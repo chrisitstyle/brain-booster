@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: Brain Booster Backend
+
+  # Hibernate conf
+  mvc:
+    pathmatch:
+      matching-strategy: ant-path-matcher
+  jpa:
+    show-sql: true
+
+  # PostgreSQL db conf
+  datasource:
+    url: jdbc:postgresql://localhost:5432/brain-booster
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+
