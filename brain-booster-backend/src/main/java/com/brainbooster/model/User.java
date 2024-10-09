@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "user")
+@Table(name = "\"user\"") // Using quotes around 'user' due to it being a reserved keyword in PostgreSQL.
 public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
