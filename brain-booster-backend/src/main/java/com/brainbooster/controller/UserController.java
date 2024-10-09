@@ -4,6 +4,7 @@ package com.brainbooster.controller;
 import com.brainbooster.model.User;
 import com.brainbooster.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,4 +26,15 @@ public class UserController {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<User> getUserById(@PathVariable long userId){
+        User user = userService.getUserById(userId);
+
+        if (user != null){
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
 }
