@@ -8,6 +8,7 @@ spring:
       matching-strategy: ant-path-matcher
   jpa:
     show-sql: true
+    open-in-view: false
 
   # PostgreSQL db conf
   datasource:
