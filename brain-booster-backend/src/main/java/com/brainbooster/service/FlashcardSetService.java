@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -16,6 +17,9 @@ public class FlashcardSetService {
 
     public ResponseEntity<FlashcardSet> addFlashcardSet(FlashcardSet flashcardSet) {
 
+        if(flashcardSet.getCreatedAt() == null){
+            flashcardSet.setCreatedAt(LocalDateTime.now());
+        }
         FlashcardSet flashcardSetSaved = flashcardSetRepository.save(flashcardSet);
         return ResponseEntity.status(HttpStatus.CREATED).body(flashcardSetSaved);
     }
