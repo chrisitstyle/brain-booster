@@ -15,6 +15,11 @@ public class FlashcardSetController {
 
     private final FlashcardSetService flashcardSetService;
 
+    @PostMapping
+    public ResponseEntity<FlashcardSet> addFlashcardSet(@RequestBody FlashcardSet flashcardSet) {
+        return flashcardSetService.addFlashcardSet(flashcardSet);
+    }
+
     @GetMapping
     public ResponseEntity<List<FlashcardSet>> getAllFlashcardSets() {
         List<FlashcardSet> flashcardSets = flashcardSetService.getAllFlashcardSets();
