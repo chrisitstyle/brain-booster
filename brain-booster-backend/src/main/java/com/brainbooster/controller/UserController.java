@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,6 +36,16 @@ public class UserController {
             return new ResponseEntity<>(user, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<String> deleteUserById(@PathVariable long userId){
+        try{
+            userService.deleteUserById(userId);
+            return new ResponseEntity<>("User with id: " + userId + " has been deleted" , HttpStatus.OK);
+        }catch(NoSuchElementException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
     }
 
 }

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -30,6 +31,17 @@ public class UserService {
     }
     public User getUserById(long userId){
         return userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this id does not exist"));
+    }
+
+    @Transactional
+    public void deleteUserById(long userId){
+
+        Optional<User> userExists = userRepository.findById(userId);
+        if(userExists.isPresent()){
+            userRepository.deleteById(userId);
+        }else{
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " doesn't exist");
+        }
     }
 
 }
