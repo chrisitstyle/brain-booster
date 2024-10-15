@@ -5,6 +5,7 @@ import com.brainbooster.model.User;
 import com.brainbooster.repository.UserRepository;
 import com.brainbooster.service.UserService;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,22 +26,27 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    @Test
-    void UserService_AddUser_ReturnsSavedUserAndCreatedStatus(){
-        //given
-       User user = new User();
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = new User();
         user.setUserId(1);
         user.setNickname("testUser");
         user.setEmail("test@example.com");
         user.setPassword("test_password");
         user.setRole(Role.USER);
+    }
 
-        //when
+    @Test
+    void UserService_AddUser_ReturnsSavedUserAndCreatedStatus(){
+
+        //arrange
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
 
-        //then
+        //act
         ResponseEntity<User> savedUser = userService.addUser(user);
-
+        //assert
         Assertions.assertThat(savedUser).isNotNull();
         Assertions.assertThat(savedUser.getBody().getUserId()).isEqualTo(1);
         Assertions.assertThat(savedUser.getBody().getNickname()).isEqualTo("testUser");
