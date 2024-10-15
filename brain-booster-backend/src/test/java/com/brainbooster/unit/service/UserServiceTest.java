@@ -14,7 +14,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,6 +58,22 @@ class UserServiceTest {
         Assertions.assertThat(savedUser.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
 
+    }
+
+    @Test
+    void UserService_AddUser_ThrowsResponseStatusException_WhenUserEmailAlreadyExist(){
+
+        //arrange
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        //act
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.addUser(user);
+        });
+
+        //assert
+        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
+        Assertions.assertThat(exception.getReason()).isEqualTo("User with this email already exists");
     }
 
 
