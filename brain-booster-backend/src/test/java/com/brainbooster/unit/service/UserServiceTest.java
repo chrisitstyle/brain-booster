@@ -76,5 +76,32 @@ class UserServiceTest {
         Assertions.assertThat(exception.getReason()).isEqualTo("User with this email already exists");
     }
 
+    @Test
+    void UserService_GetUserById_ShouldReturnUser_WhenUserExists(){
+        //arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
+        //act
+        User userExists = userService.getUserById(1L);
+        //assert
+        Assertions.assertThat(userExists)
+                .isNotNull()
+                .isEqualTo(user);
+    }
+
+    @Test
+    void userService_GetUserById_ShouldThrowResponseStatusException_WhenUserDoesNotExist(){
+        //arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        //act
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.getUserById(1L);
+        });
+        //assert
+        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        Assertions.assertThat(exception.getReason()).isEqualTo("User with this id does not exist");
+    }
+
+
+
 
 }
