@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +53,7 @@ class UserServiceTest {
         ResponseEntity<User> savedUser = userService.addUser(user);
         //assert
         Assertions.assertThat(savedUser).isNotNull();
-        Assertions.assertThat(savedUser.getBody().getUserId()).isEqualTo(1);
+        Assertions.assertThat(Objects.requireNonNull(savedUser.getBody()).getUserId()).isEqualTo(1);
         Assertions.assertThat(savedUser.getBody().getNickname()).isEqualTo("testUser");
         Assertions.assertThat(savedUser.getBody().getEmail()).isEqualTo("test@example.com");
         Assertions.assertThat(savedUser.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -67,9 +68,7 @@ class UserServiceTest {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
 
         //act
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            userService.addUser(user);
-        });
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.addUser(user));
 
         //assert
         Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
@@ -93,9 +92,7 @@ class UserServiceTest {
         //arrange
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
         //act
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            userService.getUserById(1L);
-        });
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.getUserById(1L));
         //assert
         Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
         Assertions.assertThat(exception.getReason()).isEqualTo("User with this id does not exist");
@@ -114,9 +111,7 @@ class UserServiceTest {
     void userService_DeleteUserById_ThrowsResponseStatusException_WhenUserDoesNotExist(){
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            userService.deleteUserById(1L);
-        });
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.deleteUserById(1L));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("User with id: " + 1L + " doesn't exist", exception.getReason());
