@@ -39,6 +39,20 @@ public class UserService {
     }
 
     @Transactional
+    public User updateUser(User updatedUser, long userId){
+        return userRepository.findById(userId)
+                .map(user -> {
+                    user.setNickname(updatedUser.getNickname());
+                    user.setEmail(updatedUser.getEmail());
+                    user.setPassword(updatedUser.getPassword());
+                    user.setRole(updatedUser.getRole());
+
+                    return userRepository.save(user);
+                }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " not found"));
+
+    }
+
+    @Transactional
     public void deleteUserById(long userId){
 
         Optional<User> userExists = userRepository.findById(userId);
