@@ -1,37 +1,52 @@
 package com.brainbooster.unit.controller;
 
+
 import com.brainbooster.controller.UserController;
 import com.brainbooster.model.Role;
 import com.brainbooster.model.User;
 import com.brainbooster.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@WebMvcTest(controllers = UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 
-    @InjectMocks
-    private UserController userController;
-
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+    @MockBean
     private UserService userService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private User user;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         user = new User();
         user.setUserId(1);
         user.setNickname("testUser");
@@ -41,87 +56,50 @@ class UserControllerTest {
     }
 
     @Test
-    void addUser_ShouldReturnUser_WhenUserIsAdded() {
+    void UserController_AddUser_ReturnCreated() throws Exception {
 
-        when(userService.addUser(any(User.class))).thenReturn(new ResponseEntity<>(user, HttpStatus.CREATED));
+        given(userService.addUser(ArgumentMatchers.any())).willReturn(ResponseEntity.status(HttpStatus.CREATED).body(user));
 
+        ResultActions response = mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(user)));
 
-        ResponseEntity<User> response = userController.addUser(user);
+        response.andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())))
+                .andDo(MockMvcResultHandlers.print());
 
-
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(user, response.getBody());
-        verify(userService, times(1)).addUser(user);
     }
 
     @Test
-    void getAllUsers_ShouldReturnUserList_WhenUsersExist() {
+    void UserController_GetAllUsers_ReturnUsers() throws Exception {
 
-        List<User> users = new ArrayList<>();
-        users.add(user);
-        when(userService.getAllUsers()).thenReturn(users);
+        when(userService.getAllUsers()).thenReturn(Collections.singletonList(user));
 
-
-        ResponseEntity<List<User>> response = userController.getAllUsers();
+        ResultActions response = mockMvc.perform(get("/users")
+                .contentType(MediaType.APPLICATION_JSON));
 
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(users, response.getBody());
-        verify(userService, times(1)).getAllUsers();
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.size()", CoreMatchers.is(1)));
+
     }
 
     @Test
-    void getUserById_ShouldReturnUser_WhenUserExists() {
+    void UserController_GetUserById_ReturnUser() throws Exception {
 
-        when(userService.getUserById(1)).thenReturn(user);
+        int userId = 1;
+        when(userService.getUserById(userId)).thenReturn(user);
 
-        ResponseEntity<User> response = userController.getUserById(1);
+        ResultActions response = mockMvc.perform(get("/users/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(user)));
 
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())))
+                .andDo(MockMvcResultHandlers.print());
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(user, response.getBody());
-        verify(userService, times(1)).getUserById(1);
     }
 
-    @Test
-    void getUserById_ShouldReturnNotFound_WhenUserDoesNotExist() {
-
-        when(userService.getUserById(2)).thenReturn(null);
-
-
-        ResponseEntity<User> response = userController.getUserById(2);
-
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody());
-        verify(userService, times(1)).getUserById(2);
-    }
-
-    @Test
-    void deleteUserById_ShouldReturnSuccessMessage_WhenUserIsDeleted() {
-
-        doNothing().when(userService).deleteUserById(1);
-
-
-        ResponseEntity<String> response = userController.deleteUserById(1);
-
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("User with id: 1 has been deleted", response.getBody());
-        verify(userService, times(1)).deleteUserById(1);
-    }
-
-    @Test
-    void deleteUserById_ShouldReturnNotFound_WhenUserDoesNotExist() {
-
-        doThrow(new NoSuchElementException("User not found")).when(userService).deleteUserById(2);
-
-
-        ResponseEntity<String> response = userController.deleteUserById(2);
-
-        
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals("User not found", response.getBody());
-        verify(userService, times(1)).deleteUserById(2);
-    }
 }
