@@ -16,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
@@ -58,7 +56,7 @@ class UserControllerTest {
     @Test
     void UserController_AddUser_ReturnCreated() throws Exception {
 
-        given(userService.addUser(ArgumentMatchers.any())).willReturn(ResponseEntity.status(HttpStatus.CREATED).body(user));
+        given(userService.addUser(ArgumentMatchers.any())).willReturn(user);
 
         ResultActions response = mockMvc.perform(post("/users")
                 .contentType(MediaType.APPLICATION_JSON)

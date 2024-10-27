@@ -13,10 +13,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,22 +42,21 @@ class UserServiceTest {
     }
 
     @Test
-    void UserService_AddUser_ReturnsSavedUserAndCreatedStatus(){
+    void UserService_AddUser_ReturnsSavedUser() {
 
-        //arrange
+        // arrange
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
 
-        //act
-        ResponseEntity<User> savedUser = userService.addUser(user);
-        //assert
+        // act
+        User savedUser = userService.addUser(user);
+
+        // assert
         Assertions.assertThat(savedUser).isNotNull();
-        Assertions.assertThat(Objects.requireNonNull(savedUser.getBody()).getUserId()).isEqualTo(1);
-        Assertions.assertThat(savedUser.getBody().getNickname()).isEqualTo("testUser");
-        Assertions.assertThat(savedUser.getBody().getEmail()).isEqualTo("test@example.com");
-        Assertions.assertThat(savedUser.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-
-
+        Assertions.assertThat(savedUser.getUserId()).isEqualTo(1);
+        Assertions.assertThat(savedUser.getNickname()).isEqualTo("testUser");
+        Assertions.assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
     }
+
 
     @Test
     void UserService_AddUser_ThrowsResponseStatusException_WhenUserEmailAlreadyExist(){
