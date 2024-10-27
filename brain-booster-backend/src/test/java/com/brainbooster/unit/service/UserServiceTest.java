@@ -96,6 +96,27 @@ class UserServiceTest {
     }
 
     @Test
+    void UserService_UpdateUser_ReturnsUpdatedUser() {
+        long userId = 1L;
+        when(userRepository.findById(userId)).thenReturn(Optional.ofNullable(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        User updatedUserReturn = userService.updateUser(user,userId);
+        Assertions.assertThat(updatedUserReturn).isNotNull();
+    }
+
+    @Test
+    void UserService_UpdateUser_ThrowsResponseStatusException_WhenUserDoesNotExist(){
+        long userId = 1L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(user,userId));
+
+        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    }
+
+    @Test
     void userService_DeleteUserById_ShouldDeleteUser_WhenUserExists(){
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
