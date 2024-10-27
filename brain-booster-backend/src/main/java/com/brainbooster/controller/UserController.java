@@ -40,13 +40,8 @@ public class UserController {
 
     @PutMapping("/{userId}")
     public ResponseEntity<User> updateUser(@RequestBody User updatedUser, @PathVariable long userId) {
-        try{
-            User responseUser = userService.updateUser(updatedUser, userId);
-            return new ResponseEntity<>(responseUser,HttpStatus.OK);
-
-        }catch (NoSuchElementException e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        User responseUser = userService.updateUser(updatedUser, userId);
+        return new ResponseEntity<>(responseUser, HttpStatus.OK);
     }
 
     @DeleteMapping("/{userId}")
