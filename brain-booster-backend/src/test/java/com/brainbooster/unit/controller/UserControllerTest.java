@@ -130,7 +130,8 @@ class UserControllerTest {
         ResultActions response = mockMvc.perform(delete("/users/1")
                         .contentType(MediaType.APPLICATION_JSON));
 
-        response.andExpect(MockMvcResultMatchers.status().isOk());
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string("User with id: " + userId + " has been deleted"));
 
 
     }
