@@ -3,8 +3,6 @@ package com.brainbooster.service;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.repository.FlashcardSetRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,13 +13,12 @@ import java.util.List;
 public class FlashcardSetService {
     private final FlashcardSetRepository flashcardSetRepository;
 
-    public ResponseEntity<FlashcardSet> addFlashcardSet(FlashcardSet flashcardSet) {
+    public FlashcardSet addFlashcardSet(FlashcardSet flashcardSet) {
 
         if(flashcardSet.getCreatedAt() == null){
             flashcardSet.setCreatedAt(LocalDateTime.now());
         }
-        FlashcardSet flashcardSetSaved = flashcardSetRepository.save(flashcardSet);
-        return ResponseEntity.status(HttpStatus.CREATED).body(flashcardSetSaved);
+        return flashcardSetRepository.save(flashcardSet);
     }
 
     public List<FlashcardSet> getAllFlashcardSets() {
