@@ -28,4 +28,10 @@ public class FlashcardSetController {
         List<FlashcardSet> flashcardSets = flashcardSetService.getAllFlashcardSets();
         return ResponseEntity.ok(flashcardSets);
     }
+
+    @GetMapping("/{flashcardSetId}")
+    public ResponseEntity<FlashcardSet> getFlashcardSetById(@PathVariable long flashcardSetId) {
+
+        return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(flashcardSetId));
+    }
 }
