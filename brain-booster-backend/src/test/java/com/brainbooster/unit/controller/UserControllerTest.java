@@ -27,9 +27,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.util.Collections;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -101,5 +101,39 @@ class UserControllerTest {
                 .andDo(MockMvcResultHandlers.print());
 
     }
+
+    @Test
+    void UserController_UpdateUser_ReturnUpdatedUser() throws Exception {
+
+        long userId = 1L;
+
+        when(userService.updateUser(ArgumentMatchers.any(User.class), ArgumentMatchers.eq(userId)))
+                .thenReturn(user);
+
+        ResultActions response = mockMvc.perform(put("/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andDo(MockMvcResultHandlers.print());
+
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())));
+    }
+
+    @Test
+    void UserController_DeleteUser_ReturnsString() throws Exception {
+
+        long userId = 1;
+
+        doNothing().when(userService).deleteUserById(userId);
+
+        ResultActions response = mockMvc.perform(delete("/users/1")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        response.andExpect(MockMvcResultMatchers.status().isOk());
+
+
+    }
+
 
 }
