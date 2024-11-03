@@ -34,4 +34,18 @@ public class FlashcardSetController {
 
         return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(flashcardSetId));
     }
+
+    @PatchMapping("/{flashcardSetId}")
+    public ResponseEntity<FlashcardSet> updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable Long flashcardSetId){
+
+        flashcardSetService.updateFlashcardSet(updatedFlashcardSet, flashcardSetId);
+        return new ResponseEntity<>(updatedFlashcardSet, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{flashcardSetId}")
+    public ResponseEntity<String> deleteFlashcardSetById(@PathVariable Long flashcardSetId) {
+        flashcardSetService.deleteFlashcardSetById(flashcardSetId);
+        return ResponseEntity.ok("FlashcardSet with id: " + flashcardSetId + " has been deleted.");
+    }
+
 }
