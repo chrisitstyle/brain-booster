@@ -30,7 +30,7 @@ public class FlashcardSetController {
     }
 
     @GetMapping("/{flashcardSetId}")
-    public ResponseEntity<FlashcardSet> getFlashcardSetById(@PathVariable long flashcardSetId) {
+    public ResponseEntity<FlashcardSet> getFlashcardSetById(@PathVariable Long flashcardSetId) {
 
         return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(flashcardSetId));
     }

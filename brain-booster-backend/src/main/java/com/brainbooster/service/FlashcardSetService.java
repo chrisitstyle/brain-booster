@@ -29,7 +29,7 @@ public class FlashcardSetService {
         return flashcardSetRepository.findAll();
     }
 
-    public FlashcardSet getFlashcardSetById(long flashcardSetId) {
+    public FlashcardSet getFlashcardSetById(Long flashcardSetId) {
         return flashcardSetRepository.findById(flashcardSetId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + flashcardSetId + " not found"));
     }
 

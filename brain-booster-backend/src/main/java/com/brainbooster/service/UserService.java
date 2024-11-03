@@ -32,12 +32,12 @@ public class UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll(Sort.by(Sort.Direction.ASC, "userId" ));
     }
-    public User getUserById(long userId){
+    public User getUserById(Long userId){
         return userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this id does not exist"));
     }
 
     @Transactional
-    public User updateUser(User updatedUser, long userId){
+    public User updateUser(User updatedUser, Long userId){
         return userRepository.findById(userId)
                 .map(user -> {
                     user.setNickname(updatedUser.getNickname());
@@ -51,7 +51,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUserById(long userId){
+    public void deleteUserById(Long userId){
 
         Optional<User> userExists = userRepository.findById(userId);
         if(userExists.isPresent()){

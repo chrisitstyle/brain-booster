@@ -30,7 +30,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable long userId) {
+    public ResponseEntity<User> getUserById(@PathVariable Long userId) {
         User user = userService.getUserById(userId);
 
         if (user != null) {
@@ -40,13 +40,13 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUser(@RequestBody User updatedUser, @PathVariable long userId) {
+    public ResponseEntity<User> updateUser(@RequestBody User updatedUser, @PathVariable Long userId) {
         User responseUser = userService.updateUser(updatedUser, userId);
         return new ResponseEntity<>(responseUser, HttpStatus.OK);
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<String> deleteUserById(@PathVariable long userId) {
+    public ResponseEntity<String> deleteUserById(@PathVariable Long userId) {
 
         userService.deleteUserById(userId);
         return new ResponseEntity<>("User with id: " + userId + " has been deleted", HttpStatus.OK);
