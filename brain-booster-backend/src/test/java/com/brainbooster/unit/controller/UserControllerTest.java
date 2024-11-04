@@ -86,7 +86,7 @@ class UserControllerTest {
     @Test
     void UserController_GetUserById_ReturnUser() throws Exception {
 
-        int userId = 1;
+        Long userId = 1L;
         when(userService.getUserById(userId)).thenReturn(user);
 
         ResultActions response = mockMvc.perform(get("/users/1")
