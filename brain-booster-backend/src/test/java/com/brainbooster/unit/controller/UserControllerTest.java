@@ -1,7 +1,10 @@
 package com.brainbooster.unit.controller;
 
 
+import com.brainbooster.config.JwtAuthenticationFilter;
+import com.brainbooster.config.JwtService;
 import com.brainbooster.controller.UserController;
+import com.brainbooster.dto.UserDTO;
 import com.brainbooster.model.Role;
 import com.brainbooster.model.User;
 import com.brainbooster.service.UserService;
@@ -22,11 +25,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @WebMvcTest(controllers = UserController.class)
@@ -38,41 +41,51 @@ class UserControllerTest {
     private MockMvc mockMvc;
     @MockBean
     private UserService userService;
+    @MockBean
+    private JwtService jwtService;
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
     @Autowired
     private ObjectMapper objectMapper;
 
-    private User user;
+
+    private UserDTO userDTO;
 
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setUserId(1);
-        user.setNickname("testUser");
-        user.setEmail("test@example.com");
-        user.setPassword("test_password");
-        user.setRole(Role.USER);
+        userDTO = new UserDTO(
+                1L,
+                "testUser",
+                "test@example.com",
+                Role.USER,
+                LocalDateTime.parse("2024-11-11T00:28:05.738221")
+        );
     }
 
     @Test
-    void UserController_AddUser_ReturnCreated() throws Exception {
+    void UserController_AddUserWithValidJWT_ReturnsCreated() throws Exception {
 
-        given(userService.addUser(ArgumentMatchers.any())).willReturn(user);
+        String token = "valid_token_test";
+        when(jwtService.extractUsername(token)).thenReturn("test@example.com");
+
+        given(userService.addUser(ArgumentMatchers.any())).willReturn(userDTO);
 
         ResultActions response = mockMvc.perform(post("/users")
+                .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(user)));
+                .content(objectMapper.writeValueAsString(userDTO)));
 
         response.andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(userDTO.nickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(userDTO.email())))
                 .andDo(MockMvcResultHandlers.print());
 
     }
 
     @Test
-    void UserController_GetAllUsers_ReturnUsers() throws Exception {
+    void UserController_GetAllUsers_ReturnsUsersDTO() throws Exception {
 
-        when(userService.getAllUsers()).thenReturn(Collections.singletonList(user));
+        when(userService.getAllUsers()).thenReturn(Collections.singletonList(userDTO));
 
         ResultActions response = mockMvc.perform(get("/users")
                 .contentType(MediaType.APPLICATION_JSON));
@@ -84,38 +97,38 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_GetUserById_ReturnUser() throws Exception {
+    void UserController_GetUserById_ReturnsUserDTO() throws Exception {
 
         Long userId = 1L;
-        when(userService.getUserById(userId)).thenReturn(user);
+        when(userService.getUserById(userId)).thenReturn(userDTO);
 
         ResultActions response = mockMvc.perform(get("/users/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(user)));
+                .content(objectMapper.writeValueAsString(userDTO)));
 
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(userDTO.nickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(userDTO.email())))
                 .andDo(MockMvcResultHandlers.print());
 
     }
 
     @Test
-    void UserController_UpdateUser_ReturnUpdatedUser() throws Exception {
+    void UserController_UpdateUser_ReturnsUpdatedUserDTO() throws Exception {
 
         long userId = 1L;
 
         when(userService.updateUser(ArgumentMatchers.any(User.class), ArgumentMatchers.eq(userId)))
-                .thenReturn(user);
+                .thenReturn(userDTO);
 
         ResultActions response = mockMvc.perform(put("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user)))
+                        .content(objectMapper.writeValueAsString(userDTO)))
                 .andDo(MockMvcResultHandlers.print());
 
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(user.getNickname())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(user.getEmail())));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.nickname", CoreMatchers.is(userDTO.nickname())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email", CoreMatchers.is(userDTO.email())));
     }
 
     @Test
@@ -131,6 +144,7 @@ class UserControllerTest {
         response.andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().string("User with id: " + userId + " has been deleted"));
 
+        verify(userService, times(1)).deleteUserById(userId);
 
     }
 

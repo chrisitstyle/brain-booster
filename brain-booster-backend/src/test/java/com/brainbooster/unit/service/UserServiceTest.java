@@ -1,5 +1,7 @@
 package com.brainbooster.unit.service;
 
+import com.brainbooster.dto.UserDTO;
+import com.brainbooster.dto.mapper.UserDTOMapper;
 import com.brainbooster.model.Role;
 import com.brainbooster.model.User;
 import com.brainbooster.repository.UserRepository;
@@ -13,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
@@ -25,11 +28,16 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private UserDTOMapper userDTOMapper;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
 
     private User user;
+    private UserDTO userDTO;
 
     @BeforeEach
     void setUp() {
@@ -39,22 +47,28 @@ class UserServiceTest {
         user.setEmail("test@example.com");
         user.setPassword("test_password");
         user.setRole(Role.USER);
+
+        userDTO = new UserDTO(1, "testUser", "test@example.com",Role.USER, null);
     }
 
     @Test
-    void UserService_AddUser_ReturnsSavedUser() {
+    void UserService_AddUser_ReturnsSavedUserDTO() {
 
         // arrange
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
+        when(passwordEncoder.encode(anyString())).thenReturn("secured_password");
+
+        when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
         // act
-        User savedUser = userService.addUser(user);
+        UserDTO savedUserDTO = userService.addUser(user);
 
         // assert
-        Assertions.assertThat(savedUser).isNotNull();
-        Assertions.assertThat(savedUser.getUserId()).isEqualTo(1);
-        Assertions.assertThat(savedUser.getNickname()).isEqualTo("testUser");
-        Assertions.assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
+        Assertions.assertThat(savedUserDTO).isNotNull();
+        Assertions.assertThat(savedUserDTO.userId()).isEqualTo(1);
+        Assertions.assertThat(savedUserDTO.nickname()).isEqualTo("testUser");
+        Assertions.assertThat(savedUserDTO.email()).isEqualTo("test@example.com");
     }
 
 
@@ -73,15 +87,16 @@ class UserServiceTest {
     }
 
     @Test
-    void UserService_GetUserById_ShouldReturnUser_WhenUserExists(){
+    void UserService_GetUserById_ShouldReturnUserDTO_WhenUserExists(){
         //arrange
         when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
+        when(userDTOMapper.apply(user)).thenReturn(userDTO);
         //act
-        User userExists = userService.getUserById(1L);
+        UserDTO userExistsDTO = userService.getUserById(1L);
         //assert
-        Assertions.assertThat(userExists)
+        Assertions.assertThat(userExistsDTO)
                 .isNotNull()
-                .isEqualTo(user);
+                .isEqualTo(userDTO);
     }
 
     @Test
@@ -96,13 +111,17 @@ class UserServiceTest {
     }
 
     @Test
-    void UserService_UpdateUser_ReturnsUpdatedUser() {
+    void UserService_UpdateUser_ReturnsUpdatedUserDTO() {
         long userId = 1L;
-        when(userRepository.findById(userId)).thenReturn(Optional.ofNullable(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
+        when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
-        User updatedUserReturn = userService.updateUser(user,userId);
-        Assertions.assertThat(updatedUserReturn).isNotNull();
+        UserDTO updatedUserDTO = userService.updateUser(user,userId);
+        Assertions.assertThat(updatedUserDTO)
+                .isNotNull()
+                .isEqualTo(userDTO);
     }
 
     @Test
