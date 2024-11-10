@@ -2,6 +2,7 @@ package com.brainbooster.controller;
 
 
 import com.brainbooster.model.User;
+import com.brainbooster.model.dtos.UserDTO;
 import com.brainbooster.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,14 +25,14 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        List<UserDTO> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable Long userId) {
-        User user = userService.getUserById(userId);
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
+        UserDTO user = userService.getUserById(userId);
 
         if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
