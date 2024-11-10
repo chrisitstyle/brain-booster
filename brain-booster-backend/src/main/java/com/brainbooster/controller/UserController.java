@@ -19,8 +19,8 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> addUser(@RequestBody User user) {
-        User savedUser = userService.addUser(user);
+    public ResponseEntity<UserDTO> addUser(@RequestBody User user) {
+        UserDTO savedUser = userService.addUser(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
 
@@ -41,8 +41,9 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUser(@RequestBody User updatedUser, @PathVariable Long userId) {
-        User responseUser = userService.updateUser(updatedUser, userId);
+    public ResponseEntity<UserDTO> updateUser(@RequestBody User updatedUser, @PathVariable Long userId) {
+        UserDTO responseUser = userService.updateUser(updatedUser, userId);
+
         return new ResponseEntity<>(responseUser, HttpStatus.OK);
     }
 
