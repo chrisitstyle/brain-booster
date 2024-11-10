@@ -1,8 +1,8 @@
 package com.brainbooster.service;
 
 import com.brainbooster.model.User;
-import com.brainbooster.model.dtos.UserDTO;
-import com.brainbooster.model.mappers.UserDTOMapper;
+import com.brainbooster.dto.UserDTO;
+import com.brainbooster.dto.mapper.UserDTOMapper;
 import com.brainbooster.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

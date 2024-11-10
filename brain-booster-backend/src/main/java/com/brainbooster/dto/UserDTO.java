@@ -1,4 +1,4 @@
-package com.brainbooster.model.dtos;
+package com.brainbooster.dto;
 
 import com.brainbooster.model.Role;
 

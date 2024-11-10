@@ -1,7 +1,7 @@
-package com.brainbooster.model.mappers;
+package com.brainbooster.dto.mapper;
 
 import com.brainbooster.model.User;
-import com.brainbooster.model.dtos.UserDTO;
+import com.brainbooster.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.function.Function;

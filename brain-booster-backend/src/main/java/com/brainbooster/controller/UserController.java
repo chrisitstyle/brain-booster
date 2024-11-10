@@ -2,7 +2,7 @@ package com.brainbooster.controller;
 
 
 import com.brainbooster.model.User;
-import com.brainbooster.model.dtos.UserDTO;
+import com.brainbooster.dto.UserDTO;
 import com.brainbooster.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
