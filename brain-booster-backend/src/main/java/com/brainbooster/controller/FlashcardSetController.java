@@ -1,5 +1,6 @@
 package com.brainbooster.controller;
 
+import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.service.FlashcardSetService;
 import lombok.RequiredArgsConstructor;
@@ -17,35 +18,37 @@ public class FlashcardSetController {
     private final FlashcardSetService flashcardSetService;
 
     @PostMapping
-    public ResponseEntity<FlashcardSet> addFlashcardSet(@RequestBody FlashcardSet flashcardSet) {
-        flashcardSetService.addFlashcardSet(flashcardSet);
-        return new ResponseEntity<>(flashcardSet, HttpStatus.CREATED);
+    public ResponseEntity<FlashcardSetDTO> addFlashcardSet(@RequestBody FlashcardSet flashcardSet) {
+
+        FlashcardSetDTO savedFlashcardSet = flashcardSetService.addFlashcardSet(flashcardSet);
+
+        return new ResponseEntity<>(savedFlashcardSet, HttpStatus.CREATED);
 
     }
 
     @GetMapping
-    public ResponseEntity<List<FlashcardSet>> getAllFlashcardSets() {
-        List<FlashcardSet> flashcardSets = flashcardSetService.getAllFlashcardSets();
+    public ResponseEntity<List<FlashcardSetDTO>> getAllFlashcardSets() {
+        List<FlashcardSetDTO> flashcardSets = flashcardSetService.getAllFlashcardSets();
         return ResponseEntity.ok(flashcardSets);
     }
 
-    @GetMapping("/{flashcardSetId}")
-    public ResponseEntity<FlashcardSet> getFlashcardSetById(@PathVariable Long flashcardSetId) {
+    @GetMapping("/{setId}")
+    public ResponseEntity<FlashcardSetDTO> getFlashcardSetById(@PathVariable Long setId) {
 
-        return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(flashcardSetId));
+        return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(setId));
     }
 
-    @PatchMapping("/{flashcardSetId}")
-    public ResponseEntity<FlashcardSet> updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable Long flashcardSetId){
+    @PatchMapping("/{setId}")
+    public ResponseEntity<FlashcardSetDTO> updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable Long setId){
 
-        flashcardSetService.updateFlashcardSet(updatedFlashcardSet, flashcardSetId);
-        return new ResponseEntity<>(updatedFlashcardSet, HttpStatus.OK);
+        FlashcardSetDTO responseFlashcardSet = flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
+        return new ResponseEntity<>(responseFlashcardSet, HttpStatus.OK);
     }
 
-    @DeleteMapping("/{flashcardSetId}")
-    public ResponseEntity<String> deleteFlashcardSetById(@PathVariable Long flashcardSetId) {
-        flashcardSetService.deleteFlashcardSetById(flashcardSetId);
-        return ResponseEntity.ok("FlashcardSet with id: " + flashcardSetId + " has been deleted.");
+    @DeleteMapping("/{setId}")
+    public ResponseEntity<String> deleteFlashcardSetById(@PathVariable Long setId) {
+        flashcardSetService.deleteFlashcardSetById(setId);
+        return ResponseEntity.ok("FlashcardSet with id: " + setId + " has been deleted.");
     }
 
 }

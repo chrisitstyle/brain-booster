@@ -1,9 +1,12 @@
 package com.brainbooster.service;
 
+import com.brainbooster.dto.FlashcardSetDTO;
+import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.repository.FlashcardSetRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,41 +19,52 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FlashcardSetService {
     private final FlashcardSetRepository flashcardSetRepository;
+    private final FlashcardSetDTOMapper flashcardSetDTOMapper;
 
-    public FlashcardSet addFlashcardSet(FlashcardSet flashcardSet) {
+    public FlashcardSetDTO addFlashcardSet(FlashcardSet flashcardSet) {
 
         if(flashcardSet.getCreatedAt() == null){
             flashcardSet.setCreatedAt(LocalDateTime.now());
         }
-        return flashcardSetRepository.save(flashcardSet);
+
+        FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
+        return flashcardSetDTOMapper.apply(savedFlashcardSet);
     }
 
-    public List<FlashcardSet> getAllFlashcardSets() {
-        return flashcardSetRepository.findAll();
+    public List<FlashcardSetDTO> getAllFlashcardSets() {
+        return flashcardSetRepository.findAll(Sort.by(Sort.Direction.ASC, "setId" ))
+                .stream()
+                .map(flashcardSetDTOMapper)
+                .toList();
     }
 
-    public FlashcardSet getFlashcardSetById(Long flashcardSetId) {
-        return flashcardSetRepository.findById(flashcardSetId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + flashcardSetId + " not found"));
+    public FlashcardSetDTO getFlashcardSetById(Long setId) {
+        return flashcardSetRepository.findById(setId)
+                .map(flashcardSetDTOMapper)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + setId + " not found"));
     }
 
     @Transactional
-    public FlashcardSet updateFlashcardSet(FlashcardSet updatedFlashcardSet, Long flashcardSetId) {
+    public FlashcardSetDTO updateFlashcardSet(FlashcardSet updatedFlashcardSet, Long setId) {
 
-        return flashcardSetRepository.findById(flashcardSetId)
+        return flashcardSetRepository.findById(setId)
                 .map(flashcardSet -> {
                     flashcardSet.setSetName(updatedFlashcardSet.getSetName());
                     flashcardSet.setDescription(updatedFlashcardSet.getDescription());
-                    return flashcardSetRepository.save(flashcardSet);
-                }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + flashcardSetId + " not found"));
+
+                    FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
+
+                    return flashcardSetDTOMapper.apply(savedFlashcardSet);
+                }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + setId + " not found"));
     }
 
-    public void deleteFlashcardSetById(Long flashcardSetId) {
+    public void deleteFlashcardSetById(Long setId) {
 
-        Optional<FlashcardSet> flashcardSetExists = flashcardSetRepository.findById(flashcardSetId);
+        Optional<FlashcardSet> flashcardSetExists = flashcardSetRepository.findById(setId);
         if (flashcardSetExists.isPresent()) {
-            flashcardSetRepository.deleteById(flashcardSetId);
+            flashcardSetRepository.deleteById(setId);
         } else{
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + flashcardSetId + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + setId + " not found");
         }
     }
 }
