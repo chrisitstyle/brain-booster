@@ -30,6 +30,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/v1/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/users**","/users/**").hasAuthority(Role.USER.toString())
+                                .requestMatchers("/flashcardsets**","/flashcardsets/**").permitAll()
                                 .anyRequest().hasAuthority(Role.ADMIN.toString())
                 )
                 .sessionManagement(sessionManagement ->
