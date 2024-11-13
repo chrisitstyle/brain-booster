@@ -1,9 +1,13 @@
 package com.brainbooster.unit.service;
 
+import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.dto.UserDTO;
+import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.dto.mapper.UserDTOMapper;
+import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.model.Role;
 import com.brainbooster.model.User;
+import com.brainbooster.repository.FlashcardSetRepository;
 import com.brainbooster.repository.UserRepository;
 import com.brainbooster.service.UserService;
 import org.assertj.core.api.Assertions;
@@ -18,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +37,10 @@ class UserServiceTest {
     @Mock
     private UserDTOMapper userDTOMapper;
     @Mock
+    private FlashcardSetRepository flashcardSetRepository;
+    @Mock
+    private FlashcardSetDTOMapper flashcardSetDTOMapper;
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -38,6 +48,8 @@ class UserServiceTest {
 
     private User user;
     private UserDTO userDTO;
+    private FlashcardSet flashcardSet;
+    private FlashcardSetDTO flashcardSetDTO;
 
     @BeforeEach
     void setUp() {
@@ -49,6 +61,19 @@ class UserServiceTest {
         user.setRole(Role.USER);
 
         userDTO = new UserDTO(1, "testUser", "test@example.com",Role.USER, null);
+
+        flashcardSet = new FlashcardSet();
+        flashcardSet.setSetId(1L);
+        flashcardSet.setUser(user);
+        flashcardSet.setSetName("example flashcardSet");
+        flashcardSet.setDescription("example description");
+        flashcardSet.setCreatedAt(LocalDateTime.parse("2024-11-13T00:28:05.738221"));
+
+        flashcardSetDTO = new FlashcardSetDTO(flashcardSet.getSetId(),
+                userDTOMapper.apply(user),
+                flashcardSet.getSetName(),
+                flashcardSet.getDescription(),
+                flashcardSet.getCreatedAt());
     }
 
     @Test
@@ -108,6 +133,34 @@ class UserServiceTest {
         //assert
         Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
         Assertions.assertThat(exception.getReason()).isEqualTo("User with this id does not exist");
+    }
+
+    @Test
+    void UserService_GetAllUserFlashcardSetsByUserId_ShouldReturnFlashcardSetsDTO_WhenUserExists(){
+        // arrange
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(flashcardSetRepository.findByUserId(1L)).thenReturn(List.of(flashcardSet));
+        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
+        // act
+        List<FlashcardSetDTO> flashcardSetDTOList = userService.getAllFlashcardSetsByUserId(1L);
+
+        // assert
+        Assertions.assertThat(flashcardSetDTOList)
+                .contains(flashcardSetDTO)
+                        .hasSize(1);
+        Assertions.assertThat(flashcardSetDTOList.getFirst())
+                .isEqualTo(flashcardSetDTO);
+
+    }
+    @Test
+    void UserService_GetAllUserFlashcardSetsByUserId_ThrowsResponseStatusException_WhenUserDoesNotExist(){
+        // arrange
+        when(userRepository.existsById(1L)).thenReturn(false);
+        // act
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.getAllFlashcardSetsByUserId(1L));
+        // assert
+        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        Assertions.assertThat(exception.getReason()).isEqualTo("User with id: " + 1L + " not found");
     }
 
     @Test

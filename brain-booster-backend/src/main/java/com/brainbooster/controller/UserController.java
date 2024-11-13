@@ -1,6 +1,7 @@
 package com.brainbooster.controller;
 
 
+import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.model.User;
 import com.brainbooster.dto.UserDTO;
 import com.brainbooster.service.UserService;
@@ -38,6 +39,12 @@ public class UserController {
             return new ResponseEntity<>(user, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/{userId}/flashcardsets")
+    public ResponseEntity<List<FlashcardSetDTO>> getAllFlashcardSetsByUserId(@PathVariable Long userId) {
+        List<FlashcardSetDTO> flashcardSets = userService.getAllFlashcardSetsByUserId(userId);
+        return ResponseEntity.ok(flashcardSets);
     }
 
     @PutMapping("/{userId}")

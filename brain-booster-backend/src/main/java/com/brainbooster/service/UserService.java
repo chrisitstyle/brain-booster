@@ -1,8 +1,11 @@
 package com.brainbooster.service;
 
+import com.brainbooster.dto.FlashcardSetDTO;
+import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.model.User;
 import com.brainbooster.dto.UserDTO;
 import com.brainbooster.dto.mapper.UserDTOMapper;
+import com.brainbooster.repository.FlashcardSetRepository;
 import com.brainbooster.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -22,6 +25,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserDTOMapper userDTOMapper;
     private final PasswordEncoder passwordEncoder;
+    private final FlashcardSetRepository flashcardSetRepository;
+    private final FlashcardSetDTOMapper flashcardSetDTOMapper;
+
 
     public UserDTO addUser(User user){
         Optional<User> userFromDatabase = userRepository.findByEmail(user.getEmail());
@@ -49,6 +55,19 @@ public class UserService {
                 map(userDTOMapper)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this id does not exist"));
     }
+
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(Long userId) {
+
+        if(!userRepository.existsById(userId)){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " not found");
+        }
+
+        return flashcardSetRepository.findByUserId(userId)
+                .stream()
+                .map(flashcardSetDTOMapper)
+                .toList();
+    }
+
 
     @Transactional
     public UserDTO updateUser(User updatedUser, Long userId){
