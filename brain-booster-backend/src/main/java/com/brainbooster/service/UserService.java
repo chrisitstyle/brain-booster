@@ -2,6 +2,7 @@ package com.brainbooster.service;
 
 import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
+import com.brainbooster.model.Role;
 import com.brainbooster.model.User;
 import com.brainbooster.dto.UserDTO;
 import com.brainbooster.dtomapper.UserDTOMapper;
@@ -10,6 +11,9 @@ import com.brainbooster.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +75,17 @@ public class UserService {
 
     @Transactional
     public UserDTO updateUser(User updatedUser, Long userId){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User loggedUser = (User) authentication.getPrincipal();
+
+        boolean isAdmin = loggedUser.getRole().equals(Role.ADMIN);
+        boolean isOwner = loggedUser.getUserId() == userId;
+
+        if(!isAdmin && !isOwner){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to update other users");
+        }
+
         return userRepository.findById(userId)
                 .map(user -> {
                     user.setNickname(updatedUser.getNickname());
@@ -87,8 +102,18 @@ public class UserService {
     @Transactional
     public void deleteUserById(Long userId){
 
-        Optional<User> userExists = userRepository.findById(userId);
-        if(userExists.isPresent()){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User loggedUser = (User) authentication.getPrincipal();
+        boolean isAdmin = loggedUser.getRole().equals(Role.ADMIN);
+        boolean isOwner = loggedUser.getUserId() == userId;
+
+        if (isOwner || !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot delete yourself or other users");
+        }
+
+        boolean userExists = userRepository.existsById(userId);
+
+        if(userExists){
             userRepository.deleteById(userId);
         }else{
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " doesn't exist");
