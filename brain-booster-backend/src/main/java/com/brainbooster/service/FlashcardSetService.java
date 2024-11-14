@@ -2,7 +2,9 @@ package com.brainbooster.service;
 
 import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
+import com.brainbooster.model.Flashcard;
 import com.brainbooster.model.FlashcardSet;
+import com.brainbooster.repository.FlashcardRepository;
 import com.brainbooster.repository.FlashcardSetRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FlashcardSetService {
     private final FlashcardSetRepository flashcardSetRepository;
+    private final FlashcardRepository flashcardRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
 
     public FlashcardSetDTO addFlashcardSet(FlashcardSet flashcardSet) {
@@ -42,6 +45,10 @@ public class FlashcardSetService {
         return flashcardSetRepository.findById(setId)
                 .map(flashcardSetDTOMapper)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + setId + " not found"));
+    }
+
+    public List<Flashcard> getAllFlashcardsInSet(Long setId){
+        return flashcardRepository.findAllBySetId(setId);
     }
 
     @Transactional

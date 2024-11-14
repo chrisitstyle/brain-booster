@@ -1,6 +1,7 @@
 package com.brainbooster.controller;
 
 import com.brainbooster.dto.FlashcardSetDTO;
+import com.brainbooster.model.Flashcard;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.service.FlashcardSetService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,11 @@ public class FlashcardSetController {
     public ResponseEntity<FlashcardSetDTO> getFlashcardSetById(@PathVariable Long setId) {
 
         return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(setId));
+    }
+
+    @GetMapping("/{setId}/flashcards")
+    public ResponseEntity<List<Flashcard>> getAllFlashcardsInSet(@PathVariable Long setId) {
+        return ResponseEntity.ok(flashcardSetService.getAllFlashcardsInSet(setId));
     }
 
     @PatchMapping("/{setId}")
