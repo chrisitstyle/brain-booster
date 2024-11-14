@@ -1,10 +1,10 @@
 package com.brainbooster.service;
 
 import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
 import com.brainbooster.model.User;
 import com.brainbooster.dto.UserDTO;
-import com.brainbooster.dto.mapper.UserDTOMapper;
+import com.brainbooster.dtomapper.UserDTOMapper;
 import com.brainbooster.repository.FlashcardSetRepository;
 import com.brainbooster.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.brainbooster.dto.mapper;
+package com.brainbooster.dtomapper;
 
 import com.brainbooster.model.User;
 import com.brainbooster.dto.UserDTO;

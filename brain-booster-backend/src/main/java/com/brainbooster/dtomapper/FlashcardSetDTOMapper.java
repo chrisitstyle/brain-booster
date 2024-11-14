@@ -1,4 +1,4 @@
-package com.brainbooster.dto.mapper;
+package com.brainbooster.dtomapper;
 
 import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.model.FlashcardSet;

@@ -2,8 +2,8 @@ package com.brainbooster.unit.service;
 
 import com.brainbooster.dto.FlashcardSetDTO;
 import com.brainbooster.dto.UserDTO;
-import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
-import com.brainbooster.dto.mapper.UserDTOMapper;
+import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
+import com.brainbooster.dtomapper.UserDTOMapper;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.model.Role;
 import com.brainbooster.model.User;

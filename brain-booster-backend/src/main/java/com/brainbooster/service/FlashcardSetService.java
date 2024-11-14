@@ -1,7 +1,7 @@
 package com.brainbooster.service;
 
 import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dto.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
 import com.brainbooster.model.FlashcardSet;
 import com.brainbooster.repository.FlashcardSetRepository;
 import jakarta.transaction.Transactional;
