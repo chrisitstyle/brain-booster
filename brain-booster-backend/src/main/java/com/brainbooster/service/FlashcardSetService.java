@@ -48,7 +48,13 @@ public class FlashcardSetService {
     }
 
     public List<Flashcard> getAllFlashcardsInSet(Long setId){
-        return flashcardRepository.findAllBySetId(setId);
+
+        if(flashcardSetRepository.existsById(setId)){
+            return flashcardRepository.findAllBySetId(setId);
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FlashcardSet with id: " + setId + " not found");
+        }
+
     }
 
     @Transactional
