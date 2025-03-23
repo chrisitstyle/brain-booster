@@ -1,5 +1,6 @@
-package com.brainbooster.model;
+package com.brainbooster.flashcardset;
 
+import com.brainbooster.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

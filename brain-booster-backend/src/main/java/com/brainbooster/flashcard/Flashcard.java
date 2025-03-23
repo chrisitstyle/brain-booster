@@ -1,4 +1,4 @@
-package com.brainbooster.model;
+package com.brainbooster.flashcard;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

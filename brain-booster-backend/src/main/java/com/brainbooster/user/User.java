@@ -1,4 +1,4 @@
-package com.brainbooster.model;
+package com.brainbooster.user;
 
 import jakarta.persistence.*;
 import lombok.*;

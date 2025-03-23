@@ -1,10 +1,7 @@
-package com.brainbooster.controller;
+package com.brainbooster.user;
 
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.model.User;
-import com.brainbooster.dto.UserDTO;
-import com.brainbooster.service.UserService;
+import com.brainbooster.flashcardset.FlashcardSetDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

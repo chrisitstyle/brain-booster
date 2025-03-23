@@ -1,7 +1,5 @@
-package com.brainbooster.dtomapper;
+package com.brainbooster.user;
 
-import com.brainbooster.model.User;
-import com.brainbooster.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.function.Function;

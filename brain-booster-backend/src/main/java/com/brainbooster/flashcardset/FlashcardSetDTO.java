@@ -1,4 +1,6 @@
-package com.brainbooster.dto;
+package com.brainbooster.flashcardset;
+
+import com.brainbooster.user.UserDTO;
 
 import java.time.LocalDateTime;
 

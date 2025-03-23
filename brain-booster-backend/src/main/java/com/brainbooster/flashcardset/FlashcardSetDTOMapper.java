@@ -1,7 +1,6 @@
-package com.brainbooster.dtomapper;
+package com.brainbooster.flashcardset;
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.model.FlashcardSet;
+import com.brainbooster.user.UserDTOMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.function.Function;

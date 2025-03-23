@@ -1,6 +1,5 @@
-package com.brainbooster.repository;
+package com.brainbooster.user;
 
-import com.brainbooster.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

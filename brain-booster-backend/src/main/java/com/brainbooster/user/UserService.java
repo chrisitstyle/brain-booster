@@ -1,17 +1,11 @@
-package com.brainbooster.service;
+package com.brainbooster.user;
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
-import com.brainbooster.model.Role;
-import com.brainbooster.model.User;
-import com.brainbooster.dto.UserDTO;
-import com.brainbooster.dtomapper.UserDTOMapper;
-import com.brainbooster.repository.FlashcardSetRepository;
-import com.brainbooster.repository.UserRepository;
+import com.brainbooster.flashcardset.FlashcardSetDTO;
+import com.brainbooster.flashcardset.FlashcardSetDTOMapper;
+import com.brainbooster.flashcardset.FlashcardSetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;

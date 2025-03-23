@@ -1,7 +1,7 @@
 package com.brainbooster.config;
 
 
-import com.brainbooster.repository.UserRepository;
+import com.brainbooster.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

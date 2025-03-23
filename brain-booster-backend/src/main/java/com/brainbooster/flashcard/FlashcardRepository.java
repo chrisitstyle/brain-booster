@@ -1,6 +1,5 @@
-package com.brainbooster.repository;
+package com.brainbooster.flashcard;
 
-import com.brainbooster.model.Flashcard;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

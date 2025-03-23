@@ -1,6 +1,4 @@
-package com.brainbooster.dto;
-
-import com.brainbooster.model.Role;
+package com.brainbooster.user;
 
 import java.time.LocalDateTime;
 

@@ -1,7 +1,5 @@
-package com.brainbooster.controller;
+package com.brainbooster.flashcard;
 
-import com.brainbooster.model.Flashcard;
-import com.brainbooster.service.FlashcardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

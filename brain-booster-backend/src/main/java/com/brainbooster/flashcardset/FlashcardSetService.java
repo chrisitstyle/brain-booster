@@ -1,11 +1,7 @@
-package com.brainbooster.service;
+package com.brainbooster.flashcardset;
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
-import com.brainbooster.model.Flashcard;
-import com.brainbooster.model.FlashcardSet;
-import com.brainbooster.repository.FlashcardRepository;
-import com.brainbooster.repository.FlashcardSetRepository;
+import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.FlashcardRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

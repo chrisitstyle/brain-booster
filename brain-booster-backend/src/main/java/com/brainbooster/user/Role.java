@@ -1,4 +1,4 @@
-package com.brainbooster.model;
+package com.brainbooster.user;
 
 public enum Role {
     USER, ADMIN

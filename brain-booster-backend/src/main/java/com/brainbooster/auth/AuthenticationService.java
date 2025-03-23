@@ -1,9 +1,9 @@
 package com.brainbooster.auth;
 
 import com.brainbooster.config.JwtService;
-import com.brainbooster.model.Role;
-import com.brainbooster.model.User;
-import com.brainbooster.repository.UserRepository;
+import com.brainbooster.user.Role;
+import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
