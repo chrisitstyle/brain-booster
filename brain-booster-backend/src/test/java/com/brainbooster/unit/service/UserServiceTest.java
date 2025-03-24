@@ -1,15 +1,10 @@
 package com.brainbooster.unit.service;
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dto.UserDTO;
-import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
-import com.brainbooster.dtomapper.UserDTOMapper;
-import com.brainbooster.model.FlashcardSet;
-import com.brainbooster.model.Role;
-import com.brainbooster.model.User;
-import com.brainbooster.repository.FlashcardSetRepository;
-import com.brainbooster.repository.UserRepository;
-import com.brainbooster.service.UserService;
+import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.flashcardset.FlashcardSetDTO;
+import com.brainbooster.flashcardset.FlashcardSetDTOMapper;
+import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.user.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +14,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,7 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +40,10 @@ class UserServiceTest {
     @Mock
     private FlashcardSetDTOMapper flashcardSetDTOMapper;
     @Mock
+    private Authentication authentication;
+    @Mock
+    private SecurityContext securityContext;
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -54,13 +57,14 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         user = new User();
-        user.setUserId(1);
+        user.setUserId(1L);
         user.setNickname("testUser");
         user.setEmail("test@example.com");
         user.setPassword("test_password");
         user.setRole(Role.USER);
 
-        userDTO = new UserDTO(1, "testUser", "test@example.com",Role.USER, null);
+        SecurityContextHolder.setContext(securityContext);
+        userDTO = new UserDTO(1, "testUser", "test@example.com", Role.USER, null);
 
         flashcardSet = new FlashcardSet();
         flashcardSet.setSetId(1L);
@@ -77,19 +81,19 @@ class UserServiceTest {
     }
 
     @Test
-    void UserService_AddUser_ReturnsSavedUserDTO() {
+    void addUser_ShouldReturnSavedUserDTO_WhenUserDoesNotExist() {
 
-        // arrange
+
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
         when(passwordEncoder.encode(anyString())).thenReturn("secured_password");
 
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
-        // act
+
         UserDTO savedUserDTO = userService.addUser(user);
 
-        // assert
+
         Assertions.assertThat(savedUserDTO).isNotNull();
         Assertions.assertThat(savedUserDTO.userId()).isEqualTo(1);
         Assertions.assertThat(savedUserDTO.nickname()).isEqualTo("testUser");
@@ -98,62 +102,62 @@ class UserServiceTest {
 
 
     @Test
-    void UserService_AddUser_ThrowsResponseStatusException_WhenUserEmailAlreadyExist(){
+    void addUser_ShouldThrowUnprocessableEntity_WhenUserEmailAlreadyExists() {
 
-        //arrange
+
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
 
-        //act
+
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.addUser(user));
 
-        //assert
+
         Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
         Assertions.assertThat(exception.getReason()).isEqualTo("User with this email already exists");
     }
 
     @Test
-    void UserService_GetUserById_ShouldReturnUserDTO_WhenUserExists(){
-        //arrange
+    void getUserById_ShouldReturnUserDTO_WhenUserExists() {
+
         when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
-        //act
+
         UserDTO userExistsDTO = userService.getUserById(1L);
-        //assert
+
         Assertions.assertThat(userExistsDTO)
                 .isNotNull()
                 .isEqualTo(userDTO);
     }
 
     @Test
-    void userService_GetUserById_ShouldThrowResponseStatusException_WhenUserDoesNotExist(){
-        //arrange
+    void getUserById_ShouldThrowNotFound_WhenUserDoesNotExist() {
+
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
-        //act
+
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.getUserById(1L));
-        //assert
+
         Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
         Assertions.assertThat(exception.getReason()).isEqualTo("User with this id does not exist");
     }
 
     @Test
-    void UserService_GetAllUserFlashcardSetsByUserId_ShouldReturnFlashcardSetsDTO_WhenUserExists(){
-        // arrange
+    void getAllUserFlashcardSetsByUserId_ShouldReturnFlashcardSetsDTO_WhenUserExists() {
+
         when(userRepository.existsById(1L)).thenReturn(true);
         when(flashcardSetRepository.findByUserId(1L)).thenReturn(List.of(flashcardSet));
         when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
-        // act
+
         List<FlashcardSetDTO> flashcardSetDTOList = userService.getAllFlashcardSetsByUserId(1L);
 
-        // assert
         Assertions.assertThat(flashcardSetDTOList)
                 .contains(flashcardSetDTO)
-                        .hasSize(1);
+                .hasSize(1);
         Assertions.assertThat(flashcardSetDTOList.getFirst())
                 .isEqualTo(flashcardSetDTO);
 
     }
+
     @Test
-    void UserService_GetAllUserFlashcardSetsByUserId_ThrowsResponseStatusException_WhenUserDoesNotExist(){
+    void getAllFlashcardSetsByUserId_ShouldThrowNotFound_WhenUserDoesNotExist() {
         // arrange
         when(userRepository.existsById(1L)).thenReturn(false);
         // act
@@ -164,51 +168,169 @@ class UserServiceTest {
     }
 
     @Test
-    void UserService_UpdateUser_ReturnsUpdatedUserDTO() {
-        long userId = 1L;
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.save(user)).thenReturn(user);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(userDTOMapper.apply(user)).thenReturn(userDTO);
+    void updateUser_ShouldReturnUpdatedUser_WhenUserIsOwner() {
 
-        UserDTO updatedUserDTO = userService.updateUser(user,userId);
-        Assertions.assertThat(updatedUserDTO)
-                .isNotNull()
-                .isEqualTo(userDTO);
-    }
-
-    @Test
-    void UserService_UpdateUser_ThrowsResponseStatusException_WhenUserDoesNotExist(){
-        long userId = 1L;
-
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(user,userId));
-
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    }
-
-    @Test
-    void userService_DeleteUserById_ShouldDeleteUser_WhenUserExists(){
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(user);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
+
+        User updatedUser = new User();
+        updatedUser.setNickname("newNickname");
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setPassword("new_password");
+        updatedUser.setRole(Role.USER);
+
+        User savedUser = new User();
+        savedUser.setUserId(1L);
+        savedUser.setNickname("newNickname");
+        savedUser.setEmail("new@example.com");
+        savedUser.setPassword("encoded_password");
+        savedUser.setRole(Role.USER);
+
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userDTOMapper.apply(any(User.class))).thenReturn(new UserDTO(1L, "newNickname", "new@example.com", Role.USER, null));
+
+
+        UserDTO result = userService.updateUser(updatedUser, 1L);
+
+
+
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result.nickname()).isEqualTo("newNickname");
+        Assertions.assertThat(result.email()).isEqualTo("new@example.com");
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_ShouldReturnUpdatedUser_WhenUserIsAdmin() {
+        User adminUser = new User();
+        adminUser.setUserId(2L);
+        adminUser.setRole(Role.ADMIN);
+
+        User updatedUser = new User();
+        updatedUser.setNickname("newNickname");
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setPassword("new_password");
+        updatedUser.setRole(Role.USER);
+
+        User savedUser = new User();
+        savedUser.setUserId(1L);
+        savedUser.setNickname("newNickname");
+        savedUser.setEmail("new@example.com");
+        savedUser.setPassword("encoded_password");
+        savedUser.setRole(Role.USER);
+
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userDTOMapper.apply(any(User.class))).thenReturn(new UserDTO(1L, "newNickname", "new@example.com", Role.USER, null));
+
+
+        UserDTO result = userService.updateUser(updatedUser, 1L);
+
+
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result.nickname()).isEqualTo("newNickname");
+        Assertions.assertThat(result.email()).isEqualTo("new@example.com");
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_ShouldThrowForbidden_WhenUserIsNotAllowed() {
+
+        User anotherUser = new User();
+        anotherUser.setUserId(3L);
+        anotherUser.setRole(Role.USER);
+
+        User updatedUser = new User();
+        updatedUser.setNickname("newNickname");
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setPassword("new_password");
+        updatedUser.setRole(Role.USER);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(anotherUser);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(updatedUser, 1L));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+
+    }
+
+    @Test
+    void updateUser_ShouldThrowNotFound_WhenUserDoesNotExist() {
+
+        User updatedUser = new User();
+        updatedUser.setNickname("newNickname");
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setPassword("new_password");
+        updatedUser.setRole(Role.USER);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(updatedUser, 1L));
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+
+    }
+
+    @Test
+    void deleteUserById_ShouldDeleteUser_WhenAdmin() {
+        User adminUser = new User();
+        adminUser.setUserId(2L);
+        adminUser.setRole(Role.ADMIN);
+
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(userRepository.existsById(1L)).thenReturn(true);
+
 
         userService.deleteUserById(1L);
 
-        assertAll(() -> userService.deleteUserById(1L));
+
+        verify(userRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void userService_DeleteUserById_ThrowsResponseStatusException_WhenUserDoesNotExist(){
+    void deleteUserById_ShouldThrowNotFound_WhenUserDoesNotExist() {
+        User adminUser = new User();
+        adminUser.setUserId(2L);
+        adminUser.setRole(Role.ADMIN);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(userRepository.existsById(1L)).thenReturn(false);
+
+
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.deleteUserById(1L));
 
+
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
-        assertEquals("User with id: " + 1L + " doesn't exist", exception.getReason());
         verify(userRepository, never()).deleteById(anyLong());
     }
 
+    @Test
+    void deleteUserById_ShouldThrowForbidden_WhenUserIsNotAllowed() {
+        User loggedUser = new User();
+        loggedUser.setUserId(1L);
+        loggedUser.setRole(Role.USER);
 
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(loggedUser);
+
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.deleteUserById(3L));
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
 
 
 }

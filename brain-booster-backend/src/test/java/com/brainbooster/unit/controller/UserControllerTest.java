@@ -3,11 +3,11 @@ package com.brainbooster.unit.controller;
 
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
-import com.brainbooster.controller.UserController;
-import com.brainbooster.dto.UserDTO;
-import com.brainbooster.model.Role;
-import com.brainbooster.model.User;
-import com.brainbooster.service.UserService;
+import com.brainbooster.user.UserController;
+import com.brainbooster.user.UserDTO;
+import com.brainbooster.user.Role;
+import com.brainbooster.user.User;
+import com.brainbooster.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_AddUserWithValidJWT_ReturnsCreated() throws Exception {
+    void addUserWithValidJWT_ReturnsCreated() throws Exception {
 
         String token = "valid_token_test";
         when(jwtService.extractUsername(token)).thenReturn("test@example.com");
@@ -83,7 +83,7 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_GetAllUsers_ReturnsUsersDTO() throws Exception {
+    void getAllUsers_ReturnsUsersDTO() throws Exception {
 
         when(userService.getAllUsers()).thenReturn(Collections.singletonList(userDTO));
 
@@ -97,7 +97,7 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_GetUserById_ReturnsUserDTO() throws Exception {
+    void getUserById_ReturnsUserDTO() throws Exception {
 
         Long userId = 1L;
         when(userService.getUserById(userId)).thenReturn(userDTO);
@@ -114,7 +114,7 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_UpdateUser_ReturnsUpdatedUserDTO() throws Exception {
+    void updateUser_ReturnsUpdatedUserDTO() throws Exception {
 
         long userId = 1L;
 
@@ -132,7 +132,7 @@ class UserControllerTest {
     }
 
     @Test
-    void UserController_DeleteUser_ReturnsString() throws Exception {
+    void deleteUser_ReturnsString() throws Exception {
 
         long userId = 1;
 

@@ -1,14 +1,10 @@
 package com.brainbooster.unit.service;
 
-import com.brainbooster.dto.FlashcardSetDTO;
-import com.brainbooster.dtomapper.FlashcardSetDTOMapper;
-import com.brainbooster.dtomapper.UserDTOMapper;
-import com.brainbooster.model.Flashcard;
-import com.brainbooster.model.FlashcardSet;
-import com.brainbooster.model.User;
-import com.brainbooster.repository.FlashcardRepository;
-import com.brainbooster.repository.FlashcardSetRepository;
-import com.brainbooster.service.FlashcardSetService;
+import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.FlashcardRepository;
+import com.brainbooster.flashcardset.*;
+import com.brainbooster.user.User;
+import com.brainbooster.user.UserDTOMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +44,7 @@ class FlashcardSetServiceTest {
     private FlashcardSetDTO flashcardSetDTO;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         flashcardSet = new FlashcardSet();
         User user = new User();
         user.setUserId(1L);
@@ -67,7 +63,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_AddFlashcardSet_ReturnsSavedFlashcardSetDTO() {
+    void addFlashcardSet_ReturnsSavedFlashcardSetDTO() {
         when(flashcardSetRepository.save(Mockito.any(FlashcardSet.class))).thenReturn(flashcardSet);
         when(flashcardSetDTOMapper.apply(Mockito.any(FlashcardSet.class))).thenReturn(flashcardSetDTO);
 
@@ -79,7 +75,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_GetAllFlashcardSets_ReturnsAllFlashcardSetsDTO() {
+    void getAllFlashcardSets_ReturnsAllFlashcardSetsDTO() {
 
         when(flashcardSetRepository.findAll(Sort.by(Sort.Direction.ASC, "setId")))
                 .thenReturn(Collections.singletonList(flashcardSet));
@@ -96,7 +92,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_GetFlashcardSetById_ReturnsFlashcardSetDTO_WhenFlashcardSetExists() {
+    void getFlashcardSetById_ReturnsFlashcardSetDTO_WhenFlashcardSetExists() {
         long flashcardSetId = 1L;
 
         when(flashcardSetRepository.findById(flashcardSetId)).thenReturn(Optional.ofNullable(flashcardSet));
@@ -110,7 +106,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_GetFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
+    void getFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
 
         when(flashcardSetRepository.findById(anyLong())).thenReturn(Optional.empty());
 
@@ -120,11 +116,11 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_GetAllFlashcardsInSet_ReturnFlashcards_WhenFlashcardSetExists() {
+    void getAllFlashcardsInSet_ReturnFlashcards_WhenFlashcardSetExists() {
         Long setId = 1L;
         List<Flashcard> mockFlashcards = Arrays.asList(
-                new Flashcard(1L,1L,"Question 1", "Answer 1"),
-                new Flashcard(2L,1L,"Question 2", "Answer 2")
+                new Flashcard(1L, 1L, "Question 1", "Answer 1"),
+                new Flashcard(2L, 1L, "Question 2", "Answer 2")
         );
 
         when(flashcardSetRepository.existsById(setId)).thenReturn(true);
@@ -138,7 +134,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_GetAllFlashcardsInSet_ThrowsResponseStatusException_WhenFlashcardSetNotExists(){
+    void getAllFlashcardsInSet_ThrowsResponseStatusException_WhenFlashcardSetNotExists() {
         Long setId = 1L;
         when(flashcardSetRepository.existsById(setId)).thenReturn(false);
 
@@ -150,7 +146,7 @@ class FlashcardSetServiceTest {
 
 
     @Test
-    void FlashcardSetService_UpdateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
+    void updateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
         long setId = 1L;
 
         when(flashcardSetRepository.findById(setId)).thenReturn(Optional.of(flashcardSet));
@@ -165,7 +161,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_UpdateFlashcardSet_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
+    void updateFlashcardSet_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
         long setId = 1L;
 
         when(flashcardSetRepository.findById(setId)).thenReturn(Optional.empty());
@@ -177,7 +173,7 @@ class FlashcardSetServiceTest {
 
 
     @Test
-    void FlashcardSetService_DeleteFlashcardSetById_ShouldDeleteFlashcardSet_WhenFlashcardSetExists() {
+    void deleteFlashcardSetById_ShouldDeleteFlashcardSet_WhenFlashcardSetExists() {
         when(flashcardSetRepository.findById(1L)).thenReturn(Optional.of(flashcardSet));
 
         flashcardSetService.deleteFlashcardSetById(1L);
@@ -186,7 +182,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void FlashcardSetService_DeleteFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
+    void deleteFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
         when(flashcardSetRepository.findById(1L)).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> flashcardSetService.deleteFlashcardSetById(1L));
