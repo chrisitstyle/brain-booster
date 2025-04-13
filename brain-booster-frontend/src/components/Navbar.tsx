@@ -12,6 +12,8 @@ import {
   SheetContent,
   SheetTrigger,
   SheetTitle,
+  SheetDescription,
+  SheetHeader,
 } from "@/components/ui/sheet";
 import { useMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -168,7 +170,15 @@ export default function Navbar({
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px]">
-                <SheetTitle className="sr-only">Main menu</SheetTitle>
+                <SheetHeader>
+                  <SheetTitle className="sr-only">
+                    Mobile Navigation Menu
+                  </SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Use the menu to navigate through the main sections of the
+                    app.
+                  </SheetDescription>
+                </SheetHeader>
 
                 <div className="flex flex-col gap-6 py-4">
                   <div className="relative">
