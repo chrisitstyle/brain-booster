@@ -7,7 +7,12 @@ import { ChevronDown, Menu, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,7 +29,7 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export function Navbar({
+export default function Navbar({
   className,
   items,
 }: React.HTMLAttributes<HTMLElement> & { items?: NavItem[] }) {
@@ -75,6 +80,7 @@ export function Navbar({
             <span className="inline-block text-xl font-bold text-pink-500">
               BrainBooster
             </span>
+            <span className="sr-only">Home</span>
           </Link>
         </div>
 
@@ -130,6 +136,7 @@ export function Navbar({
                 type="search"
                 placeholder="Search..."
                 className="w-[200px] rounded-full bg-gray-100 pl-9 focus-visible:ring-pink-500"
+                aria-label="Search"
               />
             </div>
           )}
@@ -140,14 +147,16 @@ export function Navbar({
                 variant="ghost"
                 size="sm"
                 className="text-gray-600 hover:text-pink-500"
+                asChild
               >
-                Login
+                <Link href="/login">Login</Link>
               </Button>
               <Button
                 size="sm"
                 className="rounded-full bg-pink-500 hover:bg-pink-600 text-white"
+                asChild
               >
-                Sign up free
+                <Link href="/signup">Sign up free</Link>
               </Button>
             </div>
           ) : (
@@ -159,6 +168,8 @@ export function Navbar({
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px]">
+                <SheetTitle className="sr-only">Main menu</SheetTitle>
+
                 <div className="flex flex-col gap-6 py-4">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
@@ -211,14 +222,20 @@ export function Navbar({
                       variant="ghost"
                       size="sm"
                       className="justify-start text-gray-600 hover:text-pink-500"
+                      asChild
                     >
-                      Login
+                      <Link href="/login" onClick={() => setIsOpen(false)}>
+                        Login
+                      </Link>
                     </Button>
                     <Button
                       size="sm"
                       className="bg-pink-500 hover:bg-pink-600 text-white"
+                      asChild
                     >
-                      Sign up free
+                      <Link href="/signup" onClick={() => setIsOpen(false)}>
+                        Sign up free
+                      </Link>
                     </Button>
                   </div>
                 </div>

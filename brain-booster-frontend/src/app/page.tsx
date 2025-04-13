@@ -1,6 +1,7 @@
+"use client";
 import type React from "react";
 import { cn } from "@/lib/utils";
-import { Navbar } from "@/components/Navbar";
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
   return (
