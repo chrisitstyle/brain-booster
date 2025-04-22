@@ -1,21 +1,20 @@
 package com.brainbooster.user;
 
+import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.FlashcardSetDTO;
 import com.brainbooster.flashcardset.FlashcardSetDTOMapper;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +27,8 @@ public class UserService {
 
 
     public UserDTO addUser(User user){
-        Optional<User> userFromDatabase = userRepository.findByEmail(user.getEmail());
-        if(userFromDatabase.isPresent()){
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "User with this email already exists");
+        if(userRepository.existsByEmail(user.getEmail())){
+            throw new EmailAlreadyExistsException("User with this email already exists!");
         }
 
         if(user.getCreatedAt() == null){
@@ -48,16 +46,16 @@ public class UserService {
                 .map(userDTOMapper)
                 .toList();
     }
-    public UserDTO getUserById(Long userId){
+    public UserDTO getUserById(long userId){
         return userRepository.findById(userId).
                 map(userDTOMapper)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with this id does not exist"));
+        .orElseThrow(() -> new NoSuchElementException("User with this id does not exist"));
     }
 
-    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(Long userId) {
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(long userId) {
 
         if(!userRepository.existsById(userId)){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " not found");
+            throw new NoSuchElementException("User with id: " + userId + " not found");
         }
 
         return flashcardSetRepository.findByUserId(userId)
@@ -66,52 +64,58 @@ public class UserService {
                 .toList();
     }
 
-
     @Transactional
-    public UserDTO updateUser(User updatedUser, Long userId){
+    public UserDTO updateUser(User updatedUser, long userId){
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User loggedUser = (User) authentication.getPrincipal();
+        User authUser = getAuthenticatedUser();
 
-        boolean isAdmin = loggedUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = loggedUser.getUserId() == userId;
+        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
+        boolean isOwner = authUser.getUserId() == userId;
 
         if(!isAdmin && !isOwner){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to update other users");
+            throw new AccessDeniedException("You are not allowed to update other users");
         }
 
-        return userRepository.findById(userId)
-                .map(user -> {
-                    user.setNickname(updatedUser.getNickname());
-                    user.setEmail(updatedUser.getEmail());
-                    user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-                    user.setRole(updatedUser.getRole());
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User with id: " + userId + " not found"));
 
-                    User savedUser = userRepository.save(user);
-                    return userDTOMapper.apply(savedUser);
-                }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " not found"));
+        updateUserFields(existingUser, updatedUser);
+
+        userRepository.save(existingUser);
+        return userDTOMapper.apply(existingUser);
 
     }
 
     @Transactional
-    public void deleteUserById(Long userId){
+    public void deleteUserById(long userId){
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User loggedUser = (User) authentication.getPrincipal();
-        boolean isAdmin = loggedUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = loggedUser.getUserId() == userId;
+        User authUser = getAuthenticatedUser();
+
+        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
+        boolean isOwner = authUser.getUserId() == userId;
 
         if (isOwner || !isAdmin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot delete yourself or other users");
+            throw new AccessDeniedException("You cannot delete yourself or other users");
         }
 
-        boolean userExists = userRepository.existsById(userId);
-
-        if(userExists){
-            userRepository.deleteById(userId);
-        }else{
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User with id: " + userId + " doesn't exist");
+        if(!userRepository.existsById(userId)){
+            throw new NoSuchElementException("User with id: " + userId + " not found");
         }
+
+        userRepository.deleteById(userId);
+    }
+
+    private User getAuthenticatedUser() {
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
+    private void updateUserFields(User existingUser, User updatedUser){
+
+        existingUser.setNickname(updatedUser.getNickname());
+        existingUser.setEmail(updatedUser.getEmail());
+        existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        existingUser.setRole(updatedUser.getRole());
+
     }
 
 }

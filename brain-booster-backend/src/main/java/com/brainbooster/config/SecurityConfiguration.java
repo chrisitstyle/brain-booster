@@ -30,7 +30,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/v1/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/users**","/users/**").authenticated()
-                                .requestMatchers("/flashcardsets**","/flashcardsets/**").permitAll()
+                                .requestMatchers("/flashcard-sets**","/flashcard-sets/**").permitAll()
                                 .requestMatchers("/flashcards**","/flashcards/**").permitAll()
                                 .anyRequest().hasAuthority(Role.ADMIN.toString())
                 )

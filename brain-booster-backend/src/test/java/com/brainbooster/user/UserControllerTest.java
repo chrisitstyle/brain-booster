@@ -1,13 +1,8 @@
-package com.brainbooster.unit.controller;
+package com.brainbooster.user;
 
 
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
-import com.brainbooster.user.UserController;
-import com.brainbooster.user.UserDTO;
-import com.brainbooster.user.Role;
-import com.brainbooster.user.User;
-import com.brainbooster.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,7 +136,7 @@ class UserControllerTest {
         ResultActions response = mockMvc.perform(delete("/users/1")
                         .contentType(MediaType.APPLICATION_JSON));
 
-        response.andExpect(MockMvcResultMatchers.status().isOk())
+        response.andExpect(MockMvcResultMatchers.status().isNoContent())
                 .andExpect(MockMvcResultMatchers.content().string("User with id: " + userId + " has been deleted"));
 
         verify(userService, times(1)).deleteUserById(userId);

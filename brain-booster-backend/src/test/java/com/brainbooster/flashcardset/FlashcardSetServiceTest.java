@@ -1,8 +1,7 @@
-package com.brainbooster.unit.service;
+package com.brainbooster.flashcardset;
 
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
-import com.brainbooster.flashcardset.*;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import org.assertj.core.api.Assertions;
@@ -14,16 +13,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,7 +67,8 @@ class FlashcardSetServiceTest {
         FlashcardSetDTO savedFlashcardSet = flashcardSetService.addFlashcardSet(flashcardSet);
 
         Assertions.assertThat(savedFlashcardSet).isNotNull();
-        Assertions.assertThat(savedFlashcardSet.setId()).isPositive();
+        Assertions.assertThat(savedFlashcardSet.setId()).isEqualTo(1L);
+        verify(flashcardSetRepository, times(1)).save(flashcardSet);
 
     }
 
@@ -83,22 +81,22 @@ class FlashcardSetServiceTest {
         when(flashcardSetDTOMapper.apply(any(FlashcardSet.class)))
                 .thenReturn(flashcardSetDTO);
 
-        List<FlashcardSetDTO> flashcardSetsDTOReturned = flashcardSetService.getAllFlashcardSets();
+        List<FlashcardSetDTO> result = flashcardSetService.getAllFlashcardSets();
 
-        assertEquals(1, flashcardSetsDTOReturned.size(),
-                "Result size should match the size of flashcardSet");
+        Assertions.assertThat(result)
+                .hasSize(1)
+                .containsExactly(flashcardSetDTO);
         verify(flashcardSetRepository, times(1))
                 .findAll(Sort.by(Sort.Direction.ASC, "setId"));
     }
 
     @Test
     void getFlashcardSetById_ReturnsFlashcardSetDTO_WhenFlashcardSetExists() {
-        long flashcardSetId = 1L;
 
-        when(flashcardSetRepository.findById(flashcardSetId)).thenReturn(Optional.ofNullable(flashcardSet));
-        when(flashcardSetDTOMapper.apply(Mockito.any(FlashcardSet.class))).thenReturn(flashcardSetDTO);
+        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.of(flashcardSet));
+        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
 
-        FlashcardSetDTO flashcardSetExists = flashcardSetService.getFlashcardSetById(flashcardSetId);
+        FlashcardSetDTO flashcardSetExists = flashcardSetService.getFlashcardSetById(1L);
 
         Assertions.assertThat(flashcardSetExists)
                 .isNotNull()
@@ -106,88 +104,96 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void getFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
+    void getFlashcardSetById_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
 
-        when(flashcardSetRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> flashcardSetService.getFlashcardSetById(1L));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> flashcardSetService.getFlashcardSetById(1L));
 
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("FlashcardSet with id: 1 not found");
     }
 
     @Test
     void getAllFlashcardsInSet_ReturnFlashcards_WhenFlashcardSetExists() {
-        Long setId = 1L;
-        List<Flashcard> mockFlashcards = Arrays.asList(
+
+        List<Flashcard> mockFlashcards = List.of(
                 new Flashcard(1L, 1L, "Question 1", "Answer 1"),
                 new Flashcard(2L, 1L, "Question 2", "Answer 2")
         );
 
-        when(flashcardSetRepository.existsById(setId)).thenReturn(true);
-        when(flashcardRepository.findAllBySetId(setId)).thenReturn(mockFlashcards);
 
-        List<Flashcard> flashcards = flashcardSetService.getAllFlashcardsInSet(setId);
+        when(flashcardRepository.findAllBySetId(1L)).thenReturn(Optional.of(mockFlashcards));
 
-        assertEquals(2, flashcards.size());
-        assertEquals("Question 1", flashcards.get(0).getTerm());
-        assertEquals("Question 2", flashcards.get(1).getTerm());
+        List<Flashcard> result = flashcardSetService.getAllFlashcardsInSet(1L);
+
+        Assertions.assertThat(result)
+                .hasSize(2)
+                .extracting(Flashcard::getTerm)
+                .containsExactly("Question 1", "Question 2");
     }
 
     @Test
-    void getAllFlashcardsInSet_ThrowsResponseStatusException_WhenFlashcardSetNotExists() {
-        Long setId = 1L;
-        when(flashcardSetRepository.existsById(setId)).thenReturn(false);
+    void getAllFlashcardsInSet_ThrowsNoSuchElement_WhenFlashcardSetNotExists() {
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> flashcardSetService.getAllFlashcardsInSet(setId));
+        when(flashcardRepository.findAllBySetId(1L)).thenReturn(Optional.empty());
 
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> flashcardSetService.getAllFlashcardsInSet(1L));
+
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("FlashcardSet with id: 1 not found");
     }
 
 
     @Test
     void updateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
-        long setId = 1L;
 
-        when(flashcardSetRepository.findById(setId)).thenReturn(Optional.of(flashcardSet));
+        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.of(flashcardSet));
         when(flashcardSetRepository.save(flashcardSet)).thenReturn(flashcardSet);
         when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
 
-        FlashcardSetDTO updatedFlashcardSetDTO = flashcardSetService.updateFlashcardSet(flashcardSet, setId);
+        FlashcardSetDTO result = flashcardSetService.updateFlashcardSet(flashcardSet, 1L);
 
-        Assertions.assertThat(updatedFlashcardSetDTO)
+        Assertions.assertThat(result)
                 .isNotNull()
                 .isEqualTo(flashcardSetDTO);
+        verify(flashcardSetRepository, times(1)).save(flashcardSet);
     }
 
     @Test
-    void updateFlashcardSet_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
-        long setId = 1L;
+    void updateFlashcardSet_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
 
-        when(flashcardSetRepository.findById(setId)).thenReturn(Optional.empty());
+        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> flashcardSetService.updateFlashcardSet(flashcardSet, setId));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> flashcardSetService.updateFlashcardSet(flashcardSet, 1L));
 
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("FlashcardSet with id: 1 not found");
     }
 
 
     @Test
     void deleteFlashcardSetById_ShouldDeleteFlashcardSet_WhenFlashcardSetExists() {
-        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.of(flashcardSet));
+        when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
         flashcardSetService.deleteFlashcardSetById(1L);
 
-        assertAll(() -> flashcardSetService.deleteFlashcardSetById(1L));
+        verify(flashcardSetRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void deleteFlashcardSetById_ThrowsResponseStatusException_WhenFlashcardSetDoesNotExist() {
-        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.empty());
+    void deleteFlashcardSetById_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
+        when(flashcardSetRepository.existsById(1L)).thenReturn(false);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> flashcardSetService.deleteFlashcardSetById(1L));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> flashcardSetService.deleteFlashcardSetById(1L));
 
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("FlashcardSet with id: 1 not found");
+
         verify(flashcardSetRepository, never()).deleteById(anyLong());
     }
 

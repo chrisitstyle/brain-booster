@@ -1,10 +1,10 @@
-package com.brainbooster.unit.service;
+package com.brainbooster.user;
 
+import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetDTO;
 import com.brainbooster.flashcardset.FlashcardSetDTOMapper;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
-import com.brainbooster.user.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,18 +13,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -84,10 +83,9 @@ class UserServiceTest {
     void addUser_ShouldReturnSavedUserDTO_WhenUserDoesNotExist() {
 
 
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.existsByEmail(user.getEmail())).thenReturn(false);
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
         when(passwordEncoder.encode(anyString())).thenReturn("secured_password");
-
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
 
@@ -102,23 +100,21 @@ class UserServiceTest {
 
 
     @Test
-    void addUser_ShouldThrowUnprocessableEntity_WhenUserEmailAlreadyExists() {
+    void addUser_ShouldThrowEmailAlreadyExists_WhenUserEmailAlreadyExists() {
 
 
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmail(user.getEmail())).thenReturn(true);
 
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.addUser(user));
+        EmailAlreadyExistsException exception = assertThrows(EmailAlreadyExistsException.class, () -> userService.addUser(user));
 
-
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
-        Assertions.assertThat(exception.getReason()).isEqualTo("User with this email already exists");
+        Assertions.assertThat(exception.getMessage()).isEqualTo("User with this email already exists!");
     }
 
     @Test
     void getUserById_ShouldReturnUserDTO_WhenUserExists() {
 
-        when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
         UserDTO userExistsDTO = userService.getUserById(1L);
@@ -129,14 +125,14 @@ class UserServiceTest {
     }
 
     @Test
-    void getUserById_ShouldThrowNotFound_WhenUserDoesNotExist() {
+    void getUserById_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.getUserById(1L));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getUserById(1L));
 
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
-        Assertions.assertThat(exception.getReason()).isEqualTo("User with this id does not exist");
+
+        Assertions.assertThat(exception.getMessage()).isEqualTo("User with this id does not exist");
     }
 
     @Test
@@ -157,21 +153,18 @@ class UserServiceTest {
     }
 
     @Test
-    void getAllFlashcardSetsByUserId_ShouldThrowNotFound_WhenUserDoesNotExist() {
-        // arrange
+    void getAllFlashcardSetsByUserId_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
         when(userRepository.existsById(1L)).thenReturn(false);
-        // act
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.getAllFlashcardSetsByUserId(1L));
-        // assert
-        Assertions.assertThat(exception.getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value());
-        Assertions.assertThat(exception.getReason()).isEqualTo("User with id: " + 1L + " not found");
+
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getAllFlashcardSetsByUserId(1L));
+
+        Assertions.assertThat(exception.getMessage()).isEqualTo("User with id: " + 1L + " not found");
     }
 
     @Test
     void updateUser_ShouldReturnUpdatedUser_WhenUserIsOwner() {
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(user);
+       mockSecurityContext(user);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
 
@@ -222,12 +215,16 @@ class UserServiceTest {
         savedUser.setRole(Role.USER);
 
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(adminUser);
+        mockSecurityContext(adminUser);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userDTOMapper.apply(any(User.class))).thenReturn(new UserDTO(1L, "newNickname", "new@example.com", Role.USER, null));
+        when(userDTOMapper.apply(any(User.class)))
+                .thenReturn(new UserDTO(1L,
+                        "newNickname",
+                        "new@example.com",
+                        Role.USER,
+                        null));
 
 
         UserDTO result = userService.updateUser(updatedUser, 1L);
@@ -240,7 +237,7 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_ShouldThrowForbidden_WhenUserIsNotAllowed() {
+    void updateUser_ShouldThrowAccessDenied_WhenUserIsNotAllowed() {
 
         User anotherUser = new User();
         anotherUser.setUserId(3L);
@@ -252,17 +249,18 @@ class UserServiceTest {
         updatedUser.setPassword("new_password");
         updatedUser.setRole(Role.USER);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(anotherUser);
+        mockSecurityContext(anotherUser);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(updatedUser, 1L));
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> userService.updateUser(updatedUser, 1L));
 
-        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("You are not allowed to update other users");
 
     }
 
     @Test
-    void updateUser_ShouldThrowNotFound_WhenUserDoesNotExist() {
+    void updateUser_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
 
         User updatedUser = new User();
         updatedUser.setNickname("newNickname");
@@ -270,13 +268,14 @@ class UserServiceTest {
         updatedUser.setPassword("new_password");
         updatedUser.setRole(Role.USER);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(user);
+        mockSecurityContext(user);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.updateUser(updatedUser, 1L));
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> userService.updateUser(updatedUser, 1L));
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("User with id: 1 not found");
 
     }
 
@@ -287,8 +286,7 @@ class UserServiceTest {
         adminUser.setRole(Role.ADMIN);
 
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(adminUser);
+        mockSecurityContext(adminUser);
         when(userRepository.existsById(1L)).thenReturn(true);
 
 
@@ -299,38 +297,44 @@ class UserServiceTest {
     }
 
     @Test
-    void deleteUserById_ShouldThrowNotFound_WhenUserDoesNotExist() {
+    void deleteUserById_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
         User adminUser = new User();
         adminUser.setUserId(2L);
         adminUser.setRole(Role.ADMIN);
 
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(adminUser);
+        mockSecurityContext(adminUser);
         when(userRepository.existsById(1L)).thenReturn(false);
 
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.deleteUserById(1L));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> userService.deleteUserById(1L));
 
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("User with id: 1 not found");
         verify(userRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteUserById_ShouldThrowForbidden_WhenUserIsNotAllowed() {
+    void deleteUserById_ShouldThrowAccessDenied_WhenUserIsNotAllowed() {
         User loggedUser = new User();
         loggedUser.setUserId(1L);
         loggedUser.setRole(Role.USER);
 
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(loggedUser);
+        mockSecurityContext(loggedUser);
 
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.deleteUserById(3L));
-        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> userService.deleteUserById(3L));
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("You cannot delete yourself or other users");
     }
 
+    private void mockSecurityContext(User user) {
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(user);
+    }
 
 }

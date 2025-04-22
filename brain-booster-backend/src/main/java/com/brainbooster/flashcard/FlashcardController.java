@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,28 +22,34 @@ public class FlashcardController {
 
     }
     @GetMapping
-    public ResponseEntity<List<Flashcard>> getAllFlashcards() {
-        List<Flashcard> flashcards = flashcardService.getAllFlashcards();
-        return new ResponseEntity<>(flashcards, HttpStatus.OK);
+    public List<Flashcard> getAllFlashcards() {
+        return flashcardService.getAllFlashcards();
+
     }
     @GetMapping("/{flashcardId}")
-    public ResponseEntity<Flashcard> getFlashcardById(@PathVariable Long flashcardId) {
+    public Flashcard getFlashcardById(@PathVariable long flashcardId) {
 
-        return ResponseEntity.ok(flashcardService.getFlashcardById(flashcardId));
+        return flashcardService.getFlashcardById(flashcardId);
     }
 
     @PatchMapping("/{flashcardId}")
-    public ResponseEntity<Flashcard> updateFlashcard(@RequestBody Flashcard updatedFlashcard, @PathVariable Long flashcardId) {
+    public Flashcard updateFlashcard(@RequestBody Flashcard updatedFlashcard, @PathVariable long flashcardId) {
 
-        flashcardService.updateFlashcard(updatedFlashcard, flashcardId);
-        return new ResponseEntity<>(updatedFlashcard, HttpStatus.OK);
+        return flashcardService.updateFlashcard(updatedFlashcard, flashcardId);
+
     }
 
     @DeleteMapping("/{flashcardId}")
-    public ResponseEntity<String> deleteFlashcardById(@PathVariable Long flashcardId) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public String deleteFlashcardById(@PathVariable long flashcardId) {
 
         flashcardService.deleteFlashcardById(flashcardId);
-        return new ResponseEntity<>("Flashcard with id: " + flashcardId + " has been deleted", HttpStatus.OK);
+        return "Flashcard with id: " + flashcardId + " has been deleted";
     }
 
+    @ExceptionHandler(NoSuchElementException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNotFound(NoSuchElementException ex) {
+        return ex.getMessage();
+    }
 }

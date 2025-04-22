@@ -5,12 +5,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/flashcardsets")
+@RequestMapping("/flashcard-sets")
 public class FlashcardSetController {
 
     private final FlashcardSetService flashcardSetService;
@@ -20,38 +23,56 @@ public class FlashcardSetController {
 
         FlashcardSetDTO savedFlashcardSet = flashcardSetService.addFlashcardSet(flashcardSet);
 
-        return new ResponseEntity<>(savedFlashcardSet, HttpStatus.CREATED);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(savedFlashcardSet.setId())
+                .toUri();
+
+        return ResponseEntity.created(location).body(savedFlashcardSet);
 
     }
 
     @GetMapping
-    public ResponseEntity<List<FlashcardSetDTO>> getAllFlashcardSets() {
-        List<FlashcardSetDTO> flashcardSets = flashcardSetService.getAllFlashcardSets();
-        return ResponseEntity.ok(flashcardSets);
+    public List<FlashcardSetDTO> getAllFlashcardSets() {
+
+        return flashcardSetService.getAllFlashcardSets();
+
     }
 
     @GetMapping("/{setId}")
-    public ResponseEntity<FlashcardSetDTO> getFlashcardSetById(@PathVariable Long setId) {
+    public FlashcardSetDTO getFlashcardSetById(@PathVariable long setId) {
 
-        return ResponseEntity.ok(flashcardSetService.getFlashcardSetById(setId));
+        return flashcardSetService.getFlashcardSetById(setId);
     }
 
     @GetMapping("/{setId}/flashcards")
-    public ResponseEntity<List<Flashcard>> getAllFlashcardsInSet(@PathVariable Long setId) {
-        return ResponseEntity.ok(flashcardSetService.getAllFlashcardsInSet(setId));
+    public List<Flashcard> getAllFlashcardsInSet(@PathVariable long setId) {
+        return flashcardSetService.getAllFlashcardsInSet(setId);
     }
 
     @PatchMapping("/{setId}")
-    public ResponseEntity<FlashcardSetDTO> updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable Long setId){
+    public FlashcardSetDTO updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable long setId){
 
-        FlashcardSetDTO responseFlashcardSet = flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
-        return new ResponseEntity<>(responseFlashcardSet, HttpStatus.OK);
+       return flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
     }
 
     @DeleteMapping("/{setId}")
-    public ResponseEntity<String> deleteFlashcardSetById(@PathVariable Long setId) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public String deleteFlashcardSetById(@PathVariable Long setId) {
         flashcardSetService.deleteFlashcardSetById(setId);
-        return ResponseEntity.ok("FlashcardSet with id: " + setId + " has been deleted.");
+        return "FlashcardSet with id: " + setId + " has been deleted.";
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNotFound(NoSuchElementException ex) {
+        return ex.getMessage();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleBadRequest(IllegalArgumentException ex) {
+        return ex.getMessage();
     }
 
 }

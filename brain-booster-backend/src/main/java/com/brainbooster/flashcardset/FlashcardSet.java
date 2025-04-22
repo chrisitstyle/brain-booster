@@ -16,7 +16,7 @@ public class FlashcardSet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long setId;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
     @Column(name = "set_name")

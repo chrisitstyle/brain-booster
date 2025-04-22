@@ -9,7 +9,7 @@ import java.util.List;
 @Repository
 public interface FlashcardSetRepository extends JpaRepository<FlashcardSet, Long> {
 
-    @Query("SELECT fs FROM FlashcardSet fs WHERE fs.user.userId = :userId")
+    @Query("SELECT fs FROM FlashcardSet fs JOIN FETCH fs.user WHERE fs.user.userId = :userId")
     List<FlashcardSet> findByUserId(Long userId);
 
 }
