@@ -2,7 +2,7 @@
 import type React from "react";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
-
+import Link from "next/link";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -21,7 +21,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button className="w-full rounded-full bg-pink-500 px-8 py-6 text-lg font-medium text-white hover:bg-pink-600 sm:w-auto">
-                Sign up free
+                <Link href="/signup">Sign up free</Link>
               </Button>
               <Button
                 variant="outline"
