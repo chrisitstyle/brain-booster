@@ -2,7 +2,6 @@ package com.brainbooster.flashcard;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +14,11 @@ public class FlashcardController {
     private final FlashcardService flashcardService;
 
     @PostMapping
-    public ResponseEntity<Flashcard> addFlashcard(@RequestBody Flashcard flashcard) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Flashcard addFlashcard(@RequestBody Flashcard flashcard) {
 
-        Flashcard addedFlashcard = flashcardService.addFlashcard(flashcard);
-        return new ResponseEntity<>(addedFlashcard, HttpStatus.CREATED);
+        return flashcardService.addFlashcard(flashcard);
+
 
     }
     @GetMapping
