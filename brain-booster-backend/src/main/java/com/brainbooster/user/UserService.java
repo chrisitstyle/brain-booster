@@ -1,8 +1,8 @@
 package com.brainbooster.user;
 
 import com.brainbooster.exception.EmailAlreadyExistsException;
-import com.brainbooster.flashcardset.FlashcardSetDTO;
-import com.brainbooster.flashcardset.FlashcardSetDTOMapper;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

@@ -2,6 +2,10 @@ package com.brainbooster.flashcardset;
 
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
+import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
+import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import org.assertj.core.api.Assertions;
@@ -10,9 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -33,12 +35,15 @@ class FlashcardSetServiceTest {
     @Mock
     private FlashcardSetDTOMapper flashcardSetDTOMapper;
     @Mock
+    private FlashcardSetCreationDTOMapper flashcardSetCreationDTOMapper;
+    @Mock
     private UserDTOMapper userDTOMapper;
     @InjectMocks
     private FlashcardSetService flashcardSetService;
 
     private FlashcardSet flashcardSet;
     private FlashcardSetDTO flashcardSetDTO;
+    private FlashcardSetCreationDTO flashcardSetCreationDTO;
 
     @BeforeEach
     void setUp() {
@@ -57,28 +62,46 @@ class FlashcardSetServiceTest {
                 flashcardSet.getDescription(),
                 flashcardSet.getCreatedAt());
 
+        flashcardSetCreationDTO = new FlashcardSetCreationDTO(1L, "example flashcardSet", "example description");
+
+
     }
 
     @Test
-    void addFlashcardSet_ReturnsSavedFlashcardSetDTO() {
-        when(flashcardSetRepository.save(Mockito.any(FlashcardSet.class))).thenReturn(flashcardSet);
-        when(flashcardSetDTOMapper.apply(Mockito.any(FlashcardSet.class))).thenReturn(flashcardSetDTO);
+    void addFlashcardSetCreationDTO_ReturnsSavedFlashcardSetCreationDTO() {
+        // given
+        FlashcardSetCreationDTO inputDTO = new FlashcardSetCreationDTO(
+                1L,
+                "example flashcardSet",
+                "example description"
+        );
 
-        FlashcardSetDTO savedFlashcardSet = flashcardSetService.addFlashcardSet(flashcardSet);
+        FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(inputDTO);
+        flashcardSet.setSetId(1L);
 
-        Assertions.assertThat(savedFlashcardSet).isNotNull();
-        Assertions.assertThat(savedFlashcardSet.setId()).isEqualTo(1L);
-        verify(flashcardSetRepository, times(1)).save(flashcardSet);
+        when(flashcardSetRepository.save(any())).thenReturn(flashcardSet);
+
+        // when
+        FlashcardSetCreationDTO resultDTO = flashcardSetService.addFlashcardSet(inputDTO);
+
+        // then
+        Assertions.assertThat(resultDTO).isNotNull();
+        Assertions.assertThat(resultDTO.userId()).isEqualTo(1L);
+        Assertions.assertThat(resultDTO.setName()).isEqualTo("example flashcardSet");
+        Assertions.assertThat(resultDTO.description()).isEqualTo("example description");
+
+
+        verify(flashcardSetRepository, times(1)).save(any(FlashcardSet.class));
 
     }
 
     @Test
     void getAllFlashcardSets_ReturnsAllFlashcardSetsDTO() {
 
-        when(flashcardSetRepository.findAll(Sort.by(Sort.Direction.ASC, "setId")))
+        when(flashcardSetRepository.findAllWithUsers())
                 .thenReturn(Collections.singletonList(flashcardSet));
 
-        when(flashcardSetDTOMapper.apply(any(FlashcardSet.class)))
+        when(flashcardSetDTOMapper.apply(flashcardSet))
                 .thenReturn(flashcardSetDTO);
 
         List<FlashcardSetDTO> result = flashcardSetService.getAllFlashcardSets();
@@ -87,13 +110,13 @@ class FlashcardSetServiceTest {
                 .hasSize(1)
                 .containsExactly(flashcardSetDTO);
         verify(flashcardSetRepository, times(1))
-                .findAll(Sort.by(Sort.Direction.ASC, "setId"));
+                .findAllWithUsers();
     }
 
     @Test
     void getFlashcardSetById_ReturnsFlashcardSetDTO_WhenFlashcardSetExists() {
 
-        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.of(flashcardSet));
+        when(flashcardSetRepository.findByIdWithUser(1L)).thenReturn(Optional.of(flashcardSet));
         when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
 
         FlashcardSetDTO flashcardSetExists = flashcardSetService.getFlashcardSetById(1L);
@@ -106,7 +129,7 @@ class FlashcardSetServiceTest {
     @Test
     void getFlashcardSetById_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
 
-        when(flashcardSetRepository.findById(1L)).thenReturn(Optional.empty());
+        when(flashcardSetRepository.findByIdWithUser(1L)).thenReturn(Optional.empty());
 
         NoSuchElementException exception = assertThrows(NoSuchElementException.class,
                 () -> flashcardSetService.getFlashcardSetById(1L));

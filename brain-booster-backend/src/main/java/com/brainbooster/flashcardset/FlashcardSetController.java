@@ -1,13 +1,12 @@
 package com.brainbooster.flashcardset;
 
 import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -19,16 +18,11 @@ public class FlashcardSetController {
     private final FlashcardSetService flashcardSetService;
 
     @PostMapping
-    public ResponseEntity<FlashcardSetDTO> addFlashcardSet(@RequestBody FlashcardSet flashcardSet) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public FlashcardSetCreationDTO addFlashcardSet(@RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO) {
 
-        FlashcardSetDTO savedFlashcardSet = flashcardSetService.addFlashcardSet(flashcardSet);
+        return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(savedFlashcardSet.setId())
-                .toUri();
-
-        return ResponseEntity.created(location).body(savedFlashcardSet);
 
     }
 

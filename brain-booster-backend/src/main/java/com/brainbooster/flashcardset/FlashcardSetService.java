@@ -2,12 +2,14 @@ package com.brainbooster.flashcardset;
 
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
+import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
+import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -18,23 +20,22 @@ public class FlashcardSetService {
     private final FlashcardRepository flashcardRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
 
-    public FlashcardSetDTO addFlashcardSet(FlashcardSet flashcardSet) {
+    public FlashcardSetCreationDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO) {
 
-            flashcardSet.setCreatedAt(LocalDateTime.now());
-
-        FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
-        return flashcardSetDTOMapper.apply(savedFlashcardSet);
+        FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
+         FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
+        return FlashcardSetCreationDTOMapper.toDTO(savedFlashcardSet);
     }
 
     public List<FlashcardSetDTO> getAllFlashcardSets() {
-        return flashcardSetRepository.findAll(Sort.by(Sort.Direction.ASC, "setId" ))
+        return flashcardSetRepository.findAllWithUsers()
                 .stream()
                 .map(flashcardSetDTOMapper)
                 .toList();
     }
 
     public FlashcardSetDTO getFlashcardSetById(long setId) {
-        return flashcardSetRepository.findById(setId)
+        return flashcardSetRepository.findByIdWithUser(setId)
                 .map(flashcardSetDTOMapper)
                 .orElseThrow(() -> new NoSuchElementException("FlashcardSet with id: " + setId + " not found"));
     }

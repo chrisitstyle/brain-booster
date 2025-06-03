@@ -1,5 +1,7 @@
-package com.brainbooster.flashcardset;
+package com.brainbooster.flashcardset.mapper;
 
+import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.user.UserDTOMapper;
 import org.springframework.stereotype.Service;
 

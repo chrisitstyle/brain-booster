@@ -2,7 +2,7 @@ package com.brainbooster.user;
 
 
 import com.brainbooster.exception.EmailAlreadyExistsException;
-import com.brainbooster.flashcardset.FlashcardSetDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

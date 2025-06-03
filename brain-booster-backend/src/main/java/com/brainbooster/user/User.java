@@ -14,6 +14,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "\"user\"") // Using quotes around 'user' due to it being a reserved keyword in PostgreSQL.
 public class User implements UserDetails {

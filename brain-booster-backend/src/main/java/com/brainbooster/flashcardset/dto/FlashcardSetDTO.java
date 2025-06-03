@@ -1,4 +1,4 @@
-package com.brainbooster.flashcardset;
+package com.brainbooster.flashcardset.dto;
 
 import com.brainbooster.user.UserDTO;
 
