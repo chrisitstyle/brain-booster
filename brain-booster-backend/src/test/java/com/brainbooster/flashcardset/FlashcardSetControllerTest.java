@@ -18,12 +18,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,7 +71,7 @@ class FlashcardSetControllerTest {
                 .thenReturn(flashcardSetCreationDTO);
 
         // when + then
-        mockMvc.perform(post("/flashcard-sets")
+        mockMvc.perform(MockMvcRequestBuilders.post("/flashcard-sets")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(flashcardSetCreationDTO)))
@@ -86,7 +86,7 @@ class FlashcardSetControllerTest {
 
         when(flashcardSetService.getAllFlashcardSets()).thenReturn(List.of(flashcardSetDTO));
 
-        mockMvc.perform(get("/flashcard-sets"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].setName").value("Test Set"));
@@ -96,7 +96,7 @@ class FlashcardSetControllerTest {
 
         when(flashcardSetService.getFlashcardSetById(1L)).thenReturn(flashcardSetDTO);
 
-        mockMvc.perform(get("/flashcard-sets/1"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.setId").value(1L));
     }
@@ -109,7 +109,7 @@ class FlashcardSetControllerTest {
 
         when(flashcardSetService.getAllFlashcardsInSet(1L)).thenReturn(List.of(flashcard));
 
-        mockMvc.perform(get("/flashcard-sets/1/flashcards"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/1/flashcards"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].term").value("What is Java?"));
@@ -135,7 +135,7 @@ class FlashcardSetControllerTest {
                 .thenReturn(updatedDTO);
 
 
-        mockMvc.perform(patch("/flashcard-sets/1")
+        mockMvc.perform(MockMvcRequestBuilders.patch("/flashcard-sets/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedFlashcardSet)))
                 .andExpect(status().isOk())
@@ -147,7 +147,7 @@ class FlashcardSetControllerTest {
     void deleteFlashcardSetById_ShouldReturnNoContent() throws Exception {
 
         long setId = 1L;
-        mockMvc.perform(delete("/flashcard-sets/" + setId))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/flashcard-sets/" + setId))
                 .andExpect(status().isNoContent());
 
     }
