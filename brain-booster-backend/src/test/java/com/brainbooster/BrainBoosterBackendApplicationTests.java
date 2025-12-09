@@ -2,17 +2,17 @@ package com.brainbooster;
 
 import com.brainbooster.config.JwtService;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 //@SpringBootTest
 class BrainBoosterBackendApplicationTests {
 
-	@MockBean
-	private JwtService jwtService;
+    @MockitoBean
+    private JwtService jwtService;
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 
 }
