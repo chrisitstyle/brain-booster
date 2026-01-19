@@ -98,8 +98,8 @@ class FlashcardControllerTest {
         when(flashcardService.getFlashcardById(1L)).thenThrow(new NoSuchElementException("Not found"));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/flashcards/1"))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())
-                .andExpect(MockMvcResultMatchers.content().string("Not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Not found"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("NOT_FOUND"));
     }
 
     @Test
