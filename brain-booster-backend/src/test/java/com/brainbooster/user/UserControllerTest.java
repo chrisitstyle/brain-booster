@@ -3,6 +3,7 @@ package com.brainbooster.user;
 
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
+import com.brainbooster.utils.TestEntities;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static org.mockito.BDDMockito.given;
@@ -48,13 +48,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userDTO = new UserDTO(
-                1L,
-                "testUser",
-                "test@example.com",
-                Role.USER,
-                LocalDateTime.parse("2024-11-11T00:28:05.738221")
-        );
+        userDTO = TestEntities.createUserDTO();
     }
 
     @Test
@@ -94,7 +88,7 @@ class UserControllerTest {
     @Test
     void getUserById_ReturnsUserDTO() throws Exception {
 
-        Long userId = 1L;
+        long userId = 1L;
         when(userService.getUserById(userId)).thenReturn(userDTO);
 
         ResultActions response = mockMvc.perform(get("/users/1")

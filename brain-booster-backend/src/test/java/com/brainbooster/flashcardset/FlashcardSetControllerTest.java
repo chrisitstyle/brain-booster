@@ -5,8 +5,8 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.user.Role;
 import com.brainbooster.user.UserDTO;
+import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import tools.jackson.databind.ObjectMapper;
@@ -45,27 +45,17 @@ class FlashcardSetControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final UserDTO userDTO = new UserDTO(1L,
-            "testuser",
-            "test@example.com",
-            Role.USER, LocalDateTime.parse("2025-06-02T00:28:05.738221"));
+    private final UserDTO userDTO = TestEntities.createUserDTO();
 
-    private final FlashcardSetDTO flashcardSetDTO = new FlashcardSetDTO(
-            1L, userDTO, "Test Set", "Test description",
-            LocalDateTime.parse("2025-06-02T00:28:05.738221")
-    );
+    private final FlashcardSetDTO flashcardSetDTO = TestEntities.createFlashcardSetDTO();
 
     @Test
     void addFlashcardSetCreationDTO_ShouldReturnFlashcardSetCreationDTO() throws Exception {
         // Given
-        FlashcardSetCreationDTO flashcardSetCreationDTO = new FlashcardSetCreationDTO(
-                1L,
-                "Test Set",
-                "Test description"
-        );
+        FlashcardSetCreationDTO flashcardSetCreationDTO = TestEntities.createFlashcardSetCreationDTO();
 
         String token = "valid_token_test";
-        when(jwtService.extractUsername(token)).thenReturn("test@example.com");
+        when(jwtService.extractUsername(token)).thenReturn("johndoe@example.com");
 
         when(flashcardSetService.addFlashcardSet(Mockito.any(FlashcardSetCreationDTO.class)))
                 .thenReturn(flashcardSetCreationDTO);
@@ -77,8 +67,8 @@ class FlashcardSetControllerTest {
                         .content(objectMapper.writeValueAsString(flashcardSetCreationDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.userId").value(1L))
-                .andExpect(jsonPath("$.setName").value("Test Set"))
-                .andExpect(jsonPath("$.description").value("Test description"));
+                .andExpect(jsonPath("$.setName").value("test_flashcardset_name"))
+                .andExpect(jsonPath("$.description").value("test_flashcardset_description"));
     }
 
     @Test
@@ -89,8 +79,9 @@ class FlashcardSetControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].setName").value("Test Set"));
+                .andExpect(jsonPath("$[0].setName").value("test_flashcardset_name"));
     }
+
     @Test
     void getAllFlashcardSetById_ShouldReturnFlashcardSetDTO() throws Exception {
 
@@ -103,9 +94,10 @@ class FlashcardSetControllerTest {
 
     @Test
     void getAllFlashcardsInSet_ShouldReturnListOfFlashcards() throws Exception {
-        Flashcard flashcard = new Flashcard();
-        flashcard.setTerm("What is Java?");
-        flashcard.setDefinition("A programming language");
+        Flashcard flashcard = TestEntities.flashcardBuilder()
+                .term("What is Java?")
+                .definition("A programming language")
+                .build();
 
         when(flashcardSetService.getAllFlashcardsInSet(1L)).thenReturn(List.of(flashcard));
 

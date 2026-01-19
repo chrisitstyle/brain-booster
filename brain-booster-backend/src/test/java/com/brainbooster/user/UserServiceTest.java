@@ -2,9 +2,10 @@ package com.brainbooster.user;
 
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
-import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -55,22 +55,12 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setUserId(1L);
-        user.setNickname("testUser");
-        user.setEmail("test@example.com");
-        user.setPassword("test_password");
-        user.setRole(Role.USER);
+        user = TestEntities.createUser();
 
         SecurityContextHolder.setContext(securityContext);
-        userDTO = new UserDTO(1, "testUser", "test@example.com", Role.USER, null);
+        userDTO = TestEntities.createUserDTO();
 
-        flashcardSet = new FlashcardSet();
-        flashcardSet.setSetId(1L);
-        flashcardSet.setUser(user);
-        flashcardSet.setSetName("example flashcardSet");
-        flashcardSet.setDescription("example description");
-        flashcardSet.setCreatedAt(LocalDateTime.parse("2024-11-13T00:28:05.738221"));
+        flashcardSet = TestEntities.createFlashcardSet();
 
         flashcardSetDTO = new FlashcardSetDTO(flashcardSet.getSetId(),
                 userDTOMapper.apply(user),
@@ -93,9 +83,9 @@ class UserServiceTest {
 
 
         Assertions.assertThat(savedUserDTO).isNotNull();
-        Assertions.assertThat(savedUserDTO.userId()).isEqualTo(1);
-        Assertions.assertThat(savedUserDTO.nickname()).isEqualTo("testUser");
-        Assertions.assertThat(savedUserDTO.email()).isEqualTo("test@example.com");
+        Assertions.assertThat(savedUserDTO.userId()).isEqualTo(1L);
+        Assertions.assertThat(savedUserDTO.nickname()).isEqualTo("johndoe");
+        Assertions.assertThat(savedUserDTO.email()).isEqualTo("johndoe@example.com");
     }
 
 
@@ -164,7 +154,7 @@ class UserServiceTest {
     @Test
     void updateUser_ShouldReturnUpdatedUser_WhenUserIsOwner() {
 
-       mockSecurityContext(user);
+        mockSecurityContext(user);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
 
@@ -186,7 +176,6 @@ class UserServiceTest {
 
 
         UserDTO result = userService.updateUser(updatedUser, 1L);
-
 
 
         Assertions.assertThat(result).isNotNull();
@@ -281,10 +270,10 @@ class UserServiceTest {
 
     @Test
     void deleteUserById_ShouldDeleteUser_WhenAdmin() {
-        User adminUser = new User();
-        adminUser.setUserId(2L);
-        adminUser.setRole(Role.ADMIN);
-
+        User adminUser = TestEntities.userBuilder()
+                .userId(2L)
+                .role(Role.ADMIN)
+                .build();
 
         mockSecurityContext(adminUser);
         when(userRepository.existsById(1L)).thenReturn(true);
@@ -298,9 +287,10 @@ class UserServiceTest {
 
     @Test
     void deleteUserById_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
-        User adminUser = new User();
-        adminUser.setUserId(2L);
-        adminUser.setRole(Role.ADMIN);
+        User adminUser = TestEntities.userBuilder()
+                .userId(2L)
+                .role(Role.ADMIN)
+                .build();
 
 
         mockSecurityContext(adminUser);
@@ -318,9 +308,7 @@ class UserServiceTest {
 
     @Test
     void deleteUserById_ShouldThrowAccessDenied_WhenUserIsNotAllowed() {
-        User loggedUser = new User();
-        loggedUser.setUserId(1L);
-        loggedUser.setRole(Role.USER);
+        User loggedUser = TestEntities.createUser();
 
 
         mockSecurityContext(loggedUser);

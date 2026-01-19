@@ -8,6 +8,7 @@ import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
+import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -43,26 +43,18 @@ class FlashcardSetServiceTest {
 
     private FlashcardSet flashcardSet;
     private FlashcardSetDTO flashcardSetDTO;
-    private FlashcardSetCreationDTO flashcardSetCreationDTO;
 
     @BeforeEach
     void setUp() {
-        flashcardSet = new FlashcardSet();
-        User user = new User();
-        user.setUserId(1L);
-        flashcardSet.setSetId(1L);
-        flashcardSet.setUser(user);
-        flashcardSet.setSetName("example flashcardSet");
-        flashcardSet.setDescription("example description");
-        flashcardSet.setCreatedAt(LocalDateTime.parse("2024-11-13T00:28:05.738221"));
-
+        flashcardSet = TestEntities.createFlashcardSet();
+        User user = TestEntities.createUser();
         flashcardSetDTO = new FlashcardSetDTO(flashcardSet.getSetId(),
                 userDTOMapper.apply(user),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription(),
                 flashcardSet.getCreatedAt());
 
-        flashcardSetCreationDTO = new FlashcardSetCreationDTO(1L, "example flashcardSet", "example description");
+        FlashcardSetCreationDTO flashcardSetCreationDTO = TestEntities.createFlashcardSetCreationDTO();
 
 
     }
@@ -70,16 +62,12 @@ class FlashcardSetServiceTest {
     @Test
     void addFlashcardSetCreationDTO_ReturnsSavedFlashcardSetCreationDTO() {
         // given
-        FlashcardSetCreationDTO inputDTO = new FlashcardSetCreationDTO(
-                1L,
-                "example flashcardSet",
-                "example description"
-        );
+        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
 
-        FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(inputDTO);
-        flashcardSet.setSetId(1L);
+        FlashcardSet savedFlashcardSet = FlashcardSetCreationDTOMapper.toEntity(inputDTO);
+        savedFlashcardSet.setSetId(1L);
 
-        when(flashcardSetRepository.save(any())).thenReturn(flashcardSet);
+        when(flashcardSetRepository.save(any())).thenReturn(savedFlashcardSet);
 
         // when
         FlashcardSetCreationDTO resultDTO = flashcardSetService.addFlashcardSet(inputDTO);
@@ -87,8 +75,8 @@ class FlashcardSetServiceTest {
         // then
         Assertions.assertThat(resultDTO).isNotNull();
         Assertions.assertThat(resultDTO.userId()).isEqualTo(1L);
-        Assertions.assertThat(resultDTO.setName()).isEqualTo("example flashcardSet");
-        Assertions.assertThat(resultDTO.description()).isEqualTo("example description");
+        Assertions.assertThat(resultDTO.setName()).isEqualTo("test_flashcardset_name");
+        Assertions.assertThat(resultDTO.description()).isEqualTo("test_flashcardset_description");
 
 
         verify(flashcardSetRepository, times(1)).save(any(FlashcardSet.class));
