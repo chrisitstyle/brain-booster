@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,9 +44,9 @@ public class FlashcardSetController {
     }
 
     @PatchMapping("/{setId}")
-    public FlashcardSetDTO updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable long setId){
+    public FlashcardSetDTO updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable long setId) {
 
-       return flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
+        return flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
     }
 
     @DeleteMapping("/{setId}")
@@ -56,17 +55,4 @@ public class FlashcardSetController {
         flashcardSetService.deleteFlashcardSetById(setId);
         return "FlashcardSet with id: " + setId + " has been deleted.";
     }
-
-    @ExceptionHandler(NoSuchElementException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handleNotFound(NoSuchElementException ex) {
-        return ex.getMessage();
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleBadRequest(IllegalArgumentException ex) {
-        return ex.getMessage();
-    }
-
 }

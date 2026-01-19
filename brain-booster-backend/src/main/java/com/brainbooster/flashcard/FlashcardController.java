@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,11 +20,13 @@ public class FlashcardController {
 
 
     }
+
     @GetMapping
     public List<Flashcard> getAllFlashcards() {
         return flashcardService.getAllFlashcards();
 
     }
+
     @GetMapping("/{flashcardId}")
     public Flashcard getFlashcardById(@PathVariable long flashcardId) {
 
@@ -45,11 +46,5 @@ public class FlashcardController {
 
         flashcardService.deleteFlashcardById(flashcardId);
         return "Flashcard with id: " + flashcardId + " has been deleted";
-    }
-
-    @ExceptionHandler(NoSuchElementException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handleNotFound(NoSuchElementException ex) {
-        return ex.getMessage();
     }
 }
