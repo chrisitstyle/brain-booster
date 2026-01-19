@@ -21,7 +21,7 @@ public class SecurityConfiguration {
     private final AuthenticationProvider authenticationProvider;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -29,9 +29,9 @@ public class SecurityConfiguration {
                         authorizeHttpRequests
                                 .requestMatchers("/api/v1/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/users**","/users/**").authenticated()
-                                .requestMatchers("/flashcard-sets**","/flashcard-sets/**").permitAll()
-                                .requestMatchers("/flashcards**","/flashcards/**").permitAll()
+                                .requestMatchers("/users**", "/users/**").authenticated()
+                                .requestMatchers("/flashcard-sets**", "/flashcard-sets/**").permitAll()
+                                .requestMatchers("/flashcards**", "/flashcards/**").permitAll()
                                 .anyRequest().hasAuthority(Role.ADMIN.toString())
                 )
                 .sessionManagement(sessionManagement ->
@@ -40,7 +40,6 @@ public class SecurityConfiguration {
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
 
 
         return http.build();

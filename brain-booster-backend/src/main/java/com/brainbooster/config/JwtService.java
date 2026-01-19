@@ -1,5 +1,6 @@
 package com.brainbooster.config;
 
+import com.brainbooster.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -32,7 +33,12 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> extraClaims = new HashMap<>();
+        if (userDetails instanceof User user) {
+            extraClaims.put("id", user.getUserId());
+            extraClaims.put("role", user.getRole());
+        }
+        return generateToken(extraClaims, userDetails);
     }
 
     public String generateToken(
