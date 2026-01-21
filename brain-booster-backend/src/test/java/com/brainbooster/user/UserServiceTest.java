@@ -325,4 +325,25 @@ class UserServiceTest {
         when(authentication.getPrincipal()).thenReturn(user);
     }
 
+    @Test
+    void deleteUserById_ShouldThrowAccessDenied_WhenAdminTriesToDeleteSelf() {
+        // given
+        User adminUser = TestEntities.userBuilder()
+                .userId(1L)
+                .role(Role.ADMIN)
+                .build();
+
+        // logged-in admin
+        mockSecurityContext(adminUser);
+
+        // when then
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> userService.deleteUserById(1L));
+
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("You cannot delete yourself or other users");
+
+        verify(userRepository, never()).deleteById(anyLong());
+    }
+
 }

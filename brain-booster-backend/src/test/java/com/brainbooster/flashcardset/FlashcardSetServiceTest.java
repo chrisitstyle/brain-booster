@@ -6,8 +6,6 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
-import com.brainbooster.user.User;
-import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,10 +32,6 @@ class FlashcardSetServiceTest {
     private FlashcardRepository flashcardRepository;
     @Mock
     private FlashcardSetDTOMapper flashcardSetDTOMapper;
-    @Mock
-    private FlashcardSetCreationDTOMapper flashcardSetCreationDTOMapper;
-    @Mock
-    private UserDTOMapper userDTOMapper;
     @InjectMocks
     private FlashcardSetService flashcardSetService;
 
@@ -47,16 +41,7 @@ class FlashcardSetServiceTest {
     @BeforeEach
     void setUp() {
         flashcardSet = TestEntities.createFlashcardSet();
-        User user = TestEntities.createUser();
-        flashcardSetDTO = new FlashcardSetDTO(flashcardSet.getSetId(),
-                userDTOMapper.apply(user),
-                flashcardSet.getSetName(),
-                flashcardSet.getDescription(),
-                flashcardSet.getCreatedAt());
-
-        FlashcardSetCreationDTO flashcardSetCreationDTO = TestEntities.createFlashcardSetCreationDTO();
-
-
+        flashcardSetDTO = TestEntities.createFlashcardSetDTO();
     }
 
     @Test
@@ -81,6 +66,26 @@ class FlashcardSetServiceTest {
 
         verify(flashcardSetRepository, times(1)).save(any(FlashcardSet.class));
 
+    }
+
+    @Test
+    void addFlashcardSet_ShouldUseMappersCorrectly() {
+        // given
+        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
+        FlashcardSet savedEntity = TestEntities.createFlashcardSet();
+
+        when(flashcardSetRepository.save(any(FlashcardSet.class))).thenReturn(savedEntity);
+
+        // when
+        FlashcardSetCreationDTO result = flashcardSetService.addFlashcardSet(inputDTO);
+
+        // then
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result.userId()).isEqualTo(1L);
+        Assertions.assertThat(result.setName()).isEqualTo(inputDTO.setName());
+        Assertions.assertThat(result.setName()).isEqualTo("test_flashcardset_name");
+
+        verify(flashcardSetRepository).save(any(FlashcardSet.class));
     }
 
     @Test
