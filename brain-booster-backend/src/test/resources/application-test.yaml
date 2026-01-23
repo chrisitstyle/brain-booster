@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: Brain Booster Backend Test
+
+  datasource:
+    url: jdbc:h2:mem:brainbooster_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
+    username: testuser
+    password: "testpassword"
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:brain-booster_testdb.sql
+      continue-on-error: true
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant-path-matcher
+  ################################################
+
+server:
+  servlet:
+    context-path: /api/v1
+
+logging:
+  level:
+    org:
+      springframework:
+        security: ERROR
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
+
+JWT_SECRET_KEY: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+JWT_EXPIRATION_HOURS: 24
