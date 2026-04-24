@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, Search } from "lucide-react";
+import { ChevronDown, Menu, Search, User } from "lucide-react"; // <-- Dodano ikonę User
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useAuth } from "@/context/AuthContext";
+
 interface NavItem {
   title: string;
   href: string;
@@ -38,6 +40,8 @@ export default function Navbar({
   const pathname = usePathname();
   const isMobile = useMobile();
   const [isOpen, setIsOpen] = React.useState(false);
+
+  const { isAuthenticated, logout } = useAuth();
 
   const defaultItems: NavItem[] = [
     {
@@ -73,7 +77,7 @@ export default function Navbar({
     <header
       className={cn(
         "sticky top-0 z-40 w-full border-b bg-white shadow-sm",
-        className
+        className,
       )}
     >
       <div className="container flex h-16 items-center justify-between">
@@ -104,7 +108,10 @@ export default function Navbar({
                     <DropdownMenuContent align="start" className="w-48">
                       {item.children.map((child, childIndex) => (
                         <DropdownMenuItem key={childIndex} asChild>
-                          <Link href={child.href} className="w-full">
+                          <Link
+                            href={child.href}
+                            className="w-full cursor-pointer"
+                          >
                             {child.title}
                           </Link>
                         </DropdownMenuItem>
@@ -119,7 +126,7 @@ export default function Navbar({
                       item.href === pathname
                         ? "text-pink-500 font-semibold"
                         : "text-gray-600",
-                      item.disabled && "cursor-not-allowed opacity-80"
+                      item.disabled && "cursor-not-allowed opacity-80",
                     )}
                   >
                     {item.title}
@@ -145,21 +152,57 @@ export default function Navbar({
 
           {!isMobile ? (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-pink-500"
-                asChild
-              >
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button
-                size="sm"
-                className="rounded-full bg-pink-500 hover:bg-pink-600 text-white"
-                asChild
-              >
-                <Link href="/signup">Sign up free</Link>
-              </Button>
+              {/* logic for desktop version */}
+              {isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 rounded-full border-gray-300 px-3 hover:bg-gray-100 hover:text-pink-500 transition-colors"
+                    >
+                      <Menu className="h-4 w-4" />
+                      <div className="bg-gray-200 p-1 rounded-full text-gray-600">
+                        <User className="h-4 w-4" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 mt-1">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/profile"
+                        className="w-full cursor-pointer font-medium"
+                      >
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="w-full cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50 font-medium"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-pink-500"
+                    asChild
+                  >
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-pink-500 hover:bg-pink-600 text-white"
+                    asChild
+                  >
+                    <Link href="/signup">Sign up free</Link>
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -202,7 +245,7 @@ export default function Navbar({
                             item.href === pathname
                               ? "text-pink-500 font-semibold"
                               : "text-gray-600",
-                            item.disabled && "cursor-not-allowed opacity-80"
+                            item.disabled && "cursor-not-allowed opacity-80",
                           )}
                           onClick={() => !item.children && setIsOpen(false)}
                         >
@@ -228,25 +271,57 @@ export default function Navbar({
                   </nav>
 
                   <div className="mt-4 flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="justify-start text-gray-600 hover:text-pink-500"
-                      asChild
-                    >
-                      <Link href="/login" onClick={() => setIsOpen(false)}>
-                        Login
-                      </Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-pink-500 hover:bg-pink-600 text-white"
-                      asChild
-                    >
-                      <Link href="/signup" onClick={() => setIsOpen(false)}>
-                        Sign up free
-                      </Link>
-                    </Button>
+                    {/* logic for mobile version */}
+                    {isAuthenticated ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link
+                            href="/profile"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            Profile
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="justify-start text-gray-600 border-gray-300 hover:bg-red-50 hover:text-red-500 hover:border-red-200"
+                          onClick={() => {
+                            logout();
+                            setIsOpen(false);
+                          }}
+                        >
+                          Logout
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link href="/login" onClick={() => setIsOpen(false)}>
+                            Login
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-pink-500 hover:bg-pink-600 text-white"
+                          asChild
+                        >
+                          <Link href="/signup" onClick={() => setIsOpen(false)}>
+                            Sign up free
+                          </Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </SheetContent>

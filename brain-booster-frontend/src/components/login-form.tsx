@@ -16,22 +16,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export function LoginForm({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call for test - not implemented yet
-    setTimeout(() => {
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error(error);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -56,6 +66,8 @@ export function LoginForm({
                 type="email"
                 placeholder="name@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="border-gray-300 focus-visible:ring-pink-500"
               />
             </div>
@@ -77,6 +89,8 @@ export function LoginForm({
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="border-gray-300 focus-visible:ring-pink-500 pr-10"
                 />
                 <Button
