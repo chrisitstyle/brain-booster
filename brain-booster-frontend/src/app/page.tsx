@@ -1,12 +1,9 @@
-"use client";
-import type React from "react";
-import { cn } from "@/lib/utils";
-import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import { HomeButton } from "@/components/HomeButton";
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
       <main className="flex-1">
         <section className="container mx-auto px-4 py-12">
           <div className="mx-auto max-w-4xl text-center">
@@ -20,15 +17,15 @@ export default function Home() {
               improve their grades and reach their goals.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button className="w-full rounded-full bg-pink-500 px-8 py-6 text-lg font-medium text-white hover:bg-pink-600 sm:w-auto">
+              <HomeButton className="w-full bg-pink-500 text-white hover:bg-pink-600 sm:w-auto">
                 <Link href="/signup">Sign up free</Link>
-              </Button>
-              <Button
+              </HomeButton>
+              <HomeButton
                 variant="outline"
-                className="w-full rounded-full border-pink-200 px-8 py-6 text-lg font-medium text-pink-500 hover:bg-pink-50 sm:w-auto"
+                className="w-full border-pink-200 text-pink-500 hover:bg-pink-50 sm:w-auto"
               >
                 Find your textbook
-              </Button>
+              </HomeButton>
             </div>
           </div>
 
@@ -64,26 +61,5 @@ export default function Home() {
         </section>
       </main>
     </div>
-  );
-}
-
-function Button({
-  className,
-  variant = "default",
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "default" | "outline";
-}) {
-  return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 disabled:pointer-events-none disabled:opacity-50",
-        variant === "default"
-          ? "bg-pink-500 text-white hover:bg-pink-600"
-          : "border border-pink-200 text-pink-500 hover:bg-pink-50",
-        className
-      )}
-      {...props}
-    />
   );
 }

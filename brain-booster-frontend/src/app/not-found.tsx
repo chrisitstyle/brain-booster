@@ -6,7 +6,6 @@ import { FileQuestion } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 py-12 bg-gray-50">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="flex justify-center">

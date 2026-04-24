@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, Search, User } from "lucide-react"; // <-- Dodano ikonę User
+import { ChevronDown, Menu, Search, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -54,8 +54,8 @@ export default function Navbar({
       ],
     },
     {
-      title: "Create",
-      href: "/create",
+      title: "Create Set",
+      href: "/create-set",
     },
     {
       title: "Solutions",
