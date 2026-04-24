@@ -77,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("token", newToken);
       toast.success("Logged in successfully");
       router.push("/"); // Redirect to home page after successful login
-    } catch (error: any) {
-      toast.error(error.message || "Invalid login credentials");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Invalid login credentials";
+      toast.error(message);
       throw error;
     }
   };

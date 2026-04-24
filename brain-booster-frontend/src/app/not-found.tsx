@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { FileQuestion } from "lucide-react";
 

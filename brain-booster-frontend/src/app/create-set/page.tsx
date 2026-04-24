@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GripVertical, Plus, Trash2, X, Image, Volume2 } from "lucide-react";
+import {
+  GripVertical,
+  Plus,
+  Trash2,
+  X,
+  Image as ImageIcon,
+  Volume2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -120,8 +127,10 @@ export default function CreateSetPage() {
 
       toast.success("Study set and flashcards created successfully!");
       router.push("/profile");
-    } catch (error: any) {
-      toast.error(error.message || "Something went wrong.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Something went wrong.";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -322,7 +331,7 @@ function FlashcardCard({
             />
             <div className="absolute bottom-2 right-0 flex gap-2">
               <button className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
-                <Image className="h-4 w-4" />
+                <ImageIcon className="h-4 w-4" />
               </button>
               <button className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
                 <Volume2 className="h-4 w-4" />
@@ -344,7 +353,7 @@ function FlashcardCard({
             />
             <div className="absolute bottom-2 right-0 flex gap-2">
               <button className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
-                <Image className="h-4 w-4" />
+                <ImageIcon className="h-4 w-4" />
               </button>
               <button className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
                 <Volume2 className="h-4 w-4" />
