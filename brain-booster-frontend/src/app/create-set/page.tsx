@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GripVertical, Plus, Trash2, X, Image, Volume2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,54 +19,112 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Term {
-  id: string;
+import { useAuth } from "@/context/AuthContext";
+import { addFlashcardSet } from "@/api/flashcardSetService";
+import { addFlashcard } from "@/api/flashcardService";
+import { parseJwt } from "@/utils/jwt";
+interface Flashcard {
+  flashcardId: string;
   term: string;
   definition: string;
 }
 
 export default function CreateSetPage() {
   const router = useRouter();
+  const { token } = useAuth(); // get token from context
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  const [terms, setTerms] = useState<Term[]>([
-    { id: "1", term: "", definition: "" },
-    { id: "2", term: "", definition: "" },
-    { id: "3", term: "", definition: "" },
-    { id: "4", term: "", definition: "" },
+  const [isLoading, setIsLoading] = useState(false);
+
+  // one flashcard by default, user can add more
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([
+    { flashcardId: "1", term: "", definition: "" },
   ]);
 
-  const addTerm = () => {
-    setTerms([
-      ...terms,
-      { id: Date.now().toString(), term: "", definition: "" },
+  const addNewFlashcard = () => {
+    setFlashcards([
+      ...flashcards,
+      { flashcardId: Date.now().toString(), term: "", definition: "" },
     ]);
   };
 
-  const removeTerm = (id: string) => {
-    if (terms.length > 2) {
-      setTerms(terms.filter((term) => term.id !== id));
+  const removeFlashcard = (id: string) => {
+    if (flashcards.length > 1) {
+      setFlashcards(
+        flashcards.filter((flashcard) => flashcard.flashcardId !== id),
+      );
     }
   };
 
-  const updateTerm = (
+  const updateFlashcard = (
     id: string,
     field: "term" | "definition",
     value: string,
   ) => {
-    setTerms(
-      terms.map((term) =>
-        term.id === id ? { ...term, [field]: value } : term,
+    setFlashcards(
+      flashcards.map((flashcard) =>
+        flashcard.flashcardId === id
+          ? { ...flashcard, [field]: value }
+          : flashcard,
       ),
     );
   };
 
-  const handleCreate = () => {
-    console.log({ title, description, isPublic, terms });
-    // after creating the set, we navigate to the profile page
-    router.push("/profile");
+  const handleCreate = async () => {
+    if (!token) {
+      toast.error("You must be logged in to create a set.");
+      return;
+    }
+
+    const decodedToken = parseJwt(token);
+    if (!decodedToken || !decodedToken.id) {
+      toast.error("Invalid session. Please log in again.");
+      return;
+    }
+
+    const validFlashcards = flashcards.filter(
+      (f) => f.term.trim() && f.definition.trim(),
+    );
+
+    setIsLoading(true);
+    try {
+      const createdSet = await addFlashcardSet(
+        {
+          userId: decodedToken.id,
+          setName: title,
+          description: description,
+        },
+        token,
+      );
+
+      const newSetId = createdSet.flashcardSetId;
+
+      if (!newSetId) {
+        throw new Error("Failed to retrieve the new set ID from server.");
+      }
+
+      const flashcardPromises = validFlashcards.map((flashcard) =>
+        addFlashcard(
+          {
+            setId: newSetId,
+            term: flashcard.term,
+            definition: flashcard.definition,
+          },
+          token,
+        ),
+      );
+
+      await Promise.all(flashcardPromises);
+
+      toast.success("Study set and flashcards created successfully!");
+      router.push("/profile");
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,12 +157,15 @@ export default function CreateSetPage() {
           <Button
             onClick={handleCreate}
             disabled={
+              isLoading ||
               !title.trim() ||
-              terms.filter((t) => t.term && t.definition).length < 2
+              // minimum 1 filled flashcard required
+              flashcards.filter((f) => f.term.trim() && f.definition.trim())
+                .length < 1
             }
             className="bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300"
           >
-            Create
+            {isLoading ? "Creating..." : "Create"}
           </Button>
         </div>
       </header>
@@ -160,23 +222,26 @@ export default function CreateSetPage() {
             </Select>
           </div>
 
-          {/* Terms */}
+          {/* Flashcards */}
           <div className="space-y-4">
-            {terms.map((term, index) => (
-              <TermCard
-                key={term.id}
+            {flashcards.map((flashcard, index) => (
+              <FlashcardCard
+                key={flashcard.flashcardId}
                 index={index + 1}
-                term={term}
-                onUpdate={(field, value) => updateTerm(term.id, field, value)}
-                onRemove={() => removeTerm(term.id)}
-                canRemove={terms.length > 2}
+                flashcard={flashcard}
+                onUpdate={(field, value) =>
+                  updateFlashcard(flashcard.flashcardId, field, value)
+                }
+                onRemove={() => removeFlashcard(flashcard.flashcardId)}
+                // you can remove if there's more than 1 flashcard to prevent empty set creation
+                canRemove={flashcards.length > 1}
               />
             ))}
           </div>
 
-          {/* Add Term Button */}
+          {/* Add Flashcard Button */}
           <button
-            onClick={addTerm}
+            onClick={addNewFlashcard}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-white py-4 text-gray-500 transition-all hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500"
           >
             <Plus className="h-5 w-5" />
@@ -188,13 +253,16 @@ export default function CreateSetPage() {
             <Button
               onClick={handleCreate}
               disabled={
+                isLoading ||
                 !title.trim() ||
-                terms.filter((t) => t.term && t.definition).length < 2
+                // minimum 1 filled flashcard required
+                flashcards.filter((f) => f.term.trim() && f.definition.trim())
+                  .length < 1
               }
               size="lg"
               className="bg-pink-500 px-12 text-white hover:bg-pink-600 disabled:bg-gray-300"
             >
-              Create
+              {isLoading ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
@@ -203,24 +271,27 @@ export default function CreateSetPage() {
   );
 }
 
-interface TermCardProps {
+// ----------------------------------------------------
+// Flashcard component
+// ----------------------------------------------------
+
+interface FlashcardCardProps {
   index: number;
-  term: Term;
+  flashcard: Flashcard;
   onUpdate: (field: "term" | "definition", value: string) => void;
   onRemove: () => void;
   canRemove: boolean;
 }
 
-function TermCard({
+function FlashcardCard({
   index,
-  term,
+  flashcard,
   onUpdate,
   onRemove,
   canRemove,
-}: TermCardProps) {
+}: FlashcardCardProps) {
   return (
     <div className="group overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md">
-      {/* Card Header */}
       <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2">
         <div className="flex items-center gap-3">
           <GripVertical className="h-4 w-4 cursor-grab text-gray-400" />
@@ -240,13 +311,12 @@ function TermCard({
         </button>
       </div>
 
-      {/* Card Content */}
       <div className="grid gap-4 p-4 md:grid-cols-2">
         <div className="space-y-2">
           <div className="relative">
             <Textarea
               placeholder="Enter term"
-              value={term.term}
+              value={flashcard.term}
               onChange={(e) => onUpdate("term", e.target.value)}
               className="min-h-[80px] resize-none border-0 border-b-2 border-gray-200 bg-transparent px-0 text-gray-800 placeholder:text-gray-400 focus:border-pink-500 focus:ring-0 focus-visible:ring-0"
             />
@@ -268,7 +338,7 @@ function TermCard({
           <div className="relative">
             <Textarea
               placeholder="Enter definition"
-              value={term.definition}
+              value={flashcard.definition}
               onChange={(e) => onUpdate("definition", e.target.value)}
               className="min-h-[80px] resize-none border-0 border-b-2 border-gray-200 bg-transparent px-0 text-gray-800 placeholder:text-gray-400 focus:border-pink-500 focus:ring-0 focus-visible:ring-0"
             />

@@ -30,6 +30,7 @@ public class FlashcardSetCreationDTOMapper {
 
     public static FlashcardSetCreationDTO toDTO(FlashcardSet flashcardSet) {
         return new FlashcardSetCreationDTO(
+                flashcardSet.getSetId(),
                flashcardSet.getUser().getUserId(),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription()
