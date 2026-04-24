@@ -5,11 +5,13 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import { authenticateUser } from "@/api/auth";
 import { toast } from "sonner";
+import { parseJwt } from "@/utils/jwt";
 
 interface AuthContextType {
   token: string | null;
@@ -32,24 +34,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Wrap logout in useCallback to safely use it as a dependency in useEffect
+  const logout = useCallback(() => {
+    setToken(null);
+    localStorage.removeItem("token");
+    toast.success("Logged out successfully");
+    router.push("/login");
+  }, [router]);
+
+  // Handle automatic logout when the JWT token expires
+  useEffect(() => {
+    if (!token) return; // Do nothing if the user is not logged in
+
+    const decoded = parseJwt(token);
+    if (!decoded || !decoded.exp) return;
+
+    // JWT expiration (exp) is in seconds, Date.now() is in milliseconds. Convert to match.
+    const expirationTime = decoded.exp * 1000;
+    const timeRemaining = expirationTime - Date.now();
+
+    if (timeRemaining <= 0) {
+      // Token has already expired (e.g., while the app was closed)
+      toast.error("Session expired. Please log in again.");
+      logout();
+    } else {
+      // Set a timer to log out the user exactly when the token expires
+      const timeoutId = setTimeout(() => {
+        toast.error("Session expired. Please log in again.");
+        logout();
+      }, timeRemaining);
+
+      // Cleanup function to clear the timeout if the component unmounts
+      // or if the token state changes before the time runs out
+      return () => clearTimeout(timeoutId);
+    }
+  }, [token, logout]);
+
   const login = async (email: string, password: string) => {
     try {
       const newToken = await authenticateUser({ email, password });
       setToken(newToken);
       localStorage.setItem("token", newToken);
       toast.success("Logged in successfully");
-      router.push("/"); // redirect to home page after login
+      router.push("/"); // Redirect to home page after successful login
     } catch (error: any) {
       toast.error(error.message || "Invalid login credentials");
       throw error;
     }
-  };
-
-  const logout = () => {
-    setToken(null);
-    localStorage.removeItem("token");
-    toast.success("Logged out successfully");
-    router.push("/login");
   };
 
   return (
