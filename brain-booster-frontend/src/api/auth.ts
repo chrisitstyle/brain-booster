@@ -5,7 +5,7 @@ export async function registerUser(data: {
   email: string;
   password: string;
 }) {
-  const response = await fetch(`${BASE_API_URL}/api/v1/auth/register`, {
+  const response = await fetch(`${BASE_API_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -30,7 +30,7 @@ export async function authenticateUser(data: {
   email: string;
   password: string;
 }) {
-  const response = await fetch(`${BASE_API_URL}/api/v1/auth/authenticate`, {
+  const response = await fetch(`${BASE_API_URL}/auth/authenticate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
