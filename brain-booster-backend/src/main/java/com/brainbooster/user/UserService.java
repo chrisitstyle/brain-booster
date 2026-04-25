@@ -64,6 +64,18 @@ public class UserService {
                 .toList();
     }
 
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserNickname(String nickname){
+
+        if(!userRepository.existsByNickname(nickname)){
+            throw new NoSuchElementException("User with nickname: " + nickname + " not found");
+        }
+
+        return flashcardSetRepository.findAllByUserNickname(nickname)
+                .stream()
+                .map(flashcardSetDTOMapper)
+                .toList();
+    }
+
     @Transactional
     public UserDTO updateUser(User updatedUser, long userId){
 

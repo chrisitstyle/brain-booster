@@ -5,6 +5,7 @@ import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,6 +118,29 @@ class UserControllerTest {
         assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
         assertThat(responseDTO.email()).isEqualTo(userDTO.email());
 
+    }
+
+    @Test
+    void getAllFlashcardSetsByUserNickname_ReturnsFlashcardSetList() throws Exception {
+        // given
+        String nickname = "johndoe";
+        FlashcardSetDTO setDTO = TestEntities.createFlashcardSetDTO();
+        when(userService.getAllFlashcardSetsByUserNickname(nickname)).thenReturn(List.of(setDTO));
+
+        // when
+        MvcResult result = mockMvc.perform(get("/users/nickname/" + nickname + "/flashcard-sets")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        List<FlashcardSetDTO> responseList = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+        );
+
+        assertThat(responseList).hasSize(1);
+        assertThat(responseList.getFirst().setName()).isEqualTo(setDTO.setName());
     }
 
     @Test

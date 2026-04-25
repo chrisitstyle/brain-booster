@@ -153,6 +153,37 @@ class UserServiceTest {
     }
 
     @Test
+    void getAllFlashcardSetsByUserNickname_ShouldReturnFlashcardSetsDTO_WhenUserExists() {
+        // given
+        String nickname = "johndoe";
+        when(userRepository.existsByNickname(nickname)).thenReturn(true);
+        when(flashcardSetRepository.findAllByUserNickname(nickname)).thenReturn(List.of(flashcardSet));
+        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
+
+        // when
+        List<FlashcardSetDTO> result = userService.getAllFlashcardSetsByUserNickname(nickname);
+
+        // then
+        Assertions.assertThat(result)
+                .contains(flashcardSetDTO)
+                .hasSize(1);
+    }
+
+    @Test
+    void getAllFlashcardSetsByUserNickname_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
+        // given
+        String nickname = "unknown";
+        when(userRepository.existsByNickname(nickname)).thenReturn(false);
+
+        // when & then
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> userService.getAllFlashcardSetsByUserNickname(nickname));
+
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("User with nickname: " + nickname + " not found");
+    }
+
+    @Test
     void updateUser_ShouldReturnUpdatedUser_WhenUserIsOwner() {
 
         mockSecurityContext(user);

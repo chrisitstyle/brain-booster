@@ -45,6 +45,11 @@ public class UserController {
 
     }
 
+    @GetMapping("/nickname/{nickname}/flashcard-sets")
+    public List<FlashcardSetDTO> getAllFlashcardSetsByNickname(@PathVariable String nickname) {
+        return userService.getAllFlashcardSetsByUserNickname(nickname);
+    }
+
     @PutMapping("/{userId}")
     public UserDTO updateUser(@RequestBody User updatedUser, @PathVariable long userId) {
         return userService.updateUser(updatedUser, userId);

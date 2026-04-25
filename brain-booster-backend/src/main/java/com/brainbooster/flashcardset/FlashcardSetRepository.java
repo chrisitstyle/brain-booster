@@ -13,6 +13,9 @@ public interface FlashcardSetRepository extends JpaRepository<FlashcardSet, Long
     @Query("SELECT fs FROM FlashcardSet fs JOIN FETCH fs.user WHERE fs.user.userId = :userId")
     List<FlashcardSet> findByUserId(Long userId);
 
+    @Query("SELECT fs FROM FlashcardSet fs JOIN FETCH fs.user u WHERE u.nickname = :nickname")
+    List<FlashcardSet> findAllByUserNickname(String nickname);
+
     @Query("SELECT fs FROM FlashcardSet fs JOIN FETCH fs.user WHERE fs.setId = :setId")
     Optional<FlashcardSet> findByIdWithUser(Long setId);
 
