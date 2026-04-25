@@ -162,7 +162,8 @@ class FlashcardSetControllerTest {
                 userDTO,
                 "Updated Set",
                 "Updated description",
-                LocalDateTime.parse("2025-06-02T00:28:05.738221")
+                LocalDateTime.parse("2025-06-02T00:28:05.738221"),
+                0L
         );
 
         when(flashcardSetService.updateFlashcardSet(Mockito.any(), Mockito.eq(1L)))

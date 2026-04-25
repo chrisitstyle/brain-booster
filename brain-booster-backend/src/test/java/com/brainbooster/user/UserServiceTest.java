@@ -66,7 +66,8 @@ class UserServiceTest {
                 userDTOMapper.apply(user),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription(),
-                flashcardSet.getCreatedAt());
+                flashcardSet.getCreatedAt(),
+                flashcardSet.getTermCount());
     }
 
     @Test

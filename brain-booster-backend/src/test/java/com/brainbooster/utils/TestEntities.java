@@ -116,7 +116,8 @@ public class TestEntities {
                 .user(userBuilder().build())
                 .setName("test_flashcardset_name")
                 .description("test_flashcardset_description")
-                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0));
+                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .termCount(0L);
 
     }
 
@@ -143,7 +144,8 @@ public class TestEntities {
                 createUserDTO(),
                 "test_flashcardset_name",
                 "test_flashcardset_description",
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, 1, 19, 23, 0),
+                0L
         );
     }
 
@@ -156,6 +158,7 @@ public class TestEntities {
      */
     public static FlashcardSetCreationDTO createFlashcardSetCreationDTO() {
         return new FlashcardSetCreationDTO(
+                1L,
                 1L,
                 "test_flashcardset_name",
                 "test_flashcardset_description");

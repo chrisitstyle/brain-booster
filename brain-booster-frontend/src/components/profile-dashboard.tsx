@@ -26,7 +26,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { parseJwt } from "@/utils/jwt";
+import { getUserFlashcardSets } from "@/api/userService";
 
 interface StudySet {
   id: string;
@@ -41,37 +44,6 @@ interface Folder {
   title: string;
   setCount: number;
 }
-
-const recentSets: StudySet[] = [
-  {
-    id: "1",
-    title: "Biology Chapter 5 - Cell Division",
-    termCount: 45,
-    author: "You",
-    lastStudied: "2 hours ago",
-  },
-  {
-    id: "2",
-    title: "Spanish Vocabulary - Unit 3",
-    termCount: 60,
-    author: "You",
-    lastStudied: "Yesterday",
-  },
-  {
-    id: "3",
-    title: "History - World War II",
-    termCount: 82,
-    author: "You",
-    lastStudied: "3 days ago",
-  },
-  {
-    id: "4",
-    title: "Chemistry - Periodic Table",
-    termCount: 118,
-    author: "You",
-    lastStudied: "1 week ago",
-  },
-];
 
 const folders: Folder[] = [
   { id: "1", title: "Science", setCount: 5 },
@@ -92,6 +64,45 @@ const achievements = [
 
 export function ProfileDashboard() {
   const [activeTab, setActiveTab] = useState("sets");
+  const { token } = useAuth();
+  const [sets, setSets] = useState<StudySet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserContent = async () => {
+      if (!token) return;
+
+      const decoded = parseJwt(token); // decode JWT to get user ID and other info
+
+      if (decoded?.id) {
+        try {
+          setIsLoading(true);
+          const data = await getUserFlashcardSets(decoded.id, token);
+
+          // Map the raw API response to StudySet format
+          const formattedSets: StudySet[] = data.map((set: any) => ({
+            id: set.setId.toString(),
+            title: set.setName,
+            termCount: set.termCount,
+            author: set.user.nickname || "You",
+            // Use the creation date, formatting it into a readable text
+            lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+          }));
+
+          setSets(formattedSets);
+        } catch (error) {
+          console.error("Error fetching flashcard sets:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchUserContent();
+  }, [token]);
 
   return (
     <>
@@ -203,27 +214,21 @@ export function ProfileDashboard() {
           <TabsList className="mb-6 w-full justify-start gap-2 border-b border-gray-200 bg-transparent p-0">
             <TabsTrigger
               value="sets"
-              className={cn(
-                "rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
-              )}
+              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Study Sets
             </TabsTrigger>
             <TabsTrigger
               value="folders"
-              className={cn(
-                "rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
-              )}
+              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
             >
               <FolderOpen className="mr-2 h-4 w-4" />
               Folders
             </TabsTrigger>
             <TabsTrigger
               value="recent"
-              className={cn(
-                "rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
-              )}
+              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
             >
               <Clock className="mr-2 h-4 w-4" />
               Recent
@@ -231,11 +236,21 @@ export function ProfileDashboard() {
           </TabsList>
 
           <TabsContent value="sets" className="mt-0">
-            <div className="grid gap-4 md:grid-cols-2">
-              {recentSets.map((set) => (
-                <StudySetCard key={set.id} set={set} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="text-center py-10 text-gray-500">
+                Downloading flashcard sets...
+              </div>
+            ) : sets.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {sets.map((set) => (
+                  <StudySetCard key={set.id} set={set} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                You don't have any flashcard sets yet.
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="folders" className="mt-0">
@@ -256,7 +271,7 @@ export function ProfileDashboard() {
 
           <TabsContent value="recent" className="mt-0">
             <div className="space-y-3">
-              {recentSets.map((set) => (
+              {sets.map((set) => (
                 <RecentActivityItem key={set.id} set={set} />
               ))}
             </div>

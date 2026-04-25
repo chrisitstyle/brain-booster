@@ -3,6 +3,7 @@ package com.brainbooster.flashcardset;
 import com.brainbooster.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 import java.time.LocalDateTime;
 
@@ -26,5 +27,7 @@ public class FlashcardSet {
     private String description;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    @Formula("(SELECT COUNT(*) FROM flashcard f WHERE f.set_id = set_id)")
+    private Long termCount;
 
 }

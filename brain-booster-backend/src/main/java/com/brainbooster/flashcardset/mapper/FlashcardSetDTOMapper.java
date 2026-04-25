@@ -16,7 +16,8 @@ public class FlashcardSetDTOMapper implements Function<FlashcardSet, FlashcardSe
                 new UserDTOMapper().apply(flashcardSet.getUser()),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription(),
-                flashcardSet.getCreatedAt()
+                flashcardSet.getCreatedAt(),
+                flashcardSet.getTermCount()
         );
     }
 }
