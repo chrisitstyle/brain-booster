@@ -45,6 +45,16 @@ interface Folder {
   setCount: number;
 }
 
+interface FlashcardSetDTO {
+  setId: number;
+  setName: string;
+  termCount: number;
+  createdAt: string;
+  user: {
+    nickname: string;
+  };
+}
+
 const folders: Folder[] = [
   { id: "1", title: "Science", setCount: 5 },
   { id: "2", title: "Languages", setCount: 3 },
@@ -80,17 +90,19 @@ export function ProfileDashboard() {
           const data = await getUserFlashcardSets(decoded.id, token);
 
           // Map the raw API response to StudySet format
-          const formattedSets: StudySet[] = data.map((set: any) => ({
-            id: set.setId.toString(),
-            title: set.setName,
-            termCount: set.termCount,
-            author: set.user.nickname || "You",
-            // Use the creation date, formatting it into a readable text
-            lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
+          const formattedSets: StudySet[] = data.map(
+            (set: FlashcardSetDTO) => ({
+              id: set.setId.toString(),
+              title: set.setName,
+              termCount: set.termCount,
+              author: set.user.nickname || "You",
+              // Use the creation date, formatting it into a readable text
+              lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              }),
             }),
-          }));
+          );
 
           setSets(formattedSets);
         } catch (error) {
@@ -248,7 +260,7 @@ export function ProfileDashboard() {
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">
-                You don't have any flashcard sets yet.
+                You don&apos;t have any flashcard sets yet.
               </div>
             )}
           </TabsContent>
