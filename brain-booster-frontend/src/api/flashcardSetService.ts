@@ -34,3 +34,18 @@ export async function addFlashcardSet(
   const result = await response.json();
   return result;
 }
+
+export const deleteFlashcardSet = async (setId: string, token: string) => {
+  const response = await fetch(`${BASE_API_URL}/flashcard-sets/${setId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to delete flashcard set with status: ${response.status}`,
+    );
+  }
+};

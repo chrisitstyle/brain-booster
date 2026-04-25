@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,10 +27,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { parseJwt } from "@/utils/jwt";
 import { getUserFlashcardSets } from "@/api/userService";
+import { deleteFlashcardSet } from "@/api/flashcardSetService";
 
 interface StudySet {
   id: string;
@@ -79,6 +92,10 @@ export function ProfileDashboard() {
   const { token } = useAuth();
   const [sets, setSets] = useState<StudySet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // states for alert dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [setToDelete, setSetToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUserContent = async () => {
@@ -118,6 +135,40 @@ export function ProfileDashboard() {
 
     fetchUserContent();
   }, [token]);
+
+  const handleDeleteConfirm = async () => {
+    if (!setToDelete || !token) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteFlashcardSet(setToDelete, token);
+      // optimistically update UI by removing the deleted set from state to prevent an additional fetch
+      setSets((prevSets) => prevSets.filter((s) => s.id !== setToDelete));
+      toast.success("Set deleted successfully", {
+        style: {
+          background: "green",
+          color: "white",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to delete set:", error);
+      toast.error("Failed to delete set. Please try again.", {
+        style: {
+          background: "red",
+          color: "white",
+        },
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setSetToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setSetToDelete(null);
+    setIsDeleteDialogOpen(false);
+  };
 
   return (
     <>
@@ -258,7 +309,17 @@ export function ProfileDashboard() {
             ) : sets.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {sets.map((set) => (
-                  <StudySetCard key={set.id} set={set} />
+                  <StudySetCard
+                    key={set.id}
+                    set={set}
+                    onDeleteClick={(id) => {
+                      setSetToDelete(id);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    isDeleteDialogOpen={
+                      isDeleteDialogOpen && setToDelete === set.id
+                    }
+                  />
                 ))}
               </div>
             ) : (
@@ -293,11 +354,52 @@ export function ProfileDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Alert Dialog for Delete Confirmation */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              flashcard set and remove all its terms from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isDeleting}
+              onClick={handleDeleteCancel}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? "Deleting..." : "Continue"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
 
-function StudySetCard({ set }: { set: StudySet }) {
+function StudySetCard({
+  set,
+  onDeleteClick,
+  isDeleteDialogOpen,
+}: {
+  set: StudySet;
+  onDeleteClick: (id: string) => void;
+  isDeleteDialogOpen: boolean;
+}) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   return (
     <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
       <CardContent className="p-4">
@@ -320,12 +422,17 @@ function StudySetCard({ set }: { set: StudySet }) {
               {set.termCount} terms
             </p>
           </div>
-          <DropdownMenu>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100"
+                className={cn(
+                  "h-8 w-8 transition-opacity",
+                  isDropdownOpen || isDeleteDialogOpen
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100",
+                )}
               >
                 <MoreHorizontal className="h-4 w-4 text-gray-400" />
               </Button>
@@ -334,7 +441,14 @@ function StudySetCard({ set }: { set: StudySet }) {
               <DropdownMenuItem>Edit</DropdownMenuItem>
               <DropdownMenuItem>Share</DropdownMenuItem>
               <DropdownMenuItem>Add to folder</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-500">
+              <DropdownMenuItem
+                className="text-red-500 cursor-pointer"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onDeleteClick(set.id);
+                  setIsDropdownOpen(false);
+                }}
+              >
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
