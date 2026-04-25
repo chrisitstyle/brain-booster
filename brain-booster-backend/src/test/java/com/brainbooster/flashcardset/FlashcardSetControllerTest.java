@@ -6,7 +6,8 @@ import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.user.UserDTO;
+import com.brainbooster.user.dto.UserDTO;
+import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +52,7 @@ class FlashcardSetControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final UserDTO userDTO = TestEntities.createUserDTO();
+    private final UserSummaryDTO userSummaryDTO = TestEntities.createUserSummaryDTO();
 
     private final FlashcardSetDTO flashcardSetDTO = TestEntities.createFlashcardSetDTO();
 
@@ -159,7 +160,7 @@ class FlashcardSetControllerTest {
 
         FlashcardSetDTO updatedDTO = new FlashcardSetDTO(
                 1L,
-                userDTO,
+                userSummaryDTO,
                 "Updated Set",
                 "Updated description",
                 LocalDateTime.parse("2025-06-02T00:28:05.738221"),

@@ -2,6 +2,7 @@ package com.brainbooster.user;
 
 
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.user.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -6,7 +6,8 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
-import com.brainbooster.user.UserDTO;
+import com.brainbooster.user.dto.UserDTO;
+import com.brainbooster.user.dto.UserSummaryDTO;
 
 import java.time.LocalDateTime;
 
@@ -70,6 +71,13 @@ public class TestEntities {
                 LocalDateTime.of(2026, 1, 19, 23, 0)
 
         );
+    }
+
+    /**
+     * Creates a {@link UserSummaryDTO} for nested flashcard set responses.
+     */
+    public static UserSummaryDTO createUserSummaryDTO() {
+        return new UserSummaryDTO("johndoe");
     }
 
     // FLASHCARD METHODS
@@ -141,7 +149,7 @@ public class TestEntities {
     public static FlashcardSetDTO createFlashcardSetDTO() {
         return new FlashcardSetDTO(
                 1L,
-                createUserDTO(),
+                createUserSummaryDTO(),
                 "test_flashcardset_name",
                 "test_flashcardset_description",
                 LocalDateTime.of(2026, 1, 19, 23, 0),

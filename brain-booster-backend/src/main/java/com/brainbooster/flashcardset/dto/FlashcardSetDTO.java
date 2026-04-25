@@ -1,12 +1,12 @@
 package com.brainbooster.flashcardset.dto;
 
-import com.brainbooster.user.UserDTO;
+import com.brainbooster.user.dto.UserSummaryDTO;
 
 import java.time.LocalDateTime;
 
 public record FlashcardSetDTO(
         Long setId,
-        UserDTO user,
+        UserSummaryDTO user,
         String setName,
         String description,
         LocalDateTime createdAt,

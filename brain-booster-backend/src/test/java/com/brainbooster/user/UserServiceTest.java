@@ -5,6 +5,7 @@ import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +64,7 @@ class UserServiceTest {
         flashcardSet = TestEntities.createFlashcardSet();
 
         flashcardSetDTO = new FlashcardSetDTO(flashcardSet.getSetId(),
-                userDTOMapper.apply(user),
+                new com.brainbooster.user.dto.UserSummaryDTO(user.getNickname()),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription(),
                 flashcardSet.getCreatedAt(),

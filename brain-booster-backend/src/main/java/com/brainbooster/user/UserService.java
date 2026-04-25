@@ -4,6 +4,7 @@ import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.user.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;

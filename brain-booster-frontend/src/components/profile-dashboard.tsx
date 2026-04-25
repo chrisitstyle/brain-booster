@@ -34,6 +34,7 @@ import { getUserFlashcardSets } from "@/api/userService";
 interface StudySet {
   id: string;
   title: string;
+  description: string;
   termCount: number;
   author: string;
   lastStudied?: string;
@@ -47,12 +48,13 @@ interface Folder {
 
 interface FlashcardSetDTO {
   setId: number;
-  setName: string;
-  termCount: number;
-  createdAt: string;
   user: {
     nickname: string;
   };
+  setName: string;
+  description: string;
+  createdAt: string;
+  termCount: number;
 }
 
 const folders: Folder[] = [
@@ -94,6 +96,7 @@ export function ProfileDashboard() {
             (set: FlashcardSetDTO) => ({
               id: set.setId.toString(),
               title: set.setName,
+              description: set.description,
               termCount: set.termCount,
               author: set.user.nickname || "You",
               // Use the creation date, formatting it into a readable text
@@ -302,11 +305,20 @@ function StudySetCard({ set }: { set: StudySet }) {
           <div className="flex-1">
             <Link
               href={`/sets/${set.id}`}
-              className="font-semibold text-gray-800 hover:text-pink-500"
+              className="font-semibold text-gray-800 hover:text-pink-500 line-clamp-1"
             >
               {set.title}
             </Link>
-            <p className="mt-1 text-sm text-gray-500">{set.termCount} terms</p>
+
+            {set.description && (
+              <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                {set.description}
+              </p>
+            )}
+
+            <p className="mt-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
+              {set.termCount} terms
+            </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

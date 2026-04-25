@@ -6,6 +6,7 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
