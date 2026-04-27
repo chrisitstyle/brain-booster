@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -26,14 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  // Load token from localStorage on initial render
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
-
   // Wrap logout in useCallback to safely use it as a dependency in useEffect
   const logout = useCallback(() => {
     setToken(null);
@@ -41,6 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.success("Logged out successfully");
     router.push("/login");
   }, [router]);
+
+  // Load token from localStorage on initial render
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToken(storedToken);
+    }
+  }, []);
 
   // Handle automatic logout when the JWT token expires
   useEffect(() => {
@@ -55,8 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (timeRemaining <= 0) {
       // Token has already expired (e.g., while the app was closed)
-      toast.error("Session expired. Please log in again.");
-      logout();
+      setTimeout(() => {
+        toast.error("Session expired. Please log in again.");
+        logout();
+      }, 0);
     } else {
       // Set a timer to log out the user exactly when the token expires
       const timeoutId = setTimeout(() => {
