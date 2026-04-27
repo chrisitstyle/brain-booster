@@ -41,7 +41,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { parseJwt } from "@/utils/jwt";
-import { getUserFlashcardSets } from "@/api/userService";
+import { getUserFlashcardSetsByUserId } from "@/api/userService";
 import { deleteFlashcardSet } from "@/api/flashcardSetService";
 
 interface StudySet {
@@ -106,7 +106,7 @@ export function ProfileDashboard() {
       if (decoded?.id) {
         try {
           setIsLoading(true);
-          const data = await getUserFlashcardSets(decoded.id, token);
+          const data = await getUserFlashcardSetsByUserId(decoded.id, token);
 
           // Map the raw API response to StudySet format
           const formattedSets: StudySet[] = data.map(
