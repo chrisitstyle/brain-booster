@@ -13,7 +13,8 @@ public class FlashcardSetDTOMapper implements Function<FlashcardSet, FlashcardSe
     public FlashcardSetDTO apply(FlashcardSet flashcardSet) {
         return new FlashcardSetDTO(
                 flashcardSet.getSetId(),
-                new UserSummaryDTO(flashcardSet.getUser().getNickname()),
+                new UserSummaryDTO(flashcardSet.getUser().getNickname(),
+                        flashcardSet.getUser().getCreatedAt()),
                 flashcardSet.getSetName(),
                 flashcardSet.getDescription(),
                 flashcardSet.getCreatedAt(),

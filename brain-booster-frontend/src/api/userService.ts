@@ -36,9 +36,13 @@ export const getUserFlashcardSetsByNickname = async (nickname: string) => {
   );
 
   if (!response.ok) {
-    throw new Error(
-      `Error: ${response.status} - Cannot fetch flashcard sets for user with this nickname`,
-    );
+    const errorData = await response.json().catch(() => null);
+
+    const errorMessage =
+      errorData?.message ||
+      `Error: ${response.status} - An unknown error occurred while fetching flashcard sets.`;
+
+    throw new Error(errorMessage);
   }
 
   return response.json();

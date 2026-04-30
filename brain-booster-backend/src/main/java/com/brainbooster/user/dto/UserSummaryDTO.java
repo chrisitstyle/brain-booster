@@ -1,4 +1,6 @@
 package com.brainbooster.user.dto;
 
-public record UserSummaryDTO(String nickname) {
+import java.time.LocalDateTime;
+
+public record UserSummaryDTO(String nickname, LocalDateTime createdAt) {
 }
