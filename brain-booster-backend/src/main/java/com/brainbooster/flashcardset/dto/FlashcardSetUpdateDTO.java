@@ -1,15 +1,13 @@
 package com.brainbooster.flashcardset.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
-public record FlashcardSetCreationDTO(
-        @NotNull(message = "User ID cannot be null")
-        Long userId,
+public record FlashcardSetUpdateDTO(
         @NotBlank(message = "Set name cannot be empty")
         String setName,
-        @NotBlank
+        @NotBlank(message = "Description cannot be empty")
         String description
-) {
 
+) {
 }
+

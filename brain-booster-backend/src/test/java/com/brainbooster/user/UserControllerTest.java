@@ -6,7 +6,10 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
+import com.brainbooster.user.dto.UserNicknameUpdateDTO;
+import com.brainbooster.user.dto.UserUpdateDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,14 +64,16 @@ class UserControllerTest {
     void addUserWithValidJWT_ReturnsCreated() throws Exception {
         // given
         String token = "valid_token_test";
+        UserCreationDTO creationDTO = TestEntities.createUserCreationDTO();
+
         when(jwtService.extractUsername(token)).thenReturn("test@example.com");
-        given(userService.addUser(ArgumentMatchers.any())).willReturn(userDTO);
+        given(userService.addUser(ArgumentMatchers.any(UserCreationDTO.class))).willReturn(userDTO);
 
         //when
         MvcResult result = mockMvc.perform(post("/users")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
+                        .content(objectMapper.writeValueAsString(creationDTO)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -77,7 +82,6 @@ class UserControllerTest {
         assertThat(responseDTO).isNotNull();
         assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
         assertThat(responseDTO.email()).isEqualTo(userDTO.email());
-
     }
 
     @Test
@@ -122,6 +126,30 @@ class UserControllerTest {
     }
 
     @Test
+    void getAllFlashcardSetsByUserId_ReturnsFlashcardSetList() throws Exception {
+        // given
+        long userId = 1L;
+        FlashcardSetDTO setDTO = TestEntities.createFlashcardSetDTO();
+        when(userService.getAllFlashcardSetsByUserId(userId)).thenReturn(List.of(setDTO));
+
+        // when
+        MvcResult result = mockMvc.perform(get("/users/" + userId + "/flashcard-sets")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        List<FlashcardSetDTO> responseList = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertThat(responseList).hasSize(1);
+        assertThat(responseList.getFirst().setName()).isEqualTo(setDTO.setName());
+    }
+
+    @Test
     void getAllFlashcardSetsByUserNickname_ReturnsFlashcardSetList() throws Exception {
         // given
         String nickname = "johndoe";
@@ -137,7 +165,8 @@ class UserControllerTest {
         // then
         List<FlashcardSetDTO> responseList = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
-                new TypeReference<>() {}
+                new TypeReference<>() {
+                }
         );
 
         assertThat(responseList).hasSize(1);
@@ -145,16 +174,37 @@ class UserControllerTest {
     }
 
     @Test
-    void updateUser_ReturnsUpdatedUserDTO() throws Exception {
+    void updateUserNickname_ReturnsUpdatedUserDTO() throws Exception {
         // given
         long userId = 1L;
-        when(userService.updateUser(ArgumentMatchers.any(User.class), ArgumentMatchers.eq(userId)))
+        UserNicknameUpdateDTO nicknameUpdateDTO = new UserNicknameUpdateDTO("NewNickname");
+        when(userService.updateUserNickname(ArgumentMatchers.any(UserNicknameUpdateDTO.class), ArgumentMatchers.eq(userId)))
                 .thenReturn(userDTO);
 
         // when
-        MvcResult result = mockMvc.perform(put("/users/1")
+        MvcResult result = mockMvc.perform(patch("/users/" + userId + "/nickname")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
+                        .content(objectMapper.writeValueAsString(nicknameUpdateDTO)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        UserDTO responseDTO = objectMapper.readValue(result.getResponse().getContentAsString(), UserDTO.class);
+        assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
+    }
+
+    @Test
+    void updateUser_ReturnsUpdatedUserDTO() throws Exception {
+        // given
+        long userId = 1L;
+        UserUpdateDTO updateDTO = new UserUpdateDTO("newNick", "new@email.com", "newPass", Role.USER);
+        when(userService.updateUser(ArgumentMatchers.any(UserUpdateDTO.class), ArgumentMatchers.eq(userId)))
+                .thenReturn(userDTO);
+
+        // when
+        MvcResult result = mockMvc.perform(put("/users/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -189,16 +239,18 @@ class UserControllerTest {
     void addUser_ShouldReturnUnprocessableEntity_WhenEmailExists() throws Exception {
         // given
         String token = "valid_token";
-        when(jwtService.extractUsername(token)).thenReturn("admin@example.com");
 
-        given(userService.addUser(ArgumentMatchers.any()))
+        UserCreationDTO creationDTO = TestEntities.createUserCreationDTO();
+
+        when(jwtService.extractUsername(token)).thenReturn("admin@example.com");
+        given(userService.addUser(ArgumentMatchers.any(UserCreationDTO.class)))
                 .willThrow(new EmailAlreadyExistsException("User with this email already exists!"));
 
         // when
         MvcResult result = mockMvc.perform(post("/users")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
+                        .content(objectMapper.writeValueAsString(creationDTO)))
                 .andReturn();
 
         // then

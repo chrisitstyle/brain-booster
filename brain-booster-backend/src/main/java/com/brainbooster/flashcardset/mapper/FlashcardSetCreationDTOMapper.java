@@ -13,7 +13,7 @@ public class FlashcardSetCreationDTOMapper {
     }
 
 
-    public static FlashcardSet toEntity(FlashcardSetCreationDTO dto){
+    public static FlashcardSet toEntity(FlashcardSetCreationDTO dto) {
 
         FlashcardSet flashcardSet = new FlashcardSet();
         User user = new User();
@@ -26,15 +26,6 @@ public class FlashcardSetCreationDTOMapper {
 
         return flashcardSet;
 
-    }
-
-    public static FlashcardSetCreationDTO toDTO(FlashcardSet flashcardSet) {
-        return new FlashcardSetCreationDTO(
-                flashcardSet.getSetId(),
-               flashcardSet.getUser().getUserId(),
-                flashcardSet.getSetName(),
-                flashcardSet.getDescription()
-        );
     }
 
 }

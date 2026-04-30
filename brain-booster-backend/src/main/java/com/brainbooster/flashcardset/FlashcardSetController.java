@@ -1,8 +1,10 @@
 package com.brainbooster.flashcardset;
 
-import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,33 +20,29 @@ public class FlashcardSetController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FlashcardSetCreationDTO addFlashcardSet(@RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO) {
+    public FlashcardSetDTO addFlashcardSet(@Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO) {
 
         return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO);
-
-
     }
 
     @GetMapping
     public List<FlashcardSetDTO> getAllFlashcardSets() {
-
         return flashcardSetService.getAllFlashcardSets();
-
     }
 
     @GetMapping("/{setId}")
-    public FlashcardSetDTO getFlashcardSetById(@PathVariable long setId) {
+    public FlashcardSetDTO getFlashcardSetById(@PathVariable Long setId) {
 
         return flashcardSetService.getFlashcardSetById(setId);
     }
 
     @GetMapping("/{setId}/flashcards")
-    public List<Flashcard> getAllFlashcardsInSet(@PathVariable long setId) {
+    public List<FlashcardDTO> getAllFlashcardsInSet(@PathVariable Long setId) {
         return flashcardSetService.getAllFlashcardsInSet(setId);
     }
 
     @PatchMapping("/{setId}")
-    public FlashcardSetDTO updateFlashcardSetById(@RequestBody FlashcardSet updatedFlashcardSet, @PathVariable long setId) {
+    public FlashcardSetDTO updateFlashcardSetById(@Valid @RequestBody FlashcardSetUpdateDTO updatedFlashcardSet, @PathVariable Long setId) {
 
         return flashcardSetService.updateFlashcardSet(updatedFlashcardSet, setId);
     }

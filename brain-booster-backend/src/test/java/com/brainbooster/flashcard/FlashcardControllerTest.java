@@ -3,6 +3,9 @@ package com.brainbooster.flashcard;
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.ErrorDTO;
+import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
+import com.brainbooster.flashcard.dto.FlashcardDTO;
+import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,45 +49,40 @@ class FlashcardControllerTest {
     @MockitoBean
     private FlashcardService flashcardService;
 
-    private final Flashcard flashcard1 = new Flashcard(1L,
-            1L,
-            "Test Term",
-            "Test Definition");
+    private final FlashcardDTO flashcardDTO1 = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition");
+    private final FlashcardDTO flashcardDTO2 = new FlashcardDTO(2L, 1L, "Test Term 2", "Test Definition 2");
+    private final FlashcardDTO updatedFlashcardDTO = new FlashcardDTO(1L, 1L, "Updated Term", "Updated Definition");
 
-    private final Flashcard flashcard2 = new Flashcard(2L,
-            1L,
-            "Test Term 2",
-            "Test Definition 2");
-
-    Flashcard updatedFlashcard = new Flashcard(1L,
-            1L,
-            "Updated Term",
-            "Updated Definition");
+    private final FlashcardCreationDTO creationDTO = new FlashcardCreationDTO(1L, "Test Term", "Test Definition");
+    private final FlashcardUpdateDTO updateDTO = new FlashcardUpdateDTO("Updated Term", "Updated Definition");
 
 
     @Test
-    void addFlashcard_ShouldReturnFlashcard() throws Exception {
+    void addFlashcardCreationDTO_ShouldReturnFlashcardDTO() throws Exception {
         // given
-        when(flashcardService.addFlashcard(any(Flashcard.class))).thenReturn(flashcard1);
+        when(flashcardService.addFlashcard(any(FlashcardCreationDTO.class))).thenReturn(flashcardDTO1);
 
         // when
         MvcResult result = mockMvc.perform(post("/flashcards")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(flashcard1)))
+                        .content(objectMapper.writeValueAsString(creationDTO)))
                 .andReturn();
 
         // then
         assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.CREATED.value());
 
-        Flashcard response = objectMapper.readValue(result.getResponse().getContentAsString(), Flashcard.class);
-        assertThat(response.getTerm()).isEqualTo("Test Term");
-        assertThat(response.getDefinition()).isEqualTo("Test Definition");
+        FlashcardDTO response = objectMapper.readValue(
+                result.getResponse()
+                        .getContentAsString(), FlashcardDTO.class);
+
+        assertThat(response.term()).isEqualTo("Test Term");
+        assertThat(response.definition()).isEqualTo("Test Definition");
     }
 
     @Test
-    void getAllFlashcards_ShouldReturnListOfFlashcards() throws Exception {
+    void getAllFlashcards_ShouldReturnListOfFlashcardsDTOs() throws Exception {
         // given
-        when(flashcardService.getAllFlashcards()).thenReturn(List.of(flashcard1, flashcard2));
+        when(flashcardService.getAllFlashcards()).thenReturn(List.of(flashcardDTO1, flashcardDTO2));
 
         // when
         MvcResult result = mockMvc.perform(get("/flashcards"))
@@ -92,22 +91,22 @@ class FlashcardControllerTest {
         // then
         assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
 
-        List<Flashcard> responseList = objectMapper.readValue(
+        List<FlashcardDTO> responseList = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 new TypeReference<>() {
                 }
         );
 
         assertThat(responseList).hasSize(2);
-        assertThat(responseList.get(0).getTerm()).isEqualTo("Test Term");
-        assertThat(responseList.get(1).getTerm()).isEqualTo("Test Term 2");
+        assertThat(responseList.get(0).term()).isEqualTo("Test Term");
+        assertThat(responseList.get(1).term()).isEqualTo("Test Term 2");
     }
 
 
     @Test
-    void getFlashcardById_ShouldReturnFlashcard() throws Exception {
+    void getFlashcardById_ShouldReturnFlashcardDTO() throws Exception {
         // given
-        when(flashcardService.getFlashcardById(1L)).thenReturn(flashcard1);
+        when(flashcardService.getFlashcardById(1L)).thenReturn(flashcardDTO1);
 
         // when
         MvcResult result = mockMvc.perform(get("/flashcards/1"))
@@ -116,9 +115,12 @@ class FlashcardControllerTest {
         // then
         assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
 
-        Flashcard response = objectMapper.readValue(result.getResponse().getContentAsString(), Flashcard.class);
-        assertThat(response.getTerm()).isEqualTo("Test Term");
-        assertThat(response.getDefinition()).isEqualTo("Test Definition");
+        FlashcardDTO response = objectMapper.readValue(
+                result.getResponse()
+                        .getContentAsString(), FlashcardDTO.class);
+
+        assertThat(response.term()).isEqualTo("Test Term");
+        assertThat(response.definition()).isEqualTo("Test Definition");
     }
 
     @Test
@@ -144,22 +146,24 @@ class FlashcardControllerTest {
     }
 
     @Test
-    void updateFlashcard_ShouldReturnUpdatedFlashcard() throws Exception {
+    void updateFlashcard_ShouldReturnUpdatedFlashcardDTO() throws Exception {
         // given
-        when(flashcardService.updateFlashcard(any(Flashcard.class), any(Long.class))).thenReturn(updatedFlashcard);
+        when(flashcardService.updateFlashcard(any(FlashcardUpdateDTO.class), eq(1L))).thenReturn(updatedFlashcardDTO);
 
         // when
         MvcResult result = mockMvc.perform(patch("/flashcards/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedFlashcard)))
+                        .content(objectMapper.writeValueAsString(updateDTO)))
                 .andReturn();
 
         // then
         assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
 
-        Flashcard response = objectMapper.readValue(result.getResponse().getContentAsString(), Flashcard.class);
-        assertThat(response.getTerm()).isEqualTo("Updated Term");
-        assertThat(response.getDefinition()).isEqualTo("Updated Definition");
+        FlashcardDTO response = objectMapper.readValue(
+                result.getResponse()
+                        .getContentAsString(), FlashcardDTO.class);
+        assertThat(response.term()).isEqualTo("Updated Term");
+        assertThat(response.definition()).isEqualTo("Updated Definition");
     }
 
     @Test

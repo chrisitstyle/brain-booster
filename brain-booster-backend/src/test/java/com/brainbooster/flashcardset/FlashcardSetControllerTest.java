@@ -3,10 +3,10 @@ package com.brainbooster.flashcardset;
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.ErrorDTO;
-import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.user.dto.UserDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
@@ -57,13 +57,13 @@ class FlashcardSetControllerTest {
     private final FlashcardSetDTO flashcardSetDTO = TestEntities.createFlashcardSetDTO();
 
     @Test
-    void addFlashcardSetCreationDTO_ShouldReturnFlashcardSetCreationDTO() throws Exception {
+    void addFlashcardSetCreationDTO_ShouldReturnFlashcardSetDTO() throws Exception {
         // given
         FlashcardSetCreationDTO flashcardSetCreationDTO = TestEntities.createFlashcardSetCreationDTO();
         String token = "valid_token_test";
         when(jwtService.extractUsername(token)).thenReturn("johndoe@example.com");
         when(flashcardSetService.addFlashcardSet(Mockito.any(FlashcardSetCreationDTO.class)))
-                .thenReturn(flashcardSetCreationDTO);
+                .thenReturn(flashcardSetDTO);
 
         // when
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/flashcard-sets")
@@ -74,12 +74,12 @@ class FlashcardSetControllerTest {
                 .andReturn();
 
         // then
-        FlashcardSetCreationDTO responseDTO = objectMapper.readValue(
+        FlashcardSetDTO responseDTO = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
-                FlashcardSetCreationDTO.class
+                FlashcardSetDTO.class
         );
 
-        assertThat(responseDTO.userId()).isEqualTo(1L);
+        assertThat(responseDTO.user().nickname()).isEqualTo("johndoe");
         assertThat(responseDTO.setName()).isEqualTo("test_flashcardset_name");
         assertThat(responseDTO.description()).isEqualTo("test_flashcardset_description");
     }
@@ -126,14 +126,11 @@ class FlashcardSetControllerTest {
     }
 
     @Test
-    void getAllFlashcardsInSet_ShouldReturnListOfFlashcards() throws Exception {
+    void getAllFlashcardsInSet_ShouldReturnListOfFlashcardsDTO() throws Exception {
         // given
-        Flashcard flashcard = TestEntities.flashcardBuilder()
-                .term("What is Java?")
-                .definition("A programming language")
-                .build();
+        FlashcardDTO flashcardDTO = TestEntities.createFlashcardDTO();
 
-        when(flashcardSetService.getAllFlashcardsInSet(1L)).thenReturn(List.of(flashcard));
+        when(flashcardSetService.getAllFlashcardsInSet(1L)).thenReturn(List.of(flashcardDTO));
 
         // when
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/1/flashcards"))
@@ -141,24 +138,22 @@ class FlashcardSetControllerTest {
                 .andReturn();
 
         // then
-        List<Flashcard> responseList = objectMapper.readValue(
+        List<FlashcardDTO> responseList = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 new TypeReference<>() {
                 }
         );
 
         assertThat(responseList).hasSize(1);
-        assertThat(responseList.getFirst().getTerm()).isEqualTo("What is Java?");
+        assertThat(responseList.getFirst().term()).isEqualTo("test_term");
     }
 
     @Test
     void updateFlashcardSetById_ShouldReturnUpdatedFlashcardSetDTO() throws Exception {
         // given
-        FlashcardSet updatedFlashcardSet = new FlashcardSet();
-        updatedFlashcardSet.setSetName("Updated Set");
-        updatedFlashcardSet.setDescription("Updated description");
+        FlashcardSetUpdateDTO updateDTO = new FlashcardSetUpdateDTO("Updated Set", "Updated description");
 
-        FlashcardSetDTO updatedDTO = new FlashcardSetDTO(
+        FlashcardSetDTO updatedResponseDTO = new FlashcardSetDTO(
                 1L,
                 userSummaryDTO,
                 "Updated Set",
@@ -168,12 +163,12 @@ class FlashcardSetControllerTest {
         );
 
         when(flashcardSetService.updateFlashcardSet(Mockito.any(), Mockito.eq(1L)))
-                .thenReturn(updatedDTO);
+                .thenReturn(updatedResponseDTO);
 
         // when
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.patch("/flashcard-sets/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedFlashcardSet)))
+                        .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -240,10 +235,9 @@ class FlashcardSetControllerTest {
     void updateFlashcardSet_ShouldReturnNotFound_WhenUpdatingNonExistentSet() throws Exception {
         // given
         long nonExistentId = 123L;
-        FlashcardSet updateData = new FlashcardSet();
-        updateData.setSetName("New Name");
+        FlashcardSetUpdateDTO updateData = new FlashcardSetUpdateDTO("New Name", "New Description");
 
-        when(flashcardSetService.updateFlashcardSet(Mockito.any(), Mockito.eq(nonExistentId)))
+        when(flashcardSetService.updateFlashcardSet(Mockito.any(FlashcardSetUpdateDTO.class), Mockito.eq(nonExistentId)))
                 .thenThrow(new java.util.NoSuchElementException("FlashcardSet not found"));
 
         // when

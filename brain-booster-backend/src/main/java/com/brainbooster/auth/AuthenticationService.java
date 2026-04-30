@@ -5,6 +5,7 @@ import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +25,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public String register(RegisterRequest request) {
+    public String register(@Valid RegisterRequest request) {
         Optional<User> userExists = userRepository.findByEmail(request.getEmail());
         if (userExists.isPresent()) {
             throw new EmailAlreadyExistsException("User with this email already exists");
@@ -42,7 +43,7 @@ public class AuthenticationService {
 
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+    public AuthenticationResponse authenticate(@Valid AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),

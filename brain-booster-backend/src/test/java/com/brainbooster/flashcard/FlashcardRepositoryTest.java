@@ -28,7 +28,8 @@ class FlashcardRepositoryTest {
     private FlashcardRepository flashcardRepository;
     @Autowired
     private TestEntityManager entityManager;
-    private Long savedSetId;
+
+    private FlashcardSet savedFlashcardSet;
 
     @BeforeEach
     void setUp() {
@@ -49,55 +50,50 @@ class FlashcardRepositoryTest {
                 .build();
         entityManager.persist(flashcardSet);
 
-        savedSetId = flashcardSet.getSetId();
+        savedFlashcardSet = entityManager.persist(flashcardSet);
     }
 
     @Test
-    @DisplayName("findAllBySetId - Should return list of flashcards when exists")
-    void findAllBySetId_ShouldReturnFlashcards() {
+    @DisplayName("findAllByFlashcardSet_SetId - Should return list of flashcards when exists")
+    void findAllByFlashcardSetSetId_ShouldReturnFlashcards() {
         // given
-        Flashcard f1 = new Flashcard(null, savedSetId, "Term 1", "Def 1");
-        Flashcard f2 = new Flashcard(null, savedSetId, "Term 2", "Def 2");
+        Flashcard f1 = new Flashcard(null, savedFlashcardSet, "Term 1", "Def 1");
+        Flashcard f2 = new Flashcard(null, savedFlashcardSet, "Term 2", "Def 2");
 
         entityManager.persist(f1);
         entityManager.persist(f2);
         entityManager.flush();
 
         // when
-        Optional<List<Flashcard>> result = flashcardRepository.findAllBySetId(savedSetId);
+        List<Flashcard> result = flashcardRepository.findAllByFlashcardSet_SetId(savedFlashcardSet.getSetId());
 
         // then
-        assertThat(result).isPresent();
-        assertThat(result.get()).hasSize(2);
-        assertThat(result.get()).extracting(Flashcard::getTerm)
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(Flashcard::getTerm)
                 .containsExactlyInAnyOrder("Term 1", "Term 2");
     }
 
     @Test
-    @DisplayName("findAllBySetId - Should return empty list when set has no flashcards")
-    void findAllBySetId_ShouldReturnEmptyList_WhenNoFlashcards() {
-        // given
-
+    @DisplayName("findAllByFlashcardSet_SetId - Should return empty list when set has no flashcards")
+    void findAllByFlashcardSetSetId_ShouldReturnEmptyList_WhenNoFlashcards() {
         // when
-        Optional<List<Flashcard>> result = flashcardRepository.findAllBySetId(savedSetId);
+        List<Flashcard> result = flashcardRepository.findAllByFlashcardSet_SetId(savedFlashcardSet.getSetId());
 
         // then
-        assertThat(result).isPresent();
-        assertThat(result.get()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("findAllBySetId - Should return empty list when set ID does not exist")
-    void findAllBySetId_ShouldReturnEmpty_WhenSetIdDoesNotExist() {
+    @DisplayName("findAllByFlashcardSet_SetId - Should return empty list when set ID does not exist")
+    void findAllBySetId_ShouldReturnEmpty_WhenFlashcardSetSetIdDoesNotExist() {
         // given
         Long nonExistentSetId = 9999L;
 
         // when
-        Optional<List<Flashcard>> result = flashcardRepository.findAllBySetId(nonExistentSetId);
+        List<Flashcard> result = flashcardRepository.findAllByFlashcardSet_SetId(nonExistentSetId);
 
         // then
-        assertThat(result).isPresent();
-        assertThat(result.get()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -105,7 +101,7 @@ class FlashcardRepositoryTest {
     void save_ShouldPersistFlashcard() {
         // given
         Flashcard flashcard = Flashcard.builder()
-                .setId(savedSetId)
+                .flashcardSet(savedFlashcardSet)
                 .term("Inheritance")
                 .definition("Is-a relationship")
                 .build();
@@ -123,7 +119,7 @@ class FlashcardRepositoryTest {
     @DisplayName("findById - Should return flashcard when exists")
     void findById_ShouldReturnFlashcard() {
         // given
-        Flashcard flashcard = new Flashcard(null, savedSetId, "Polymorphism", "Many forms");
+        Flashcard flashcard = new Flashcard(null, savedFlashcardSet, "Polymorphism", "Many forms");
         Flashcard persisted = entityManager.persist(flashcard);
         Long id = persisted.getFlashcardId();
 
@@ -136,11 +132,30 @@ class FlashcardRepositoryTest {
     }
 
     @Test
+    @DisplayName("findByIdWithSetAndUser - Should fetch entity with its Set and User")
+    void findByIdWithSetAndUser_ShouldReturnEntityWithRelations() {
+        // given
+        Flashcard flashcard = new Flashcard(null, savedFlashcardSet, "Encapsulation", "Hiding state");
+        Flashcard persisted = entityManager.persist(flashcard);
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        Optional<Flashcard> result = flashcardRepository.findByIdWithSetAndUser(persisted.getFlashcardId());
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get().getFlashcardSet()).isNotNull();
+        assertThat(result.get().getFlashcardSet().getUser()).isNotNull();
+        assertThat(result.get().getFlashcardSet().getUser().getNickname()).isEqualTo("testUser");
+    }
+
+    @Test
     @DisplayName("findAll - Should return all flashcards in DB")
     void findAll_ShouldReturnAll() {
         // given
-        entityManager.persist(new Flashcard(null, savedSetId, "A", "B"));
-        entityManager.persist(new Flashcard(null, savedSetId, "C", "D"));
+        entityManager.persist(new Flashcard(null, savedFlashcardSet, "A", "B"));
+        entityManager.persist(new Flashcard(null, savedFlashcardSet, "C", "D"));
 
         // when
         List<Flashcard> all = flashcardRepository.findAll();
@@ -154,7 +169,7 @@ class FlashcardRepositoryTest {
     @DisplayName("update - Should update existing flashcard")
     void update_ShouldModifyData() {
         // given
-        Flashcard flashcard = new Flashcard(null, savedSetId, "Old Term", "Old Def");
+        Flashcard flashcard = new Flashcard(null, savedFlashcardSet, "Old Term", "Old Def");
         Flashcard persisted = entityManager.persist(flashcard);
 
         // when
@@ -174,7 +189,7 @@ class FlashcardRepositoryTest {
     @DisplayName("deleteById - Should remove flashcard")
     void deleteById_ShouldRemoveFlashcard() {
         // given
-        Flashcard flashcard = new Flashcard(null, savedSetId, "To Delete", "Def");
+        Flashcard flashcard = new Flashcard(null, savedFlashcardSet, "To Delete", "Def");
         Flashcard persisted = entityManager.persist(flashcard);
         Long id = persisted.getFlashcardId();
 

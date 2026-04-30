@@ -2,7 +2,11 @@ package com.brainbooster.user;
 
 
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
+import com.brainbooster.user.dto.UserNicknameUpdateDTO;
+import com.brainbooster.user.dto.UserUpdateDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +24,8 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserDTO> addUser(@RequestBody User user) {
-        UserDTO savedUser = userService.addUser(user);
+    public ResponseEntity<UserDTO> addUser(@Valid @RequestBody UserCreationDTO userCreationDTO) {
+        UserDTO savedUser = userService.addUser(userCreationDTO);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(savedUser.userId())
@@ -36,12 +40,12 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public UserDTO getUserById(@PathVariable long userId) {
+    public UserDTO getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId);
     }
 
     @GetMapping("/{userId}/flashcard-sets")
-    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(@PathVariable long userId) {
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(@PathVariable Long userId) {
         return userService.getAllFlashcardSetsByUserId(userId);
 
     }
@@ -51,8 +55,14 @@ public class UserController {
         return userService.getAllFlashcardSetsByUserNickname(nickname);
     }
 
+    @PatchMapping("/{userId}/nickname")
+    public UserDTO updateUserNickname(@Valid @RequestBody UserNicknameUpdateDTO updatedUserNickname,
+                                      @PathVariable Long userId) {
+        return userService.updateUserNickname(updatedUserNickname, userId);
+    }
+
     @PutMapping("/{userId}")
-    public UserDTO updateUser(@RequestBody User updatedUser, @PathVariable long userId) {
+    public UserDTO updateUser(@Valid @RequestBody UserUpdateDTO updatedUser, @PathVariable Long userId) {
         return userService.updateUser(updatedUser, userId);
 
     }

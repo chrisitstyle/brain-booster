@@ -1,11 +1,14 @@
 package com.brainbooster.utils;
 
 import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
+import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserSummaryDTO;
 
@@ -77,7 +80,24 @@ public class TestEntities {
      * Creates a {@link UserSummaryDTO} for nested flashcard set responses.
      */
     public static UserSummaryDTO createUserSummaryDTO() {
-        return new UserSummaryDTO("johndoe");
+        return new UserSummaryDTO("johndoe",
+                LocalDateTime.of(2026, 1, 19, 23, 0));
+    }
+
+    /**
+     * Creates a {@link UserCreationDTO} used for testing user creation requests.
+     * <p>
+     * Includes a valid password to satisfy @Valid constraints in controllers.
+     *
+     * @return a UserCreationDTO object.
+     */
+    public static UserCreationDTO createUserCreationDTO() {
+        return new UserCreationDTO(
+                "johndoe",
+                "johndoe@example.com",
+                "test_password",
+                Role.USER
+        );
     }
 
     // FLASHCARD METHODS
@@ -92,7 +112,7 @@ public class TestEntities {
     public static Flashcard.FlashcardBuilder flashcardBuilder() {
         return Flashcard.builder()
                 .flashcardId(1L)
-                .setId(1L)
+                .flashcardSet(createFlashcardSet())
                 .term("test_term")
                 .definition("test_definition");
 
@@ -109,7 +129,11 @@ public class TestEntities {
         return flashcardBuilder().build();
     }
 
-    //flashcardset methods
+    public static FlashcardDTO createFlashcardDTO() {
+        return new FlashcardDTO(1L, 1L, "test_term", "test_definition");
+    }
+
+    // FLASHCARD SET METHODS
 
     /**
      * Creates a {@link FlashcardSet.FlashcardSetBuilder} pre-configured with default test data.
@@ -167,8 +191,19 @@ public class TestEntities {
     public static FlashcardSetCreationDTO createFlashcardSetCreationDTO() {
         return new FlashcardSetCreationDTO(
                 1L,
-                1L,
                 "test_flashcardset_name",
                 "test_flashcardset_description");
+    }
+
+
+    /**
+     * Creates a {@link FlashcardSetUpdateDTO} used for testing update (PATCH/PUT) requests.
+     * <p>
+     * Contains the fields that are allowed to be updated.
+     *
+     * @return a FlashcardSetUpdateDTO object.
+     */
+    public static FlashcardSetUpdateDTO createFlashcardSetUpdateDTO() {
+        return new FlashcardSetUpdateDTO("Updated Set", "Updated description");
     }
 }
