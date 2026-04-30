@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,6 +30,7 @@ public class User implements UserDetails {
     private LocalDateTime createdAt;
 
     @Override
+    @NonNull
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
@@ -41,6 +41,7 @@ public class User implements UserDetails {
     }
 
     @Override
+    @NonNull
     public String getUsername() {
         return email;
     }
