@@ -1,9 +1,18 @@
 "use client";
 
-import * as React from "react";
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, Search, User } from "lucide-react";
+import {
+  ChevronDown,
+  Menu,
+  Search,
+  User,
+  Settings,
+  BookOpen,
+  FolderOpen,
+  LogOut,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,7 +31,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -39,7 +51,7 @@ export default function Navbar({
 }: React.HTMLAttributes<HTMLElement> & { items?: NavItem[] }) {
   const pathname = usePathname();
   const isMobile = useMobile();
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const { isAuthenticated, logout } = useAuth();
 
@@ -93,7 +105,7 @@ export default function Navbar({
         {!isMobile && (
           <nav className="flex items-center gap-6">
             {navItems.map((item, index) => (
-              <React.Fragment key={index}>
+              <Fragment key={index}>
                 {item.children ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -132,7 +144,7 @@ export default function Navbar({
                     {item.title}
                   </Link>
                 )}
-              </React.Fragment>
+              </Fragment>
             ))}
           </nav>
         )}
@@ -157,30 +169,92 @@ export default function Navbar({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="flex items-center gap-2 rounded-full border-gray-300 px-3 hover:bg-gray-100 hover:text-pink-500 transition-colors"
+                      className="flex items-center gap-2 rounded-full border border-gray-200 px-2 py-1 hover:border-pink-300 hover:bg-pink-50 transition-all duration-200 h-10"
                     >
-                      <Menu className="h-4 w-4" />
-                      <div className="bg-gray-200 p-1 rounded-full text-gray-600">
-                        <User className="h-4 w-4" />
-                      </div>
+                      <Menu className="h-4 w-4 text-gray-500" />
+                      <Avatar className="h-7 w-7 border-2 border-pink-200">
+                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white text-xs font-semibold">
+                          JD
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 mt-1">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 mt-2 p-2 rounded-xl shadow-lg border-gray-100"
+                  >
+                    <DropdownMenuLabel className="px-3 py-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border-2 border-pink-200">
+                          <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white font-semibold">
+                            JD
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-gray-800">
+                            John Doe
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            @johndoe
+                          </span>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="my-2" />
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile"
-                        className="w-full cursor-pointer font-medium"
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
                       >
-                        Profile
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          Profile
+                        </span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/profile?tab=sets"
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                      >
+                        <BookOpen className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          My Sets
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/profile?tab=folders"
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                      >
+                        <FolderOpen className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          My Folders
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                      >
+                        <Settings className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          Settings
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-2" />
                     <DropdownMenuItem
                       onClick={logout}
-                      className="w-full cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50 font-medium"
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors focus:text-red-600 focus:bg-red-50"
                     >
-                      Logout
+                      <LogOut className="h-4 w-4" />
+                      <span className="font-medium">Logout</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
