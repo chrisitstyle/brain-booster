@@ -280,21 +280,35 @@ export function ProfileDashboard() {
           <TabsList className="mb-6 w-full justify-start gap-2 border-b border-gray-200 bg-transparent p-0">
             <TabsTrigger
               value="sets"
-              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
+              className={cn(
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+              )}
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Study Sets
             </TabsTrigger>
+
             <TabsTrigger
               value="folders"
-              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
+              className={cn(
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+              )}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
               Folders
             </TabsTrigger>
+
             <TabsTrigger
               value="recent"
-              className="rounded-none border-b-2 border-transparent px-4 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none"
+              className={cn(
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+              )}
             >
               <Clock className="mr-2 h-4 w-4" />
               Recent
@@ -334,6 +348,7 @@ export function ProfileDashboard() {
               {folders.map((folder) => (
                 <FolderCard key={folder.id} folder={folder} />
               ))}
+
               <Card className="flex cursor-pointer items-center justify-center border-2 border-dashed border-gray-200 bg-white p-6 transition-colors hover:border-pink-300 hover:bg-pink-50">
                 <div className="text-center">
                   <Plus className="mx-auto mb-2 h-8 w-8 text-gray-400" />
@@ -406,7 +421,7 @@ function StudySetCard({
         <div className="mb-3 flex items-start justify-between">
           <div className="flex-1">
             <Link
-              href={`/sets/${set.id}`}
+              href={`users/${set.author}/sets/${set.id}`}
               className="font-semibold text-gray-800 hover:text-pink-500 line-clamp-1"
             >
               {set.title}
@@ -494,7 +509,7 @@ function RecentActivityItem({ set }: { set: StudySet }) {
         </div>
         <div>
           <Link
-            href={`/sets/${set.id}`}
+            href={`/users/${set.author}/sets/${set.id}`}
             className="font-medium text-gray-800 hover:text-pink-500"
           >
             {set.title}

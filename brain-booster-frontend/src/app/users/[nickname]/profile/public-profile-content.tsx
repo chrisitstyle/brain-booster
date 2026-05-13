@@ -242,7 +242,7 @@ function PublicStudySetCard({
       <CardContent className="p-4">
         <div className="mb-3">
           <Link
-            href={`/sets/${set.setId}`}
+            href={`/users/${nickname}/sets/${set.setId}`}
             className="font-semibold text-gray-800 hover:text-pink-500"
           >
             {set.setName}
@@ -256,7 +256,7 @@ function PublicStudySetCard({
             </AvatarFallback>
           </Avatar>
           <Link
-            href={`/users/${nickname}`}
+            href={`/users/${nickname}/profile`}
             className="text-sm text-gray-500 hover:text-pink-500"
           >
             {nickname}
@@ -293,7 +293,7 @@ function PublicFolderCard({
             </AvatarFallback>
           </Avatar>
           <Link
-            href={`/users/${nickname}`}
+            href={`/users/${nickname}/profile`}
             className="text-sm text-gray-500 hover:text-pink-500"
           >
             {nickname}

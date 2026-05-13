@@ -6,6 +6,18 @@ export interface CreateFlashcardSetData {
   description: string;
 }
 
+export interface FlashcardSet {
+  setId: number;
+  user: {
+    nickname: string;
+    createdAt: string;
+  };
+  setName: string;
+  description: string;
+  createdAt: string;
+  termCount: number;
+}
+
 export async function addFlashcardSet(
   data: CreateFlashcardSetData,
   token: string,
@@ -49,3 +61,20 @@ export const deleteFlashcardSet = async (setId: string, token: string) => {
     );
   }
 };
+
+export async function getFlashcardSetById(
+  setId: string | number,
+): Promise<FlashcardSet> {
+  const response = await fetch(`${BASE_API_URL}/flashcard-sets/${setId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch flashcard set details");
+  }
+
+  return await response.json();
+}
