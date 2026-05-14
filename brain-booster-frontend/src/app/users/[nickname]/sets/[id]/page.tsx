@@ -4,7 +4,7 @@ import {
   getFlashcardSetById,
   type FlashcardSet,
 } from "@/api/flashcardSetService";
-import StudyFlashcardSetClient from "../study-flashcardset-client";
+import StudyFlashcardSetClient from "./study-flashcardset-client";
 
 export default async function StudySetPage({
   params,
