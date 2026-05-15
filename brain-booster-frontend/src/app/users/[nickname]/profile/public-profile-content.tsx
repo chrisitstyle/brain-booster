@@ -129,20 +129,25 @@ export default function PublicProfileContent({
           }}
           className="w-full"
         >
-          <TabsList className="mb-6 w-full justify-center gap-2 border-b border-gray-200 bg-transparent p-0">
+          <TabsList className="mb-6 h-auto w-full justify-center gap-2 border-b border-gray-200 bg-transparent p-0">
             <TabsTrigger
               value="sets"
               className={cn(
-                "rounded-none border-b-2 border-transparent px-6 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-gray-600 shadow-none",
+                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
               )}
             >
               <BookOpen className="mr-2 h-4 w-4" />
-              Flashcard Sets ({flashcardSets.length})
+              Sets ({flashcardSets.length})
             </TabsTrigger>
+
             <TabsTrigger
               value="folders"
               className={cn(
-                "rounded-none border-b-2 border-transparent px-6 py-3 text-gray-600 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-gray-600 shadow-none",
+                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
               )}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
