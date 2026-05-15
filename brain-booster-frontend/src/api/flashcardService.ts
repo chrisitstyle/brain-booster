@@ -19,7 +19,21 @@ export interface UpdateFlashcardData {
   definition: string;
 }
 
-export async function addFlashcard(data: CreateFlashcardData, token: string) {
+async function getErrorMessage(response: Response, fallbackMessage: string) {
+  const text = await response.text();
+
+  try {
+    const parsed = JSON.parse(text);
+    return parsed.message || fallbackMessage;
+  } catch {
+    return text || fallbackMessage;
+  }
+}
+
+export async function addFlashcard(
+  data: CreateFlashcardData,
+  token: string,
+): Promise<Flashcard> {
   const response = await fetch(`${BASE_API_URL}/flashcards`, {
     method: "POST",
     headers: {
@@ -30,7 +44,11 @@ export async function addFlashcard(data: CreateFlashcardData, token: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create flashcard");
+    const message = await getErrorMessage(
+      response,
+      "Failed to create flashcard",
+    );
+    throw new Error(message);
   }
 
   return await response.json();
@@ -50,17 +68,21 @@ export async function getFlashcardsBySetId(
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch flashcards");
+    const message = await getErrorMessage(
+      response,
+      "Failed to fetch flashcards",
+    );
+    throw new Error(message);
   }
 
   return await response.json();
 }
 
-export async function updateFlashcard(
-  flashcardId: number,
+export async function updateFlashcardById(
+  flashcardId: string | number,
   data: UpdateFlashcardData,
   token: string,
-) {
+): Promise<Flashcard> {
   const response = await fetch(`${BASE_API_URL}/flashcards/${flashcardId}`, {
     method: "PATCH",
     headers: {
@@ -71,8 +93,32 @@ export async function updateFlashcard(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update flashcard");
+    const message = await getErrorMessage(
+      response,
+      "Failed to update flashcard",
+    );
+    throw new Error(message);
   }
 
   return await response.json();
+}
+
+export async function deleteFlashcard(
+  flashcardId: string | number,
+  token: string,
+): Promise<void> {
+  const response = await fetch(`${BASE_API_URL}/flashcards/${flashcardId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(
+      response,
+      "Failed to delete flashcard",
+    );
+    throw new Error(message);
+  }
 }

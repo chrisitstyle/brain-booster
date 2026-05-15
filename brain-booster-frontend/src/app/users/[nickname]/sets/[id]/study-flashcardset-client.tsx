@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { type Flashcard, updateFlashcard } from "@/api/flashcardService";
+import { type Flashcard, updateFlashcardById } from "@/api/flashcardService";
 import type { FlashcardSet } from "@/api/flashcardSetService";
 import { useAuth } from "@/context/AuthContext";
 
@@ -28,6 +29,7 @@ export default function StudyFlashcardSetClient({
   nickname,
 }: StudyFlashcardSetClientProps) {
   const { token } = useAuth();
+  const router = useRouter();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -182,7 +184,7 @@ export default function StudyFlashcardSetClient({
     }
 
     try {
-      await updateFlashcard(
+      await updateFlashcardById(
         flashcardId,
         { term: editTerm, definition: editDefinition },
         token,
@@ -208,7 +210,7 @@ export default function StudyFlashcardSetClient({
   };
 
   const handleEditSet = () => {
-    toast.info("Edit option coming soon.");
+    router.push(`/users/${nickname}/sets/${studySet.setId}/edit`);
   };
 
   const handleMakeCopy = () => {
