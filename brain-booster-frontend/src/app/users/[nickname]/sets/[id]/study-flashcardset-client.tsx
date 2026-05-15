@@ -16,7 +16,9 @@ import StudyControls from "../components/study-controls";
 import StudyProgress from "../components/study-progress";
 import StudySetAuthorInfo from "../components/study-set-author-info";
 import FlashcardTermsList from "../components/flashcard-terms-list";
+import StudyVisibilityControls from "../components/study-visibility-controls";
 
+type HiddenFlashcardSide = "terms" | "definitions" | null;
 interface StudyFlashcardSetClientProps {
   studySet: FlashcardSet;
   initialFlashcards: Flashcard[];
@@ -35,6 +37,34 @@ export default function StudyFlashcardSetClient({
   const [isFlipped, setIsFlipped] = useState(false);
   const [isProgressTrackingEnabled, setIsProgressTrackingEnabled] =
     useState(true);
+
+  const [hiddenFlashcardSide, setHiddenFlashcardSide] =
+    useState<HiddenFlashcardSide>(null);
+
+  const [revealedFlashcardIds, setRevealedFlashcardIds] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const areTermsHidden = hiddenFlashcardSide === "terms";
+  const areDefinitionsHidden = hiddenFlashcardSide === "definitions";
+
+  const toggleHiddenFlashcardSide = (
+    sideToToggle: Exclude<HiddenFlashcardSide, null>,
+  ) => {
+    setHiddenFlashcardSide((previousSide) =>
+      previousSide === sideToToggle ? null : sideToToggle,
+    );
+
+    setRevealedFlashcardIds(new Set());
+  };
+
+  const revealFlashcardText = (flashcardId: number) => {
+    setRevealedFlashcardIds((previousRevealedFlashcardIds) => {
+      const nextRevealedFlashcardIds = new Set(previousRevealedFlashcardIds);
+      nextRevealedFlashcardIds.add(flashcardId);
+      return nextRevealedFlashcardIds;
+    });
+  };
 
   const [flashcards, setFlashcards] = useState<StudyFlashcard[]>(() =>
     initialFlashcards.map((flashcard) => ({
@@ -227,7 +257,7 @@ export default function StudyFlashcardSetClient({
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
-      <div className="container mx-auto px-4 py-6 print:px-0 print:py-0">
+      <div className="container mx-auto px-4 pt-6 pb-28 print:px-0 print:py-0">
         <StudySetHeader
           nickname={nickname}
           setName={studySet.setName}
@@ -286,19 +316,34 @@ export default function StudyFlashcardSetClient({
         )}
 
         {flashcards.length > 0 && (
-          <FlashcardTermsList
-            flashcards={flashcards}
-            editingFlashcardId={editingFlashcardId}
-            editTerm={editTerm}
-            editDefinition={editDefinition}
-            onEditTermChange={setEditTerm}
-            onEditDefinitionChange={setEditDefinition}
-            onStartEditing={startEditing}
-            onCancelEditing={cancelEditing}
-            onSaveEditing={saveEditingFlashcard}
-            onToggleStar={toggleStar}
-            onSpeak={speakText}
-          />
+          <>
+            <StudyVisibilityControls
+              areTermsHidden={areTermsHidden}
+              areDefinitionsHidden={areDefinitionsHidden}
+              onToggleTerms={() => toggleHiddenFlashcardSide("terms")}
+              onToggleDefinitions={() =>
+                toggleHiddenFlashcardSide("definitions")
+              }
+            />
+
+            <FlashcardTermsList
+              flashcards={flashcards}
+              editingFlashcardId={editingFlashcardId}
+              editTerm={editTerm}
+              editDefinition={editDefinition}
+              areTermsHidden={areTermsHidden}
+              areDefinitionsHidden={areDefinitionsHidden}
+              revealedFlashcardIds={revealedFlashcardIds}
+              onRevealFlashcardText={revealFlashcardText}
+              onEditTermChange={setEditTerm}
+              onEditDefinitionChange={setEditDefinition}
+              onStartEditing={startEditing}
+              onCancelEditing={cancelEditing}
+              onSaveEditing={saveEditingFlashcard}
+              onToggleStar={toggleStar}
+              onSpeak={speakText}
+            />
+          </>
         )}
       </div>
     </div>

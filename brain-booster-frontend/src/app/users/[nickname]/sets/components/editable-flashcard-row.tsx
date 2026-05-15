@@ -14,6 +14,10 @@ interface EditableFlashcardRowProps {
   isEditing: boolean;
   editTerm: string;
   editDefinition: string;
+  areTermsHidden: boolean;
+  areDefinitionsHidden: boolean;
+  isTextRevealed: boolean;
+  onRevealText: () => void;
   onEditTermChange: (value: string) => void;
   onEditDefinitionChange: (value: string) => void;
   onStartEditing: () => void;
@@ -28,6 +32,10 @@ export default function EditableFlashcardRow({
   isEditing,
   editTerm,
   editDefinition,
+  areTermsHidden,
+  areDefinitionsHidden,
+  isTextRevealed,
+  onRevealText,
   onEditTermChange,
   onEditDefinitionChange,
   onStartEditing,
@@ -36,6 +44,9 @@ export default function EditableFlashcardRow({
   onToggleStar,
   onSpeak,
 }: EditableFlashcardRowProps) {
+  const shouldBlurTerm = areTermsHidden && !isTextRevealed;
+  const shouldBlurDefinition = areDefinitionsHidden && !isTextRevealed;
+
   return (
     <Card className="border-gray-200 bg-white transition-all hover:shadow-md print:break-inside-avoid print:shadow-none">
       <CardContent className="p-4">
@@ -90,11 +101,45 @@ export default function EditableFlashcardRow({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <p className="font-medium text-gray-800">{flashcard.term}</p>
+                <button
+                  type="button"
+                  disabled={!shouldBlurTerm}
+                  onClick={onRevealText}
+                  className={cn(
+                    "block max-w-full text-left",
+                    shouldBlurTerm ? "cursor-pointer" : "cursor-default",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "block font-medium text-gray-800 transition",
+                      shouldBlurTerm && "select-none blur-sm",
+                    )}
+                  >
+                    {flashcard.term}
+                  </span>
+                </button>
               </div>
 
               <div>
-                <p className="text-gray-600">{flashcard.definition}</p>
+                <button
+                  type="button"
+                  disabled={!shouldBlurDefinition}
+                  onClick={onRevealText}
+                  className={cn(
+                    "block max-w-full text-left",
+                    shouldBlurDefinition ? "cursor-pointer" : "cursor-default",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "block text-gray-600 transition",
+                      shouldBlurDefinition && "select-none blur-sm",
+                    )}
+                  >
+                    {flashcard.definition}
+                  </span>
+                </button>
               </div>
             </div>
 
