@@ -6,3 +6,8 @@ export interface FlashcardEditorItem {
 }
 
 export type FlashcardEditorField = "term" | "definition";
+
+export interface ImportedFlashcard {
+  term: string;
+  definition: string;
+}

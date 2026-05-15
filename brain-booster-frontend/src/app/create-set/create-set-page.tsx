@@ -26,6 +26,7 @@ import { ConfirmActionDialog } from "@/features/sets/components/confirm-action-d
 import { EditorActionButtons } from "@/features/sets/components/editor-action-buttons";
 import { SetTitleDescriptionFields } from "@/features/sets/components/set-title-description-fields";
 import { SortableFlashcardList } from "@/features/sets/components/sortable-flashcard-list";
+import { ImportFlashcardsDialog } from "@/features/sets/components/import-flashcards-dialog";
 
 export default function CreateSetPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function CreateSetPage() {
   const [isPublic, setIsPublic] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
-
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const flashcardEditor = useFlashcardEditor({
     initialFlashcards: [
       {
@@ -181,12 +182,14 @@ export default function CreateSetPage() {
 
             <div className="mb-6 flex flex-wrap gap-3">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 className="border-gray-200 text-gray-600 hover:border-pink-300 hover:text-pink-500"
+                onClick={() => setIsImportDialogOpen(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Import from Word, Excel, Google Docs, etc.
+                Import
               </Button>
 
               <Select defaultValue="both">
@@ -251,6 +254,12 @@ export default function CreateSetPage() {
         searchQuery={flashcardEditor.searchQuery}
         onSearchQueryChange={flashcardEditor.setSearchQuery}
         onClose={flashcardEditor.closeSearch}
+      />
+
+      <ImportFlashcardsDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImport={flashcardEditor.appendImportedFlashcards}
       />
 
       <ConfirmActionDialog

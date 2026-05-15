@@ -1,5 +1,9 @@
 import { useState } from "react";
-import type { FlashcardEditorField, FlashcardEditorItem } from "../types";
+import type {
+  FlashcardEditorField,
+  FlashcardEditorItem,
+  ImportedFlashcard,
+} from "../types";
 
 interface UseFlashcardEditorProps {
   initialFlashcards: FlashcardEditorItem[];
@@ -131,6 +135,32 @@ export function useFlashcardEditor({
     setSearchQuery("");
   };
 
+  const appendImportedFlashcards = (
+    importedFlashcards: ImportedFlashcard[],
+  ) => {
+    const newFlashcards: FlashcardEditorItem[] = importedFlashcards.map(
+      (flashcard) => ({
+        localId: crypto.randomUUID(),
+        term: flashcard.term,
+        definition: flashcard.definition,
+      }),
+    );
+
+    setFlashcards((previousFlashcards) => {
+      const hasOnlyEmptyInitialCard =
+        previousFlashcards.length === 1 &&
+        !previousFlashcards[0].flashcardId &&
+        !previousFlashcards[0].term.trim() &&
+        !previousFlashcards[0].definition.trim();
+
+      if (hasOnlyEmptyInitialCard) {
+        return newFlashcards;
+      }
+
+      return [...previousFlashcards, ...newFlashcards];
+    });
+  };
+
   return {
     flashcards,
     filteredFlashcards,
@@ -147,5 +177,6 @@ export function useFlashcardEditor({
     reorderFlashcards,
     flipTermsAndDefinitions,
     resetFlashcards,
+    appendImportedFlashcards,
   };
 }

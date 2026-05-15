@@ -27,6 +27,7 @@ import { ConfirmActionDialog } from "@/features/sets/components/confirm-action-d
 import { EditorActionButtons } from "@/features/sets/components/editor-action-buttons";
 import { SetTitleDescriptionFields } from "@/features/sets/components/set-title-description-fields";
 import { SortableFlashcardList } from "@/features/sets/components/sortable-flashcard-list";
+import { ImportFlashcardsDialog } from "@/features/sets/components/import-flashcards-dialog";
 
 interface EditFlashcardSetClientProps {
   setId: string;
@@ -49,6 +50,7 @@ export default function EditFlashcardSetClient({
   const [isPublic, setIsPublic] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const flashcardEditor = useFlashcardEditor({
     initialFlashcards:
@@ -226,6 +228,19 @@ export default function EditFlashcardSetClient({
               onDescriptionChange={setDescription}
             />
 
+            <div className="mb-6 flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-gray-200 text-gray-600 hover:border-pink-300 hover:text-pink-500"
+                onClick={() => setIsImportDialogOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </div>
+
             {flashcardEditor.isFiltering && (
               <p className="mb-4 text-sm text-gray-500">
                 Drag and drop is disabled while searching.
@@ -276,6 +291,12 @@ export default function EditFlashcardSetClient({
         searchQuery={flashcardEditor.searchQuery}
         onSearchQueryChange={flashcardEditor.setSearchQuery}
         onClose={flashcardEditor.closeSearch}
+      />
+
+      <ImportFlashcardsDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImport={flashcardEditor.appendImportedFlashcards}
       />
 
       <ConfirmActionDialog
