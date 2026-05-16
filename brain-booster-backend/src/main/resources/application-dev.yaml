@@ -13,11 +13,13 @@ spring:
 
   flyway:
     enabled: true
+    clean-disabled: false
     locations:
       - classpath:db/migration
+      - classpath:db/dev-migration
 
   jpa:
-    show-sql: false
+    show-sql: true
     open-in-view: false
     hibernate:
       ddl-auto: validate
