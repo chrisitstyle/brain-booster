@@ -11,6 +11,8 @@ The project allows users to learn effectively through interactive flashcard sets
 - [Prerequisites](#-prerequisites)
 - [Environment Variables](#️-environment-variables)
 - [Running Locally](#-running-locally)
+- [Running with Docker](#-running-with-docker)
+- [Running with Makefile](#-running-with-makefile)
 - [Roles and Authorization](#-roles-and-authorization)
 - [API Overview](#-api-overview)
 - [Roadmap](#-roadmap)
@@ -73,9 +75,14 @@ The project is divided into two main modules:
 
 ```txt
 brain-booster/
+├── docker-compose.yml
+├── Makefile
+├── .env.example
 ├── brain-booster-backend/
 │   ├── src/
 │   ├── gradle/
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── build.gradle
 │   ├── settings.gradle
 │   ├── gradlew
@@ -85,8 +92,11 @@ brain-booster/
 └── brain-booster-frontend/
     ├── public/
     ├── src/
+    ├── Dockerfile
+    ├── .dockerignore
     ├── package.json
     ├── pnpm-lock.yaml
+    ├── pnpm-workspace.yaml
     ├── next.config.ts
     ├── tsconfig.json
     ├── components.json
@@ -114,12 +124,15 @@ Routing is handled by the Next.js routing system, and API services are separated
 Before running the project locally, make sure you have installed:
 
 - Java 25 LTS
-- Node.js v22 or newer
+- Node.js v24 or newer
 - pnpm
 - PostgreSQL
+- Docker Engine/Desktop
+- Make (optional, for shortcut commands from `Makefile`)
 - Git
 
-You also need a configured local PostgreSQL database.
+You also need a configured local PostgreSQL database when running the backend without Docker.  
+When using Docker Compose, PostgreSQL is started automatically as a container.
 
 ## ⚙️ Environment Variables
 
@@ -177,6 +190,35 @@ Example frontend environment variable:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 ```
+
+### Docker Compose
+
+For Docker Compose, create a `.env` file in the project root based on `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Example Docker environment variables:
+
+```env
+# PostgreSQL
+POSTGRES_DB=brain-booster
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=postgres
+
+# Backend
+CLIENT_URL=http://localhost:3000
+SPRING_PROFILES_ACTIVE=dev
+JWT_EXPIRATION_HOURS=24
+JWT_SECRET_KEY=change-me-to-a-long-random-secret-key
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+```
+
+`NEXT_PUBLIC_API_URL` should point to `localhost` because this value is used by the browser.  
+Inside Docker Compose, the backend connects to PostgreSQL using the `database` service name.
 
 ## 🚀 Running Locally
 
@@ -236,6 +278,125 @@ The frontend will be available at:
 ```txt
 http://localhost:3000
 ```
+
+## 🐳 Running with Docker
+
+The project can also be started with Docker Compose directly or through the included `Makefile`. This starts three services:
+
+- PostgreSQL database
+- Spring Boot backend
+- Next.js frontend
+
+### 1. Prepare Environment Variables
+
+From the project root, copy the Docker environment example:
+
+```bash
+cp .env.example .env
+```
+
+Then update the values if needed, especially:
+
+```env
+JWT_SECRET_KEY=change-me-to-a-long-random-secret-key
+SPRING_PROFILES_ACTIVE=dev
+JWT_EXPIRATION_HOURS=24
+```
+
+### 2. Build and Start Containers
+
+Run the application from the project root:
+
+```bash
+docker compose up --build
+```
+
+After startup, the services will be available at:
+
+```txt
+Frontend: http://localhost:3000
+Backend:  http://localhost:8080/api/v1
+Database: localhost:5432
+```
+
+### 3. Stop Containers
+
+```bash
+docker compose down
+```
+
+To remove the database volume as well, run:
+
+```bash
+docker compose down -v
+```
+
+### Useful Docker Commands
+
+Rebuild only the frontend:
+
+```bash
+docker compose build --no-cache frontend
+```
+
+Rebuild only the backend:
+
+```bash
+docker compose build --no-cache backend
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
+
+View backend logs only:
+
+```bash
+docker compose logs -f backend
+```
+
+## 🧾 Running with Makefile
+
+The project includes a `Makefile` with shortcut commands for common Docker Compose workflows.
+
+Available commands:
+
+| Command      | Description                                                |
+| ------------ | ---------------------------------------------------------- |
+| `make up`    | Recreates containers and starts the application with build |
+| `make up-nc` | Rebuilds images without cache and starts the application   |
+| `make down`  | Stops containers and removes Docker volumes                |
+
+### Start the Application
+
+```bash
+make up
+```
+
+This command runs:
+
+```bash
+docker compose down -v && docker compose up --build
+```
+
+### Rebuild Without Cache
+
+```bash
+make up-nc
+```
+
+This is useful when Docker cache causes outdated dependencies, images, or build artifacts to be reused.
+
+### Stop the Application
+
+```bash
+make down
+```
+
+> **Note:** The current Makefile commands use `docker compose down -v`, which removes Docker volumes.  
+> This means the PostgreSQL database data is reset after running these commands.
 
 ## 🔐 Roles and Authorization
 
@@ -354,8 +515,8 @@ Planned features and improvements:
 - **Automated Tests**  
   Expand backend and frontend test coverage.
 
-- **Docker Support**  
-  Add Docker or Docker Compose configuration for easier local development and deployment.
+- **Deployment Improvements**  
+  Extend the Docker setup with production deployment configuration and CI/CD automation.
 
 ## 📄 License
 
