@@ -282,6 +282,7 @@ The backend exposes a REST API under the following base path:
 | GET    | `/users`                                    | Get all users                       | Admin              |
 | POST   | `/users`                                    | Create a new user                   | Admin              |
 | GET    | `/users/nickname/{nickname}/flashcard-sets` | Get flashcard sets by user nickname | Public             |
+| GET    | `/users/{nickname}/folders`                 | Get folders by user nickname        | Public             |
 | GET    | `/users/{userId}`                           | Get user by ID                      | Admin              |
 | PUT    | `/users/{userId}`                           | Update user by ID                   | Admin              |
 | DELETE | `/users/{userId}`                           | Delete user by ID                   | Admin              |
@@ -308,6 +309,19 @@ The backend exposes a REST API under the following base path:
 | PATCH  | `/flashcard-sets/{setId}`            | Update flashcard set by ID          | Authenticated user |
 | DELETE | `/flashcard-sets/{setId}`            | Delete flashcard set by ID          | Authenticated user |
 | GET    | `/flashcard-sets/{setId}/flashcards` | Get flashcards from a flashcard set | Public             |
+
+### Folders
+
+| Method | Endpoint                           | Description                        | Access             |
+| ------ | ---------------------------------- | ---------------------------------- | ------------------ |
+| GET    | `/folders`                         | Get all folders                    | Admin              |
+| POST   | `/folders`                         | Create a new folder                | Authenticated user |
+| GET    | `/folders/me`                      | Get folders of authenticated user  | Authenticated user |
+| GET    | `/folders/{folderId}`              | Get folder details by ID           | Public             |
+| PATCH  | `/folders/{folderId}`              | Update folder name and description | Authenticated user |
+| DELETE | `/folders/{folderId}`              | Delete folder by ID                | Authenticated user |
+| POST   | `/folders/{folderId}/sets/{setId}` | Add flashcard set to folder        | Authenticated user |
+| DELETE | `/folders/{folderId}/sets/{setId}` | Remove flashcard set from folder   | Authenticated user |
 
 ## 🗺 Roadmap
 
