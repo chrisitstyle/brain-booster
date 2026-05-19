@@ -12,6 +12,7 @@ The project allows users to learn effectively through interactive flashcard sets
 - [Environment Variables](#️-environment-variables)
 - [Running Locally](#-running-locally)
 - [Running with Docker](#-running-with-docker)
+- [Running with Makefile](#-running-with-makefile)
 - [Roles and Authorization](#-roles-and-authorization)
 - [API Overview](#-api-overview)
 - [Roadmap](#-roadmap)
@@ -75,6 +76,7 @@ The project is divided into two main modules:
 ```txt
 brain-booster/
 ├── docker-compose.yml
+├── Makefile
 ├── .env.example
 ├── brain-booster-backend/
 │   ├── src/
@@ -126,6 +128,7 @@ Before running the project locally, make sure you have installed:
 - pnpm
 - PostgreSQL
 - Docker Engine/Desktop
+- Make (optional, for shortcut commands from `Makefile`)
 - Git
 
 You also need a configured local PostgreSQL database when running the backend without Docker.  
@@ -278,7 +281,7 @@ http://localhost:3000
 
 ## 🐳 Running with Docker
 
-The project can also be started with Docker Compose. This starts three services:
+The project can also be started with Docker Compose directly or through the included `Makefile`. This starts three services:
 
 - PostgreSQL database
 - Spring Boot backend
@@ -353,6 +356,47 @@ View backend logs only:
 ```bash
 docker compose logs -f backend
 ```
+
+## 🧾 Running with Makefile
+
+The project includes a `Makefile` with shortcut commands for common Docker Compose workflows.
+
+Available commands:
+
+| Command      | Description                                                |
+| ------------ | ---------------------------------------------------------- |
+| `make up`    | Recreates containers and starts the application with build |
+| `make up-nc` | Rebuilds images without cache and starts the application   |
+| `make down`  | Stops containers and removes Docker volumes                |
+
+### Start the Application
+
+```bash
+make up
+```
+
+This command runs:
+
+```bash
+docker compose down -v && docker compose up --build
+```
+
+### Rebuild Without Cache
+
+```bash
+make up-nc
+```
+
+This is useful when Docker cache causes outdated dependencies, images, or build artifacts to be reused.
+
+### Stop the Application
+
+```bash
+make down
+```
+
+> **Note:** The current Makefile commands use `docker compose down -v`, which removes Docker volumes.  
+> This means the PostgreSQL database data is reset after running these commands.
 
 ## 🔐 Roles and Authorization
 
