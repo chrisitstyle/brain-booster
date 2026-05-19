@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+dist
+build
+
+.env
+.env.*
+!.env.local_example
+
+.git
+.gitignore
+
+.idea
+.vscode
+
+*.log

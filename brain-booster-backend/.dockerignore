@@ -1,0 +1,16 @@
+.gradle
+build
+out
+target
+
+.env
+.env.*
+!.env_example
+
+.git
+.gitignore
+
+.idea
+.vscode
+
+*.log
