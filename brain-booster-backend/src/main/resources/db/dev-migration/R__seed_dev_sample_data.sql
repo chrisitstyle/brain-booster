@@ -1,3 +1,10 @@
+DELETE FROM folder_flashcard_set
+WHERE folder_id BETWEEN 1 AND 30
+   OR set_id BETWEEN 1 AND 100;
+
+DELETE FROM folder
+WHERE folder_id BETWEEN 1 AND 30;
+
 DELETE FROM flashcard
 WHERE flashcard_id BETWEEN 1 AND 1000;
 
@@ -145,6 +152,90 @@ VALUES
 INSERT INTO flashcard_set (set_id, user_id, set_name, description)
 SELECT set_id, user_id, set_name, description
 FROM sample_seed_sets;
+
+INSERT INTO folder (folder_id, user_id, name, description, created_at)
+VALUES
+    (1, 1, 'Admin: Backend Review', 'Folder with admin sets for Java, Spring Security, and database review.', CURRENT_TIMESTAMP),
+    (2, 1, 'Admin: Learning Analytics', 'Folder with product metrics, planning, and support communication sets.', CURRENT_TIMESTAMP),
+    (3, 1, 'Admin: General Knowledge', 'Folder with biology, geography, history, and computer science reference sets.', CURRENT_TIMESTAMP),
+
+    (4, 2, 'John: Programming Basics', 'Core programming and backend sets for everyday practice.', CURRENT_TIMESTAMP),
+    (5, 2, 'John: School Revision', 'Math, biology, history, and geography sets for revision.', CURRENT_TIMESTAMP),
+    (6, 2, 'John: English Practice', 'English conversation and meeting vocabulary sets.', CURRENT_TIMESTAMP),
+
+    (7, 3, 'Alice: Travel English', 'Airport, email, and communication sets for travel and study.', CURRENT_TIMESTAMP),
+    (8, 3, 'Alice: Backend API', 'Java constructor, DTO, REST, and database relationship sets.', CURRENT_TIMESTAMP),
+    (9, 3, 'Alice: Science Notes', 'Math, biology, geography, history, and computer science study sets.', CURRENT_TIMESTAMP),
+
+    (10, 4, 'Bob: Workplace English', 'Office introductions, payments, and business communication sets.', CURRENT_TIMESTAMP),
+    (11, 4, 'Bob: Software Design', 'Java interface, Spring service, SQL join, and testing edge case sets.', CURRENT_TIMESTAMP),
+    (12, 4, 'Bob: Humanities and Science', 'Probability, revolutions, DNA, and river system revision sets.', CURRENT_TIMESTAMP),
+
+    (13, 5, 'Charlie: Chat and Projects', 'Chat messages, project status, and professional update vocabulary.', CURRENT_TIMESTAMP),
+    (14, 5, 'Charlie: Error Handling', 'Java exceptions, Spring profiles, unique constraints, and Big O sets.', CURRENT_TIMESTAMP),
+    (15, 5, 'Charlie: Advanced School Topics', 'Derivatives, imperial expansion, natural selection, and urban population sets.', CURRENT_TIMESTAMP),
+
+    (16, 6, 'Diana: Study Group', 'Study questions, validation errors, and clean Java method design.', CURRENT_TIMESTAMP),
+    (17, 6, 'Diana: Database Safety', 'Transaction safety and backend reliability sets.', CURRENT_TIMESTAMP),
+    (18, 6, 'Diana: Exam Revision', 'Science, math, history, geography, and computer science revision sets.', CURRENT_TIMESTAMP),
+
+    (19, 7, 'Evans: Public Speaking', 'Presentation English, planning vocabulary, and communication practice.', CURRENT_TIMESTAMP),
+    (20, 7, 'Evans: Testing and APIs', 'Unit tests, query parameters, indexes, and input validation sets.', CURRENT_TIMESTAMP),
+    (21, 7, 'Evans: Environment and Systems', 'Climate change, food chains, and transport geography sets.', CURRENT_TIMESTAMP),
+
+    (22, 8, 'Frankie: Customer Support', 'Support calls, sprint reviews, and customer communication sets.', CURRENT_TIMESTAMP),
+    (23, 8, 'Frankie: Java and Spring', 'Collections, pagination, aggregate queries, and code structure sets.', CURRENT_TIMESTAMP),
+    (24, 8, 'Frankie: Mixed Revision', 'Ratios, medieval guilds, ecosystems, mountains, and recursion sets.', CURRENT_TIMESTAMP),
+
+    (25, 9, 'Grace: Reading and Reports', 'Reading comprehension, report summaries, and business reporting vocabulary.', CURRENT_TIMESTAMP),
+    (26, 9, 'Grace: Persistence Layer', 'JPA relationships, entity mapping, normalization, and data structures.', CURRENT_TIMESTAMP),
+    (27, 9, 'Grace: Knowledge Builder', 'Graphs, world wars, photosynthesis, oceans, and loops revision sets.', CURRENT_TIMESTAMP),
+
+    (28, 10, 'Henry: Beginner Coding', 'Variables, program instructions, and beginner Java/Spring sets.', CURRENT_TIMESTAMP),
+    (29, 10, 'Henry: Team Tasks', 'Team task vocabulary, requirements, and workflow communication sets.', CURRENT_TIMESTAMP),
+    (30, 10, 'Henry: General Revision', 'Percentages, trade routes, body systems, weather, and SQL basics sets.', CURRENT_TIMESTAMP);
+
+INSERT INTO folder_flashcard_set (folder_id, set_id)
+VALUES
+    (1, 2), (1, 3), (1, 4),
+    (2, 1), (2, 5), (2, 10),
+    (3, 6), (3, 7), (3, 8), (3, 9),
+
+    (4, 12), (4, 13), (4, 14), (4, 19),
+    (5, 15), (5, 16), (5, 17), (5, 18),
+    (6, 11), (6, 20),
+
+    (7, 21), (7, 30),
+    (8, 22), (8, 23), (8, 24), (8, 29),
+    (9, 25), (9, 26), (9, 27), (9, 28),
+
+    (10, 31), (10, 40),
+    (11, 32), (11, 33), (11, 34), (11, 39),
+    (12, 35), (12, 36), (12, 37), (12, 38),
+
+    (13, 41), (13, 50),
+    (14, 42), (14, 43), (14, 44), (14, 49),
+    (15, 45), (15, 46), (15, 47), (15, 48),
+
+    (16, 51), (16, 52), (16, 53),
+    (17, 54), (17, 59), (17, 60),
+    (18, 55), (18, 56), (18, 57), (18, 58),
+
+    (19, 61), (19, 70),
+    (20, 62), (20, 63), (20, 64), (20, 69),
+    (21, 65), (21, 66), (21, 67), (21, 68),
+
+    (22, 71), (22, 80),
+    (23, 72), (23, 73), (23, 74), (23, 79),
+    (24, 75), (24, 76), (24, 77), (24, 78),
+
+    (25, 81), (25, 90),
+    (26, 82), (26, 83), (26, 84), (26, 89),
+    (27, 85), (27, 86), (27, 87), (27, 88),
+
+    (28, 92), (28, 93), (28, 94), (28, 99),
+    (29, 91), (29, 100),
+    (30, 95), (30, 96), (30, 97), (30, 98);
 
 INSERT INTO flashcard (flashcard_id, set_id, term, definition)
 VALUES
@@ -1260,6 +1351,7 @@ BEGIN
     PERFORM setval(pg_get_serial_sequence('"user"', 'user_id'), 10, true);
     PERFORM setval(pg_get_serial_sequence('flashcard_set', 'set_id'), 100, true);
     PERFORM setval(pg_get_serial_sequence('flashcard', 'flashcard_id'), 1000, true);
+    PERFORM setval(pg_get_serial_sequence('folder', 'folder_id'), 30, true);
 END $$;
 
 DROP TABLE sample_seed_sets;

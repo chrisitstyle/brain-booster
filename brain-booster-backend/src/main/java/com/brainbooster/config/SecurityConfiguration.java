@@ -24,6 +24,9 @@ public class SecurityConfiguration {
     private static final String USER_BY_ID = "/users/*";
     private static final String FLASHCARD_BY_ID = "/flashcards/*";
     private static final String FLASHCARD_SET_BY_ID = "/flashcard-sets/*";
+    private static final String FOLDER_BY_ID = "/folders/*";
+    private static final String FOLDER_SET_BY_ID = "/folders/*/sets/*";
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
@@ -39,11 +42,12 @@ public class SecurityConfiguration {
                         // users - public
                         .requestMatchers(HttpMethod.GET, "/users/*/flashcard-sets").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users/nickname/*/flashcard-sets").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/*/folders").permitAll()
 
                         // users - only admin
                         .requestMatchers(HttpMethod.GET, "/users").hasAuthority(Role.ADMIN.name())
-                        .requestMatchers(HttpMethod.POST, "/users").hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, USER_BY_ID).hasAuthority(Role.ADMIN.name())
+                        .requestMatchers(HttpMethod.POST, "/users").hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.PUT, USER_BY_ID).hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.DELETE, USER_BY_ID).hasAuthority(Role.ADMIN.name())
 
@@ -68,6 +72,18 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/flashcard-sets").authenticated()
                         .requestMatchers(HttpMethod.PATCH, FLASHCARD_SET_BY_ID).authenticated()
                         .requestMatchers(HttpMethod.DELETE, FLASHCARD_SET_BY_ID).authenticated()
+
+                        // folders - public
+                        .requestMatchers(HttpMethod.GET, "/folders").permitAll()
+                        .requestMatchers(HttpMethod.GET, FOLDER_BY_ID).permitAll()
+
+                        // folders - authenticated
+                        .requestMatchers(HttpMethod.POST, "/folders").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/folders/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, FOLDER_BY_ID).authenticated()
+                        .requestMatchers(HttpMethod.DELETE, FOLDER_BY_ID).authenticated()
+                        .requestMatchers(HttpMethod.POST, FOLDER_SET_BY_ID).authenticated()
+                        .requestMatchers(HttpMethod.DELETE, FOLDER_SET_BY_ID).authenticated()
 
 
                         .anyRequest().hasAuthority(Role.ADMIN.name())

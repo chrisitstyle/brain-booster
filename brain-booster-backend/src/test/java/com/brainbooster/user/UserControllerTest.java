@@ -6,6 +6,8 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.folder.FolderService;
+import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserNicknameUpdateDTO;
@@ -47,6 +49,8 @@ class UserControllerTest {
     private UserService userService;
     @MockitoBean
     private JwtService jwtService;
+    @MockitoBean
+    private FolderService folderService;
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @Autowired
@@ -171,6 +175,37 @@ class UserControllerTest {
 
         assertThat(responseList).hasSize(1);
         assertThat(responseList.getFirst().setName()).isEqualTo(setDTO.setName());
+    }
+
+    @Test
+    void getFoldersByNickname_ReturnsFolderList() throws Exception {
+        // given
+        String nickname = "johndoe";
+        FolderDTO folderDTO = TestEntities.createFolderDTO();
+
+        when(folderService.getFoldersByNickname(nickname)).thenReturn(List.of(folderDTO));
+
+        // when
+        MvcResult result = mockMvc.perform(get("/users/" + nickname + "/folders")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        List<FolderDTO> responseList = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertThat(responseList).hasSize(1);
+        assertThat(responseList.getFirst().folderId()).isEqualTo(folderDTO.folderId());
+        assertThat(responseList.getFirst().nickname()).isEqualTo(folderDTO.nickname());
+        assertThat(responseList.getFirst().name()).isEqualTo(folderDTO.name());
+        assertThat(responseList.getFirst().description()).isEqualTo(folderDTO.description());
+        assertThat(responseList.getFirst().setCount()).isEqualTo(folderDTO.setCount());
+
+        verify(folderService, times(1)).getFoldersByNickname(nickname);
     }
 
     @Test

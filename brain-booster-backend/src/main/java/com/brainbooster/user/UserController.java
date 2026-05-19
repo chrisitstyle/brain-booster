@@ -2,6 +2,8 @@ package com.brainbooster.user;
 
 
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.folder.FolderService;
+import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserNicknameUpdateDTO;
@@ -22,6 +24,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final FolderService folderService;
 
     @PostMapping
     public ResponseEntity<UserDTO> addUser(@Valid @RequestBody UserCreationDTO userCreationDTO) {
@@ -53,6 +56,12 @@ public class UserController {
     @GetMapping("/nickname/{nickname}/flashcard-sets")
     public List<FlashcardSetDTO> getAllFlashcardSetsByNickname(@PathVariable String nickname) {
         return userService.getAllFlashcardSetsByUserNickname(nickname);
+    }
+
+    @GetMapping("/{nickname}/folders")
+    public List<FolderDTO> getFoldersByNickname(@PathVariable String nickname) {
+
+        return folderService.getFoldersByNickname(nickname);
     }
 
     @PatchMapping("/{userId}/nickname")
