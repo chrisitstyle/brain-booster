@@ -53,7 +53,7 @@ export default function Navbar({
   const isMobile = useMobile();
   const [isOpen, setIsOpen] = useState(false);
 
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, isAuthLoading, logout } = useAuth();
 
   const defaultItems: NavItem[] = [
     {
@@ -117,6 +117,7 @@ export default function Navbar({
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="start" className="w-48">
                       {item.children.map((child, childIndex) => (
                         <DropdownMenuItem key={childIndex} asChild>
@@ -136,7 +137,7 @@ export default function Navbar({
                     className={cn(
                       "text-sm font-medium transition-colors hover:text-pink-500",
                       item.href === pathname
-                        ? "text-pink-500 font-semibold"
+                        ? "font-semibold text-pink-500"
                         : "text-gray-600",
                       item.disabled && "cursor-not-allowed opacity-80",
                     )}
@@ -164,34 +165,37 @@ export default function Navbar({
 
           {!isMobile ? (
             <div className="flex items-center gap-2">
-              {/* logic for desktop version */}
-              {isAuthenticated ? (
+              {isAuthLoading ? (
+                <div className="h-10 w-24 rounded-full bg-gray-100" />
+              ) : isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center gap-2 rounded-full border border-gray-200 px-2 py-1 hover:border-pink-300 hover:bg-pink-50 transition-all duration-200 h-10"
+                      className="flex h-10 items-center gap-2 rounded-full border border-gray-200 px-2 py-1 transition-all duration-200 hover:border-pink-300 hover:bg-pink-50"
                     >
                       <Menu className="h-4 w-4 text-gray-500" />
                       <Avatar className="h-7 w-7 border-2 border-pink-200">
-                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white text-xs font-semibold">
+                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-xs font-semibold text-white">
                           JD
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent
                     align="end"
-                    className="w-56 mt-2 p-2 rounded-xl shadow-lg border-gray-100"
+                    className="mt-2 w-56 rounded-xl border-gray-100 p-2 shadow-lg"
                   >
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border-2 border-pink-200">
-                          <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white font-semibold">
+                          <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 font-semibold text-white">
                             JD
                           </AvatarFallback>
                         </Avatar>
+
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-gray-800">
                             John Doe
@@ -202,11 +206,13 @@ export default function Navbar({
                         </div>
                       </div>
                     </DropdownMenuLabel>
+
                     <DropdownMenuSeparator className="my-2" />
+
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile"
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <User className="h-4 w-4 text-gray-500" />
                         <span className="font-medium text-gray-700">
@@ -214,10 +220,11 @@ export default function Navbar({
                         </span>
                       </Link>
                     </DropdownMenuItem>
+
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/profile?tab=sets"
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                        href="/profile"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <BookOpen className="h-4 w-4 text-gray-500" />
                         <span className="font-medium text-gray-700">
@@ -225,10 +232,11 @@ export default function Navbar({
                         </span>
                       </Link>
                     </DropdownMenuItem>
+
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/profile?tab=folders"
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                        href="/profile/folders"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <FolderOpen className="h-4 w-4 text-gray-500" />
                         <span className="font-medium text-gray-700">
@@ -236,11 +244,13 @@ export default function Navbar({
                         </span>
                       </Link>
                     </DropdownMenuItem>
+
                     <DropdownMenuSeparator className="my-2" />
+
                     <DropdownMenuItem asChild>
                       <Link
                         href="/settings"
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg hover:bg-pink-50 transition-colors"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <Settings className="h-4 w-4 text-gray-500" />
                         <span className="font-medium text-gray-700">
@@ -248,10 +258,12 @@ export default function Navbar({
                         </span>
                       </Link>
                     </DropdownMenuItem>
+
                     <DropdownMenuSeparator className="my-2" />
+
                     <DropdownMenuItem
-                      onClick={logout}
-                      className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors focus:text-red-600 focus:bg-red-50"
+                      onClick={() => logout()}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600"
                     >
                       <LogOut className="h-4 w-4" />
                       <span className="font-medium">Logout</span>
@@ -268,9 +280,10 @@ export default function Navbar({
                   >
                     <Link href="/login">Login</Link>
                   </Button>
+
                   <Button
                     size="sm"
-                    className="rounded-full bg-pink-500 hover:bg-pink-600 text-white"
+                    className="rounded-full bg-pink-500 text-white hover:bg-pink-600"
                     asChild
                   >
                     <Link href="/signup">Sign up free</Link>
@@ -286,6 +299,7 @@ export default function Navbar({
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
+
               <SheetContent side="right" className="w-[300px]">
                 <SheetHeader>
                   <SheetTitle className="sr-only">
@@ -317,7 +331,7 @@ export default function Navbar({
                           className={cn(
                             "text-base font-medium transition-colors",
                             item.href === pathname
-                              ? "text-pink-500 font-semibold"
+                              ? "font-semibold text-pink-500"
                               : "text-gray-600",
                             item.disabled && "cursor-not-allowed opacity-80",
                           )}
@@ -345,8 +359,9 @@ export default function Navbar({
                   </nav>
 
                   <div className="mt-4 flex flex-col gap-2">
-                    {/* logic for mobile version */}
-                    {isAuthenticated ? (
+                    {isAuthLoading ? (
+                      <div className="h-9 w-full rounded-md bg-gray-100" />
+                    ) : isAuthenticated ? (
                       <>
                         <Button
                           variant="ghost"
@@ -361,10 +376,39 @@ export default function Navbar({
                             Profile
                           </Link>
                         </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link
+                            href="/profile"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            My Sets
+                          </Link>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link
+                            href="/profile/folders"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            My Folders
+                          </Link>
+                        </Button>
+
                         <Button
                           variant="outline"
                           size="sm"
-                          className="justify-start text-gray-600 border-gray-300 hover:bg-red-50 hover:text-red-500 hover:border-red-200"
+                          className="justify-start border-gray-300 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           onClick={() => {
                             logout();
                             setIsOpen(false);
@@ -385,9 +429,10 @@ export default function Navbar({
                             Login
                           </Link>
                         </Button>
+
                         <Button
                           size="sm"
-                          className="bg-pink-500 hover:bg-pink-600 text-white"
+                          className="bg-pink-500 text-white hover:bg-pink-600"
                           asChild
                         >
                           <Link href="/signup" onClick={() => setIsOpen(false)}>

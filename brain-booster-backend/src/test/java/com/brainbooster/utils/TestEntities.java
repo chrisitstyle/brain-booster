@@ -3,6 +3,11 @@ package com.brainbooster.utils;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.folder.Folder;
+import com.brainbooster.folder.dto.FlashcardSetInFolderDTO;
+import com.brainbooster.folder.dto.FolderCreationDTO;
+import com.brainbooster.folder.dto.FolderDTO;
+import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
@@ -13,6 +18,8 @@ import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserSummaryDTO;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Utility class for creating entity and DTO instances for testing purposes.
@@ -206,4 +213,100 @@ public class TestEntities {
     public static FlashcardSetUpdateDTO createFlashcardSetUpdateDTO() {
         return new FlashcardSetUpdateDTO("Updated Set", "Updated description");
     }
+
+    // FOLDER METHODS
+
+    /**
+     * Creates a {@link Folder.FolderBuilder} pre-configured with default test data.
+     */
+    public static Folder.FolderBuilder folderBuilder() {
+        return Folder.builder()
+                .folderId(1L)
+                .user(createUser())
+                .name("test_folder_name")
+                .description("test_folder_description")
+                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .flashcardSets(new HashSet<>())
+                .setCount(0L);
+    }
+
+    /**
+     * Creates a fully instantiated {@link Folder} entity with default test data.
+     */
+    public static Folder createFolder() {
+        return folderBuilder().build();
+    }
+
+    /**
+     * Creates a folder entity containing one flashcard set.
+     */
+    public static Folder createFolderWithFlashcardSet() {
+        Folder folder = folderBuilder()
+                .setCount(1L)
+                .build();
+
+        folder.getFlashcardSets().add(createFlashcardSet());
+
+        return folder;
+    }
+
+    /**
+     * Creates a nested DTO representing a flashcard set inside a folder.
+     */
+    public static FlashcardSetInFolderDTO createFlashcardSetInFolderDTO() {
+        return new FlashcardSetInFolderDTO(
+                1L,
+                "test_flashcardset_name",
+                0L
+        );
+    }
+
+    /**
+     * Creates a {@link FolderDTO} with one nested flashcard set.
+     */
+    public static FolderDTO createFolderDTO() {
+        return new FolderDTO(
+                1L,
+                "johndoe",
+                "test_folder_name",
+                "test_folder_description",
+                1L,
+                List.of(createFlashcardSetInFolderDTO())
+        );
+    }
+
+    /**
+     * Creates a {@link FolderDTO} without nested flashcard sets.
+     */
+    public static FolderDTO createEmptyFolderDTO() {
+        return new FolderDTO(
+                1L,
+                "johndoe",
+                "test_folder_name",
+                "test_folder_description",
+                0L,
+                List.of()
+        );
+    }
+
+    /**
+     * Creates a {@link FolderCreationDTO} used for testing folder creation requests.
+     */
+    public static FolderCreationDTO createFolderCreationDTO() {
+        return new FolderCreationDTO(
+                "test_folder_name",
+                "test_folder_description"
+        );
+    }
+
+    /**
+     * Creates a {@link FolderUpdateDTO} used for testing folder update requests.
+     */
+    public static FolderUpdateDTO createFolderUpdateDTO() {
+        return new FolderUpdateDTO(
+                "Updated Folder",
+                "Updated folder description"
+        );
+    }
+
 }

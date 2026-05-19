@@ -2,50 +2,29 @@
 
 import Link from "next/link";
 import { BookOpen, Calendar, FolderOpen, Search, User } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import {
+  getFoldersByNickname,
+  type Folder as ApiFolder,
+} from "@/api/folderService";
 
 interface FlashcardSet {
   setId: number;
-  user: { nickname: string; createdAt: Date };
+  user: {
+    nickname: string;
+    createdAt: Date;
+  };
   setName: string;
   description: string;
   createdAt: Date;
   termCount: number;
 }
-
-interface Folder {
-  folderId: string;
-  title: string;
-  setCount: number;
-}
-
-// Mock data for johndoe example user
-const mockUserData: Record<
-  string,
-  {
-    displayName: string;
-    nickname: string;
-    avatar?: string;
-    joinedDate: string;
-    folders: Folder[];
-  }
-> = {
-  johndoe: {
-    displayName: "John Doe",
-    nickname: "johndoe",
-    joinedDate: "January 2024",
-    folders: [
-      { folderId: "1", title: "Science", setCount: 5 },
-      { folderId: "2", title: "Languages", setCount: 3 },
-    ],
-  },
-};
 
 export default function PublicProfileContent({
   nickname,
@@ -56,27 +35,34 @@ export default function PublicProfileContent({
 }) {
   const [activeTab, setActiveTab] = useState("sets");
   const [searchQuery, setSearchQuery] = useState("");
+  const [folders, setFolders] = useState<ApiFolder[]>([]);
+  const [isFoldersLoading, setIsFoldersLoading] = useState(true);
 
   const flashcardSets = initialSets;
 
-  // Get user data
-  const userData = mockUserData[nickname] || {
-    displayName: nickname,
-    nickname: nickname,
-    joinedDate: "Unknown",
-    folders: [
-      { folderId: "m1", title: "Mock Folder 1", setCount: 5 },
-      { folderId: "m2", title: "Mock Folder 2", setCount: 3 },
-    ],
-  };
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        setIsFoldersLoading(true);
+        const data = await getFoldersByNickname(nickname);
+        setFolders(data);
+      } catch (error) {
+        console.error("Error fetching folders:", error);
+        setFolders([]);
+      } finally {
+        setIsFoldersLoading(false);
+      }
+    };
 
-  // Filter sets and folders based on search query
+    fetchFolders();
+  }, [nickname]);
+
   const filteredSets = flashcardSets.filter((set) =>
     set.setName?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const filteredFolders = userData.folders.filter((folder) =>
-    folder.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredFolders = folders.filter((folder) =>
+    folder.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const joinedDateToDisplay =
@@ -85,12 +71,12 @@ export default function PublicProfileContent({
           month: "long",
           year: "numeric",
         })
-      : userData.joinedDate;
+      : "Unknown";
 
   const displayedNickname =
     flashcardSets.length > 0 && flashcardSets[0].user?.nickname
       ? flashcardSets[0].user.nickname
-      : userData.displayName;
+      : nickname;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,7 +85,7 @@ export default function PublicProfileContent({
         <div className="mb-8 flex flex-col items-center text-center">
           <Avatar className="h-24 w-24 border-4 border-pink-200">
             <AvatarImage
-              src={userData.avatar || "/placeholder.svg?height=96&width=96"}
+              src="/placeholder.svg?height=96&width=96"
               alt={displayedNickname}
             />
             <AvatarFallback className="bg-pink-100 text-3xl text-pink-500">
@@ -110,10 +96,13 @@ export default function PublicProfileContent({
                 .toUpperCase()}
             </AvatarFallback>
           </Avatar>
+
           <h1 className="mt-4 text-2xl font-bold text-gray-800">
             {displayedNickname}
           </h1>
+
           <p className="text-gray-500">@{displayedNickname}</p>
+
           <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
             <Calendar className="h-4 w-4" />
             <span>Joined {joinedDateToDisplay}</span>
@@ -151,7 +140,7 @@ export default function PublicProfileContent({
               )}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
-              Folders ({filteredFolders.length})
+              Folders ({folders.length})
             </TabsTrigger>
           </TabsList>
 
@@ -165,7 +154,7 @@ export default function PublicProfileContent({
                   placeholder="Search sets..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                  className="border-gray-200 pl-10 focus:border-pink-300 focus:ring-pink-200"
                 />
               </div>
             </div>
@@ -203,11 +192,16 @@ export default function PublicProfileContent({
                   placeholder="Search folders..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                  className="border-gray-200 pl-10 focus:border-pink-300 focus:ring-pink-200"
                 />
               </div>
             </div>
-            {filteredFolders.length > 0 ? (
+
+            {isFoldersLoading ? (
+              <div className="py-12 text-center text-gray-500">
+                Downloading folders...
+              </div>
+            ) : filteredFolders.length > 0 ? (
               <div className="mx-auto max-w-2xl space-y-4">
                 {filteredFolders.map((folder) => (
                   <PublicFolderCard
@@ -252,14 +246,23 @@ function PublicStudySetCard({
           >
             {set.setName}
           </Link>
+
+          {set.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+              {set.description}
+            </p>
+          )}
+
           <p className="mt-1 text-sm text-gray-500">{set.termCount} terms</p>
         </div>
+
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
               <User className="h-3 w-3" />
             </AvatarFallback>
           </Avatar>
+
           <Link
             href={`/users/${nickname}/profile`}
             className="text-sm text-gray-500 hover:text-pink-500"
@@ -276,7 +279,7 @@ function PublicFolderCard({
   folder,
   nickname,
 }: {
-  folder: Folder;
+  folder: ApiFolder;
   nickname: string;
 }) {
   return (
@@ -286,17 +289,34 @@ function PublicFolderCard({
           <div className="rounded-lg bg-pink-100 p-2">
             <FolderOpen className="h-5 w-5 text-pink-500" />
           </div>
+
           <div>
-            <h3 className="font-semibold text-gray-800">{folder.title}</h3>
-            <p className="text-sm text-gray-500">{folder.setCount} sets</p>
+            <Link
+              href={`/profile/folders/${folder.folderId}`}
+              className="font-semibold text-gray-800 hover:text-pink-500"
+            >
+              {folder.name}
+            </Link>
+
+            <p className="text-sm text-gray-500">
+              {folder.setCount} {folder.setCount === 1 ? "set" : "sets"}
+            </p>
           </div>
         </div>
+
+        {folder.description && (
+          <p className="mb-3 line-clamp-2 text-sm text-gray-500">
+            {folder.description}
+          </p>
+        )}
+
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
               <User className="h-3 w-3" />
             </AvatarFallback>
           </Avatar>
+
           <Link
             href={`/users/${nickname}/profile`}
             className="text-sm text-gray-500 hover:text-pink-500"
@@ -323,6 +343,7 @@ function EmptyState({
       <div className="mb-4 rounded-full bg-gray-100 p-4">
         <Icon className="h-8 w-8 text-gray-400" />
       </div>
+
       <h3 className="text-lg font-medium text-gray-800">{title}</h3>
       <p className="mt-1 text-sm text-gray-500">{description}</p>
     </div>
