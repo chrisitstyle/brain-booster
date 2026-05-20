@@ -36,3 +36,16 @@ logging:
     org:
       springframework:
         security: ERROR
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+    try-it-out-enabled: true
+    path: /swagger-ui.html

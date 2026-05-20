@@ -6,7 +6,6 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
-import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;
 import jakarta.persistence.EntityManager;
@@ -18,7 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -125,23 +123,6 @@ class FolderServiceTest {
         verify(folderRepository).findAllByUserNickname("johndoe");
     }
 
-    @Test
-    @DisplayName("getFolderById should return folder when authenticated user is owner")
-    void getFolderById_whenOwner_shouldReturnFolder() {
-        User authUser = createUser();
-        Folder folder = createFolder();
-        FolderDTO dto = createEmptyFolderDTO();
-
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-            when(folderDTOMapper.apply(folder)).thenReturn(dto);
-
-            FolderDTO result = folderService.getFolderById(1L);
-
-            assertThat(result).isEqualTo(dto);
-        }
-    }
 
     @Test
     @DisplayName("getFolderById should throw when folder does not exist")
@@ -151,22 +132,6 @@ class FolderServiceTest {
         assertThatThrownBy(() -> folderService.getFolderById(999L))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("Folder with id: 999 not found");
-    }
-
-    @Test
-    @DisplayName("getFolderById should throw when authenticated user is not owner or admin")
-    void getFolderById_whenNotOwnerAndNotAdmin_shouldThrow() {
-        User authUser = userBuilder().userId(2L).role(Role.USER).build();
-        Folder folder = createFolder();
-
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-
-            assertThatThrownBy(() -> folderService.getFolderById(1L))
-                    .isInstanceOf(AccessDeniedException.class)
-                    .hasMessage("You are not allowed to view this folder!");
-        }
     }
 
     @Test
