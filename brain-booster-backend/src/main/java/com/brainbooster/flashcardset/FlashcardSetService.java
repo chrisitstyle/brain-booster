@@ -31,6 +31,8 @@ public class FlashcardSetService {
 
     @Transactional
     public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO) {
+
+        // TODO implement feature that assigns flashcard set to authenticated user
         User setOwner = userRepository.findById(flashcardSetCreationDTO.userId())
                 .orElseThrow(() -> new NoSuchElementException("User with id: " + flashcardSetCreationDTO.userId() + " not found"));
 

@@ -32,6 +32,7 @@ public class UserService {
 
 
     public UserDTO addUser(UserCreationDTO userCreationDTO) {
+
         if (userRepository.existsByEmail(userCreationDTO.email())) {
             throw new EmailAlreadyExistsException("User with this email already exists!");
         }

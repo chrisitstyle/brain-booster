@@ -83,18 +83,8 @@ public class FolderService {
 
         verifyFolderAccess(folder, "You are not allowed to edit this folder!");
 
-        if (dto.name() != null) {
-            if (dto.name().isBlank()) {
-                throw new IllegalArgumentException("Folder name cannot be empty");
-            }
-
-            folder.setName(dto.name());
-        }
-
-        if (dto.description() != null) {
-            folder.setDescription(dto.description());
-        }
-
+        folder.setName(dto.name());
+        folder.setDescription(dto.description());
         return folderDTOMapper.apply(folder);
     }
 
