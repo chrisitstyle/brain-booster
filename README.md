@@ -15,6 +15,7 @@ The project allows users to learn effectively through interactive flashcard sets
 - [Running with Makefile](#-running-with-makefile)
 - [Roles and Authorization](#-roles-and-authorization)
 - [API Overview](#-api-overview)
+- [OpenAPI / Swagger](#-openapi--swagger)
 - [Roadmap](#-roadmap)
 - [License](#-license)
 - [Author](#-author)
@@ -54,6 +55,7 @@ The project allows users to learn effectively through interactive flashcard sets
 - Spring Web
 - Spring Security
 - Spring Data JPA
+- Springdoc OpenAPI / Swagger UI
 - PostgreSQL
 - JWT
 - Flyway
@@ -244,6 +246,21 @@ Then run the application:
 ```bash
 ./gradlew bootRun
 ```
+
+To expose OpenAPI documentation and Swagger UI locally, run the backend with the `dev` profile enabled:
+
+```bash
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+```
+
+Alternative:
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+> **Note:** Remember to configure the required environment variables based on `.env_example` before starting the backend.  
+> Spring Boot does not automatically load `.env` files unless additional configuration is added.
 
 Flyway migrations should run automatically during application startup.
 
@@ -484,12 +501,59 @@ The backend exposes a REST API under the following base path:
 | POST   | `/folders/{folderId}/sets/{setId}` | Add flashcard set to folder        | Authenticated user |
 | DELETE | `/folders/{folderId}/sets/{setId}` | Remove flashcard set from folder   | Authenticated user |
 
+## 📖 OpenAPI / Swagger
+
+The backend provides automatically generated OpenAPI documentation using Springdoc OpenAPI and Swagger UI.
+
+OpenAPI and Swagger UI are intended for local development and API testing. In this project, they should be enabled when the backend runs with the `dev` profile. The default application configuration may keep them disabled, so make sure `SPRING_PROFILES_ACTIVE=dev` is set when you want to use Swagger.
+
+When the backend is running locally, the API documentation is available at:
+
+```txt
+Swagger UI:   http://localhost:8080/api/v1/swagger-ui.html
+OpenAPI JSON: http://localhost:8080/api/v1/v3/api-docs
+```
+
+When running the application with Docker Compose, the `.env` file should include:
+
+```env
+SPRING_PROFILES_ACTIVE=dev
+```
+
+### Using Protected Endpoints in Swagger UI
+
+Some endpoints require JWT authentication. To test protected endpoints in Swagger UI:
+
+1. Authenticate with the login endpoint:
+
+   ```txt
+   POST /auth/authenticate
+   ```
+
+2. Copy the returned JWT token.
+
+3. Click **Authorize** in Swagger UI.
+
+4. Enter the token using the Bearer format:
+
+   ```txt
+   Bearer <token>
+   ```
+
+After authorization, Swagger UI can be used to call endpoints that require an authenticated user or admin role.
+
+### Troubleshooting
+
+If Swagger UI is not available, check that:
+
+- the backend is running with the `dev` profile,
+- `springdoc.api-docs.enabled=true` is configured for the active profile,
+- `springdoc.swagger-ui.enabled=true` is configured for the active profile,
+- the URL includes the backend context path: `/api/v1`.
+
 ## 🗺 Roadmap
 
 Planned features and improvements:
-
-- **OpenAPI / Swagger Documentation**  
-  Add automatically generated API documentation to make backend testing and integration easier.
 
 - **Quiz / Test Mode**  
   Add a mode where users can test their knowledge using questions based on their flashcards.
