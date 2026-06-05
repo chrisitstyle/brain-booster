@@ -177,7 +177,7 @@ export default function Navbar({
                     >
                       <Menu className="h-4 w-4 text-gray-500" />
                       <Avatar className="h-7 w-7 border-2 border-pink-200">
-                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-xs font-semibold text-white">
+                        <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 text-xs font-semibold text-white">
                           JD
                         </AvatarFallback>
                       </Avatar>
@@ -191,7 +191,7 @@ export default function Navbar({
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border-2 border-pink-200">
-                          <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 font-semibold text-white">
+                          <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 font-semibold text-white">
                             JD
                           </AvatarFallback>
                         </Avatar>
@@ -223,7 +223,7 @@ export default function Navbar({
 
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/profile"
+                        href="/profile/sets"
                         className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <BookOpen className="h-4 w-4 text-gray-500" />
