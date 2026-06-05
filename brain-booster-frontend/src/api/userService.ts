@@ -1,11 +1,11 @@
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/api/apiConfig";
 
 export const getUserFlashcardSetsByUserId = async (
   userId: number,
   token: string,
 ) => {
   const response = await fetch(
-    `${BASE_API_URL}/users/${userId}/flashcard-sets`,
+    `${getApiBaseUrl()}/users/${userId}/flashcard-sets`,
     {
       method: "GET",
       headers: {
@@ -26,7 +26,7 @@ export const getUserFlashcardSetsByUserId = async (
 
 export const getUserFlashcardSetsByNickname = async (nickname: string) => {
   const response = await fetch(
-    `${BASE_API_URL}/users/nickname/${nickname}/flashcard-sets`,
+    `${getApiBaseUrl()}/users/nickname/${nickname}/flashcard-sets`,
     {
       method: "GET",
       headers: {
