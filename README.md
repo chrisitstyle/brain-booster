@@ -187,11 +187,18 @@ Copy the example environment file:
 cp .env.local_example .env.local
 ```
 
-Example frontend environment variable:
+Example frontend environment variables for local development:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+API_INTERNAL_URL=http://localhost:8080/api/v1
 ```
+
+`NEXT_PUBLIC_API_URL` is used by the browser.
+`API_INTERNAL_URL` is used by Next.js when data is fetched on the server side, for example inside `page.tsx` server components.
+
+When the frontend is started locally with `pnpm next dev` and the backend is exposed on port `8080`, both values can point to `localhost`.
+When the frontend runs inside Docker Compose, `API_INTERNAL_URL` should use the backend service name instead: `http://backend:8080/api/v1`.
 
 ### Docker Compose
 
@@ -217,10 +224,12 @@ JWT_SECRET_KEY=change-me-to-a-long-random-secret-key
 
 # Frontend
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+API_INTERNAL_URL=http://backend:8080/api/v1
 ```
 
-`NEXT_PUBLIC_API_URL` should point to `localhost` because this value is used by the browser.  
-Inside Docker Compose, the backend connects to PostgreSQL using the `database` service name.
+`NEXT_PUBLIC_API_URL` should point to `localhost` because this value is used by the browser on the host machine.  
+`API_INTERNAL_URL` should point to the backend service name because this value is used by Next.js server-side code running inside the frontend container.  
+Inside Docker Compose, the backend connects to PostgreSQL using the `database` service name, and the frontend connects to the backend using the `backend` service name.
 
 ## 🚀 Running Locally
 

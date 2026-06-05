@@ -1,4 +1,4 @@
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/api/apiConfig";
 
 export interface CreateFlashcardData {
   setId: number;
@@ -34,7 +34,7 @@ export async function addFlashcard(
   data: CreateFlashcardData,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(`${BASE_API_URL}/flashcards`, {
+  const response = await fetch(`${getApiBaseUrl()}/flashcards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +58,7 @@ export async function getFlashcardsBySetId(
   setId: string | number,
 ): Promise<Flashcard[]> {
   const response = await fetch(
-    `${BASE_API_URL}/flashcard-sets/${setId}/flashcards`,
+    `${getApiBaseUrl()}/flashcard-sets/${setId}/flashcards`,
     {
       method: "GET",
       headers: {
@@ -83,7 +83,7 @@ export async function updateFlashcardById(
   data: UpdateFlashcardData,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(`${BASE_API_URL}/flashcards/${flashcardId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/flashcards/${flashcardId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -107,7 +107,7 @@ export async function deleteFlashcard(
   flashcardId: string | number,
   token: string,
 ): Promise<void> {
-  const response = await fetch(`${BASE_API_URL}/flashcards/${flashcardId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/flashcards/${flashcardId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,

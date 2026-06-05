@@ -1,11 +1,11 @@
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/api/apiConfig";
 
 export async function registerUser(data: {
   nickname: string;
   email: string;
   password: string;
 }) {
-  const response = await fetch(`${BASE_API_URL}/auth/register`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -30,7 +30,7 @@ export async function authenticateUser(data: {
   email: string;
   password: string;
 }) {
-  const response = await fetch(`${BASE_API_URL}/auth/authenticate`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/authenticate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

@@ -1,4 +1,4 @@
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/api/apiConfig";
 
 export interface FlashcardSetInFolder {
   flashcardSetId: number;
@@ -35,7 +35,7 @@ export async function createFolder(
   folderData: CreateFolderData,
   token: string,
 ): Promise<Folder> {
-  const response = await fetch(`${BASE_API_URL}/folders`, {
+  const response = await fetch(`${getApiBaseUrl()}/folders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -57,7 +57,7 @@ export async function addSetToFolder(
   token: string,
 ): Promise<Folder> {
   const response = await fetch(
-    `${BASE_API_URL}/folders/${addSetToFolderData.folderId}/sets/${addSetToFolderData.flashcardSetId}`,
+    `${getApiBaseUrl()}/folders/${addSetToFolderData.folderId}/sets/${addSetToFolderData.flashcardSetId}`,
     {
       method: "POST",
       headers: {
@@ -79,7 +79,7 @@ export async function addSetToFolder(
 }
 
 export async function getMyFolders(token: string): Promise<Folder[]> {
-  const response = await fetch(`${BASE_API_URL}/folders/me`, {
+  const response = await fetch(`${getApiBaseUrl()}/folders/me`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -98,7 +98,7 @@ export async function getMyFolders(token: string): Promise<Folder[]> {
 export async function getFoldersByNickname(
   nickname: string,
 ): Promise<Folder[]> {
-  const response = await fetch(`${BASE_API_URL}/users/${nickname}/folders`, {
+  const response = await fetch(`${getApiBaseUrl()}/users/${nickname}/folders`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export async function getFoldersByNickname(
 export async function getFolderDetailsById(
   folderId: number | string,
 ): Promise<Folder> {
-  const response = await fetch(`${BASE_API_URL}/folders/${folderId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/folders/${folderId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -139,7 +139,7 @@ export async function editFolder(
 ): Promise<Folder> {
   const { folderId, name, description } = folderData;
 
-  const response = await fetch(`${BASE_API_URL}/folders/${folderId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/folders/${folderId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -163,7 +163,7 @@ export async function deleteFolderById(
   folderId: number | string,
   token: string,
 ): Promise<void> {
-  const response = await fetch(`${BASE_API_URL}/folders/${folderId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/folders/${folderId}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -183,7 +183,7 @@ export async function removeSetFromFolder(
   token: string,
 ): Promise<void> {
   const response = await fetch(
-    `${BASE_API_URL}/folders/${folderId}/sets/${setId}`,
+    `${getApiBaseUrl()}/folders/${folderId}/sets/${setId}`,
     {
       method: "DELETE",
       headers: {
