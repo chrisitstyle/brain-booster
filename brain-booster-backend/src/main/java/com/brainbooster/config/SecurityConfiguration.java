@@ -24,6 +24,7 @@ public class SecurityConfiguration {
     private final AuthenticationProvider authenticationProvider;
     private static final String USER_BY_ID = "/users/*";
     private static final String FLASHCARD_BY_ID = "/flashcards/*";
+    private static final String FLASHCARD_STARRED = "/flashcards/*/starred";
     private static final String FLASHCARD_SET_BY_ID = "/flashcard-sets/*";
     private static final String FOLDER_BY_ID = "/folders/*";
     private static final String FOLDER_SET_BY_ID = "/folders/*/sets/*";
@@ -69,7 +70,9 @@ public class SecurityConfiguration {
                         // flashcards - authenticated
                         .requestMatchers(HttpMethod.POST, "/flashcards").authenticated()
                         .requestMatchers(HttpMethod.PATCH, FLASHCARD_BY_ID).authenticated()
+                        .requestMatchers(HttpMethod.POST, FLASHCARD_STARRED).authenticated()
                         .requestMatchers(HttpMethod.DELETE, FLASHCARD_BY_ID).authenticated()
+                        .requestMatchers(HttpMethod.DELETE, FLASHCARD_STARRED).authenticated()
 
                         // flashcardSets - public endpoints
                         .requestMatchers(HttpMethod.GET, "/flashcard-sets").permitAll()

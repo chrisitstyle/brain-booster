@@ -40,4 +40,22 @@ public class SecurityUtils {
 
         return authUser;
     }
+
+    public static User getAuthenticatedUserOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (
+                authentication == null ||
+                        !authentication.isAuthenticated() ||
+                        "anonymousUser".equals(authentication.getPrincipal())
+        ) {
+            return null;
+        }
+
+        if (!(authentication.getPrincipal() instanceof User authUser)) {
+            return null;
+        }
+
+        return authUser;
+    }
 }

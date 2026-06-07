@@ -83,6 +83,16 @@ public class FlashcardController {
 
     }
 
+    @PostMapping("/{flashcardId}/starred")
+    public FlashcardDTO starFlashcard(@PathVariable Long flashcardId) {
+        return flashcardService.starFlashcard(flashcardId);
+    }
+
+    @DeleteMapping("/{flashcardId}/starred")
+    public FlashcardDTO unstarFlashcard(@PathVariable Long flashcardId) {
+        return flashcardService.unstarFlashcard(flashcardId);
+    }
+
     @Operation(
             summary = "Delete flashcard",
             description = "Deletes an existing flashcard by its ID.",

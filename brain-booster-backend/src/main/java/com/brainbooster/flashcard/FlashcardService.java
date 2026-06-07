@@ -4,10 +4,14 @@ import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
+import com.brainbooster.flashcard.starred.UserStarredFlashcard;
+import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
+import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +27,8 @@ public class FlashcardService {
 
     private final FlashcardRepository flashcardRepository;
     private final FlashcardSetRepository flashcardSetRepository;
+    private final UserStarredFlashcardRepository starredFlashcardRepository;
+    private final UserRepository userRepository;
     private final FlashcardDTOMapper flashcardDTOMapper;
 
     @Transactional
@@ -70,6 +76,46 @@ public class FlashcardService {
 
         Flashcard savedFlashcard = flashcardRepository.save(existingFlashcardFromDB);
         return flashcardDTOMapper.apply(savedFlashcard);
+    }
+
+    @Transactional
+    public FlashcardDTO starFlashcard(Long flashcardId) {
+        User authUser = SecurityUtils.getAuthenticatedUser();
+
+        Flashcard flashcard = flashcardRepository.findById(flashcardId)
+                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+
+        boolean alreadyStarred = starredFlashcardRepository
+                .existsByUser_UserIdAndFlashcard_FlashcardId(authUser.getUserId(), flashcardId);
+
+        if (!alreadyStarred) {
+            User userReference = userRepository.getReferenceById(authUser.getUserId());
+
+            UserStarredFlashcard starredFlashcard = UserStarredFlashcard.builder()
+                    .id(new UserStarredFlashcardId(authUser.getUserId(), flashcardId))
+                    .user(userReference)
+                    .flashcard(flashcard)
+                    .build();
+
+            starredFlashcardRepository.save(starredFlashcard);
+        }
+
+        return flashcardDTOMapper.toDto(flashcard, true);
+    }
+
+    @Transactional
+    public FlashcardDTO unstarFlashcard(Long flashcardId) {
+        User authUser = SecurityUtils.getAuthenticatedUser();
+
+        Flashcard flashcard = flashcardRepository.findById(flashcardId)
+                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+
+        starredFlashcardRepository.deleteByUser_UserIdAndFlashcard_FlashcardId(
+                authUser.getUserId(),
+                flashcardId
+        );
+
+        return flashcardDTOMapper.toDto(flashcard, false);
     }
 
     public void deleteFlashcardById(Long flashcardId) {

@@ -1,16 +1,20 @@
 package com.brainbooster.utils;
 
 import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
+import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
+import com.brainbooster.flashcard.starred.UserStarredFlashcard;
+import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
+import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.folder.Folder;
 import com.brainbooster.folder.dto.FlashcardSetInFolderDTO;
 import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
-import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
-import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserCreationDTO;
@@ -29,7 +33,6 @@ import java.util.List;
  * in unit and integration tests.
  */
 public class TestEntities {
-
 
     /**
      * Private constructor to block instantiation of utility class.
@@ -67,19 +70,36 @@ public class TestEntities {
     }
 
     /**
+     * Creates a fully instantiated {@link User} entity with custom ID and role.
+     */
+    public static User createUser(Long userId, Role role) {
+        return userBuilder()
+                .userId(userId)
+                .nickname("user" + userId)
+                .email("user" + userId + "@example.com")
+                .role(role)
+                .build();
+    }
+
+    /**
+     * Creates an admin user entity.
+     */
+    public static User createAdminUser() {
+        return createUser(2L, Role.ADMIN);
+    }
+
+    /**
      * Creates a {@link UserDTO} with data corresponding to the default User entity.
      *
      * @return a UserDTO object.
      */
     public static UserDTO createUserDTO() {
-
         return new UserDTO(
                 1L,
                 "johndoe",
                 "johndoe@example.com",
                 Role.USER,
                 LocalDateTime.of(2026, 1, 19, 23, 0)
-
         );
     }
 
@@ -87,8 +107,10 @@ public class TestEntities {
      * Creates a {@link UserSummaryDTO} for nested flashcard set responses.
      */
     public static UserSummaryDTO createUserSummaryDTO() {
-        return new UserSummaryDTO("johndoe",
-                LocalDateTime.of(2026, 1, 19, 23, 0));
+        return new UserSummaryDTO(
+                "johndoe",
+                LocalDateTime.of(2026, 1, 19, 23, 0)
+        );
     }
 
     /**
@@ -122,8 +144,6 @@ public class TestEntities {
                 .flashcardSet(createFlashcardSet())
                 .term("test_term")
                 .definition("test_definition");
-
-
     }
 
     /**
@@ -136,8 +156,76 @@ public class TestEntities {
         return flashcardBuilder().build();
     }
 
+    /**
+     * Creates a {@link FlashcardCreationDTO} used for testing flashcard creation requests.
+     */
+    public static FlashcardCreationDTO createFlashcardCreationDTO() {
+        return new FlashcardCreationDTO(
+                1L,
+                "test_term",
+                "test_definition"
+        );
+    }
+
+    /**
+     * Creates a {@link FlashcardUpdateDTO} used for testing flashcard update requests.
+     */
+    public static FlashcardUpdateDTO createFlashcardUpdateDTO() {
+        return new FlashcardUpdateDTO(
+                "updated_term",
+                "updated_definition"
+        );
+    }
+
+    /**
+     * Creates a {@link FlashcardDTO} with default data and starred=false.
+     */
     public static FlashcardDTO createFlashcardDTO() {
-        return new FlashcardDTO(1L, 1L, "test_term", "test_definition");
+        return createFlashcardDTO(false);
+    }
+
+    /**
+     * Creates a {@link FlashcardDTO} with default data and custom starred status.
+     */
+    public static FlashcardDTO createFlashcardDTO(boolean starred) {
+        return new FlashcardDTO(
+                1L,
+                1L,
+                "test_term",
+                "test_definition",
+                starred
+        );
+    }
+
+    /**
+     * Creates a {@link FlashcardDTO} representing an updated flashcard.
+     */
+    public static FlashcardDTO createUpdatedFlashcardDTO() {
+        return new FlashcardDTO(
+                1L,
+                1L,
+                "updated_term",
+                "updated_definition",
+                false
+        );
+    }
+
+    /**
+     * Creates a {@link UserStarredFlashcard} relation between a user and flashcard.
+     */
+    public static UserStarredFlashcard createUserStarredFlashcard(
+            User user,
+            Flashcard flashcard
+    ) {
+        return UserStarredFlashcard.builder()
+                .id(new UserStarredFlashcardId(
+                        user.getUserId(),
+                        flashcard.getFlashcardId()
+                ))
+                .user(user)
+                .flashcard(flashcard)
+                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .build();
     }
 
     // FLASHCARD SET METHODS
@@ -157,7 +245,6 @@ public class TestEntities {
                 .description("test_flashcardset_description")
                 .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
                 .termCount(0L);
-
     }
 
     /**
@@ -199,9 +286,9 @@ public class TestEntities {
         return new FlashcardSetCreationDTO(
                 1L,
                 "test_flashcardset_name",
-                "test_flashcardset_description");
+                "test_flashcardset_description"
+        );
     }
-
 
     /**
      * Creates a {@link FlashcardSetUpdateDTO} used for testing update (PATCH/PUT) requests.
@@ -211,7 +298,10 @@ public class TestEntities {
      * @return a FlashcardSetUpdateDTO object.
      */
     public static FlashcardSetUpdateDTO createFlashcardSetUpdateDTO() {
-        return new FlashcardSetUpdateDTO("Updated Set", "Updated description");
+        return new FlashcardSetUpdateDTO(
+                "Updated Set",
+                "Updated description"
+        );
     }
 
     // FOLDER METHODS
@@ -308,5 +398,4 @@ public class TestEntities {
                 "Updated folder description"
         );
     }
-
 }

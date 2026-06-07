@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { type Flashcard, updateFlashcardById } from "@/api/flashcardService";
+import {
+  type Flashcard,
+  getFlashcardsBySetId,
+  starFlashcard,
+  unstarFlashcard,
+  updateFlashcardById,
+} from "@/api/flashcardService";
 import type { FlashcardSet } from "@/api/flashcardSetService";
 import { useAuth } from "@/context/AuthContext";
 
@@ -19,6 +25,7 @@ import FlashcardTermsList from "../components/flashcard-terms-list";
 import StudyVisibilityControls from "../components/study-visibility-controls";
 
 type HiddenFlashcardSide = "terms" | "definitions" | null;
+
 interface StudyFlashcardSetClientProps {
   studySet: FlashcardSet;
   initialFlashcards: Flashcard[];
@@ -45,8 +52,68 @@ export default function StudyFlashcardSetClient({
     new Set(),
   );
 
+  const [flashcards, setFlashcards] =
+    useState<StudyFlashcard[]>(initialFlashcards);
+
+  const [pendingStarFlashcardIds, setPendingStarFlashcardIds] = useState<
+    Set<number>
+  >(new Set());
+
+  const [studyFlashcardIds, setStudyFlashcardIds] = useState<number[]>(() =>
+    initialFlashcards.map((flashcard) => flashcard.flashcardId),
+  );
+
+  const [knownFlashcards, setKnownFlashcards] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const [unknownFlashcards, setUnknownFlashcards] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const [editingFlashcardId, setEditingFlashcardId] = useState<number | null>(
+    null,
+  );
+
+  const [editTerm, setEditTerm] = useState("");
+  const [editDefinition, setEditDefinition] = useState("");
+
   const areTermsHidden = hiddenFlashcardSide === "terms";
   const areDefinitionsHidden = hiddenFlashcardSide === "definitions";
+
+  const currentFlashcardId = studyFlashcardIds[currentIndex];
+
+  const currentFlashcard = flashcards.find(
+    (flashcard) => flashcard.flashcardId === currentFlashcardId,
+  );
+
+  useEffect(() => {
+    if (!token) {
+      setFlashcards(initialFlashcards);
+      setStudyFlashcardIds(
+        initialFlashcards.map((flashcard) => flashcard.flashcardId),
+      );
+      return;
+    }
+
+    const fetchFlashcardsWithUserStarredStatus = async () => {
+      try {
+        const flashcardsWithStarredStatus = await getFlashcardsBySetId(
+          studySet.setId,
+          token,
+        );
+
+        setFlashcards(flashcardsWithStarredStatus);
+        setStudyFlashcardIds(
+          flashcardsWithStarredStatus.map((flashcard) => flashcard.flashcardId),
+        );
+      } catch (error) {
+        console.error("Error fetching flashcards with starred status:", error);
+      }
+    };
+
+    void fetchFlashcardsWithUserStarredStatus();
+  }, [initialFlashcards, studySet.setId, token]);
 
   const toggleHiddenFlashcardSide = (
     sideToToggle: Exclude<HiddenFlashcardSide, null>,
@@ -65,36 +132,6 @@ export default function StudyFlashcardSetClient({
       return nextRevealedFlashcardIds;
     });
   };
-
-  const [flashcards, setFlashcards] = useState<StudyFlashcard[]>(() =>
-    initialFlashcards.map((flashcard) => ({
-      ...flashcard,
-      starred: false,
-    })),
-  );
-
-  const [studyFlashcardIds, setStudyFlashcardIds] = useState<number[]>(() =>
-    initialFlashcards.map((flashcard) => flashcard.flashcardId),
-  );
-
-  const [knownFlashcards, setKnownFlashcards] = useState<Set<number>>(
-    new Set(),
-  );
-  const [unknownFlashcards, setUnknownFlashcards] = useState<Set<number>>(
-    new Set(),
-  );
-
-  const [editingFlashcardId, setEditingFlashcardId] = useState<number | null>(
-    null,
-  );
-  const [editTerm, setEditTerm] = useState("");
-  const [editDefinition, setEditDefinition] = useState("");
-
-  const currentFlashcardId = studyFlashcardIds[currentIndex];
-
-  const currentFlashcard = flashcards.find(
-    (flashcard) => flashcard.flashcardId === currentFlashcardId,
-  );
 
   const handleFlipCard = () => {
     setIsFlipped((previousValue) => !previousValue);
@@ -178,14 +215,71 @@ export default function StudyFlashcardSetClient({
     setIsFlipped(false);
   };
 
-  const toggleStar = (flashcardId: number) => {
+  const toggleStar = async (flashcardId: number) => {
+    if (!token) {
+      toast.error("Please log in to star flashcards.");
+      return;
+    }
+
+    if (pendingStarFlashcardIds.has(flashcardId)) {
+      return;
+    }
+
+    const flashcardToUpdate = flashcards.find(
+      (flashcard) => flashcard.flashcardId === flashcardId,
+    );
+
+    if (!flashcardToUpdate) {
+      return;
+    }
+
+    const nextStarredValue = !flashcardToUpdate.starred;
+
+    setPendingStarFlashcardIds((previousIds) => {
+      const nextIds = new Set(previousIds);
+      nextIds.add(flashcardId);
+      return nextIds;
+    });
+
     setFlashcards((previousFlashcards) =>
       previousFlashcards.map((flashcard) =>
         flashcard.flashcardId === flashcardId
-          ? { ...flashcard, starred: !flashcard.starred }
+          ? { ...flashcard, starred: nextStarredValue }
           : flashcard,
       ),
     );
+
+    try {
+      const updatedFlashcard = nextStarredValue
+        ? await starFlashcard(flashcardId, token)
+        : await unstarFlashcard(flashcardId, token);
+
+      setFlashcards((previousFlashcards) =>
+        previousFlashcards.map((flashcard) =>
+          flashcard.flashcardId === flashcardId
+            ? { ...flashcard, starred: updatedFlashcard.starred }
+            : flashcard,
+        ),
+      );
+    } catch (error) {
+      console.error("Error updating flashcard starred status:", error);
+
+      setFlashcards((previousFlashcards) =>
+        previousFlashcards.map((flashcard) =>
+          flashcard.flashcardId === flashcardId
+            ? { ...flashcard, starred: !nextStarredValue }
+            : flashcard,
+        ),
+      );
+
+      toast.error("Failed to update flashcard starred status.");
+    } finally {
+      setPendingStarFlashcardIds((previousIds) => {
+        const nextIds = new Set(previousIds);
+        nextIds.delete(flashcardId);
+        return nextIds;
+      });
+    }
   };
 
   const speakText = (text: string) => {
@@ -310,7 +404,7 @@ export default function StudyFlashcardSetClient({
             />
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-gray-500">
             This study set does not have any flashcards yet.
           </div>
         )}
@@ -334,13 +428,16 @@ export default function StudyFlashcardSetClient({
               areTermsHidden={areTermsHidden}
               areDefinitionsHidden={areDefinitionsHidden}
               revealedFlashcardIds={revealedFlashcardIds}
+              pendingStarFlashcardIds={pendingStarFlashcardIds}
               onRevealFlashcardText={revealFlashcardText}
               onEditTermChange={setEditTerm}
               onEditDefinitionChange={setEditDefinition}
               onStartEditing={startEditing}
               onCancelEditing={cancelEditing}
               onSaveEditing={saveEditingFlashcard}
-              onToggleStar={toggleStar}
+              onToggleStar={(flashcardId) => {
+                void toggleStar(flashcardId);
+              }}
               onSpeak={speakText}
             />
           </>
