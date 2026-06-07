@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Clock,
@@ -13,9 +15,19 @@ import {
   User,
   Zap,
 } from "lucide-react";
-
 import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { parseJwt } from "@/utils/jwt";
+import { getUserFlashcardSetsByUserId } from "@/api/userService";
+import { deleteFlashcardSet } from "@/api/flashcardSetService";
+import {
+  deleteFolderById,
+  getMyFolders,
+  type Folder as FolderDTO,
+} from "@/api/folderService";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,16 +50,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { parseJwt } from "@/utils/jwt";
-import { getUserFlashcardSetsByUserId } from "@/api/userService";
-import { deleteFlashcardSet } from "@/api/flashcardSetService";
-import {
-  deleteFolderById,
-  getMyFolders,
-  type Folder as FolderDTO,
-} from "@/api/folderService";
 import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
 import EditFolderForm from "@/app/profile/folders/components/edit-folder-form";
 
@@ -90,6 +92,7 @@ const achievements = [
 ];
 
 export function ProfileDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("sets");
   const { token } = useAuth();
 
@@ -103,17 +106,21 @@ export function ProfileDashboard() {
 
   const [isFolderDeleteDialogOpen, setIsFolderDeleteDialogOpen] =
     useState(false);
+
   const [folderToDelete, setFolderToDelete] = useState<DashboardFolder | null>(
     null,
   );
+
   const [isDeletingFolder, setIsDeletingFolder] = useState(false);
 
   const [isEditFolderFormOpen, setIsEditFolderFormOpen] = useState(false);
+
   const [folderToEdit, setFolderToEdit] = useState<DashboardFolder | null>(
     null,
   );
 
   const [isFolderListOpen, setIsFolderListOpen] = useState(false);
+
   const [setToAddToFolder, setSetToAddToFolder] = useState<StudySet | null>(
     null,
   );
@@ -179,8 +186,12 @@ export function ProfileDashboard() {
       }
     };
 
-    fetchUserContent();
+    void fetchUserContent();
   }, [token]);
+
+  const handleEditSetClick = (set: StudySet) => {
+    router.push(`/users/${set.author}/sets/${set.id}/edit`);
+  };
 
   const handleAddToFolderClick = (set: StudySet) => {
     setSetToAddToFolder(set);
@@ -310,6 +321,7 @@ export function ProfileDashboard() {
                 src="/placeholder.svg?height=80&width=80"
                 alt="User avatar"
               />
+
               <AvatarFallback className="bg-pink-100 text-2xl text-pink-500">
                 JD
               </AvatarFallback>
@@ -348,8 +360,8 @@ export function ProfileDashboard() {
         </div>
 
         <div className="mb-8 grid gap-4 md:grid-cols-3">
-          {achievements.map((achievement, index) => (
-            <Card key={index} className="border-gray-200 bg-white">
+          {achievements.map((achievement) => (
+            <Card key={achievement.label} className="border-gray-200 bg-white">
               <CardContent className="flex items-center gap-4 p-6">
                 <div
                   className={cn(
@@ -364,6 +376,7 @@ export function ProfileDashboard() {
                   <p className="text-2xl font-bold text-gray-800">
                     {achievement.value}
                   </p>
+
                   <p className="text-sm text-gray-500">{achievement.label}</p>
                 </div>
               </CardContent>
@@ -400,6 +413,7 @@ export function ProfileDashboard() {
                     >
                       {index < 5 ? <Flame className="h-4 w-4" /> : null}
                     </div>
+
                     <span className="text-xs text-gray-500">{day}</span>
                   </div>
                 ),
@@ -458,6 +472,7 @@ export function ProfileDashboard() {
                   <StudySetCard
                     key={set.id}
                     set={set}
+                    onEditClick={handleEditSetClick}
                     onDeleteClick={(id) => {
                       setSetToDelete(id);
                       setIsDeleteDialogOpen(true);
@@ -501,6 +516,7 @@ export function ProfileDashboard() {
                   <Card className="flex cursor-pointer items-center justify-center border-2 border-dashed border-gray-200 bg-white p-6 transition-colors hover:border-pink-300 hover:bg-pink-50">
                     <div className="text-center">
                       <Plus className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+
                       <p className="text-sm font-medium text-gray-500">
                         Create new folder
                       </p>
@@ -534,6 +550,7 @@ export function ProfileDashboard() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete your
               flashcard set and remove all its terms from our servers.
@@ -566,6 +583,7 @@ export function ProfileDashboard() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete folder?</AlertDialogTitle>
+
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
               folder &quot;{folderToDelete?.title}&quot;. Your flashcard sets
@@ -614,11 +632,13 @@ export function ProfileDashboard() {
 
 function StudySetCard({
   set,
+  onEditClick,
   onDeleteClick,
   onAddToFolderClick,
   isDeleteDialogOpen,
 }: {
   set: StudySet;
+  onEditClick: (set: StudySet) => void;
   onDeleteClick: (id: string) => void;
   onAddToFolderClick: (set: StudySet) => void;
   isDeleteDialogOpen: boolean;
@@ -651,6 +671,7 @@ function StudySetCard({
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className={cn(
@@ -665,10 +686,21 @@ function StudySetCard({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit</DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onEditClick(set);
+                  setIsDropdownOpen(false);
+                }}
+              >
+                Edit
+              </DropdownMenuItem>
+
               <DropdownMenuItem>Share</DropdownMenuItem>
 
               <DropdownMenuItem
+                className="cursor-pointer"
                 onSelect={(event) => {
                   event.preventDefault();
                   onAddToFolderClick(set);
@@ -745,6 +777,7 @@ function FolderCard({
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className={cn(
@@ -760,6 +793,7 @@ function FolderCard({
 
             <DropdownMenuContent align="end">
               <DropdownMenuItem
+                className="cursor-pointer"
                 onSelect={(event) => {
                   event.preventDefault();
                   onEditClick(folder);

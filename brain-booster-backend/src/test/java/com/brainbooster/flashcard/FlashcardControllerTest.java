@@ -26,8 +26,7 @@ import java.util.NoSuchElementException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @WebMvcTest(controllers = FlashcardController.class)
@@ -49,10 +48,11 @@ class FlashcardControllerTest {
     @MockitoBean
     private FlashcardService flashcardService;
 
-    private final FlashcardDTO flashcardDTO1 = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition");
-    private final FlashcardDTO flashcardDTO2 = new FlashcardDTO(2L, 1L, "Test Term 2", "Test Definition 2");
-    private final FlashcardDTO updatedFlashcardDTO = new FlashcardDTO(1L, 1L, "Updated Term", "Updated Definition");
-
+    private final FlashcardDTO flashcardDTO1 = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition", false);
+    private final FlashcardDTO flashcardDTO2 = new FlashcardDTO(2L, 1L, "Test Term 2", "Test Definition 2", false);
+    private final FlashcardDTO updatedFlashcardDTO = new FlashcardDTO(1L, 1L, "Updated Term", "Updated Definition", false);
+    private final FlashcardDTO starredFlashcardDTO = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition", true);
+    private final FlashcardDTO unstarredFlashcardDTO = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition", false);
     private final FlashcardCreationDTO creationDTO = new FlashcardCreationDTO(1L, "Test Term", "Test Definition");
     private final FlashcardUpdateDTO updateDTO = new FlashcardUpdateDTO("Updated Term", "Updated Definition");
 
@@ -180,6 +180,76 @@ class FlashcardControllerTest {
 
         String content = result.getResponse().getContentAsString();
         assertThat(content).isEqualTo("Flashcard with id: 1 has been deleted");
+    }
+
+
+    @Test
+    void starFlashcard_ShouldReturnStarredFlashcardDTO() throws Exception {
+        // given
+        when(flashcardService.starFlashcard(1L)).thenReturn(starredFlashcardDTO);
+
+        // when
+        MvcResult result = mockMvc.perform(post("/flashcards/1/starred"))
+                .andReturn();
+
+        // then
+        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
+
+        FlashcardDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                FlashcardDTO.class
+        );
+
+        assertThat(response.flashcardId()).isEqualTo(1L);
+        assertThat(response.starred()).isTrue();
+
+        verify(flashcardService).starFlashcard(1L);
+    }
+
+    @Test
+    void unstarFlashcard_ShouldReturnUnstarredFlashcardDTO() throws Exception {
+        // given
+        when(flashcardService.unstarFlashcard(1L)).thenReturn(unstarredFlashcardDTO);
+
+        // when
+        MvcResult result = mockMvc.perform(delete("/flashcards/1/starred"))
+                .andReturn();
+
+        // then
+        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
+
+        FlashcardDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                FlashcardDTO.class
+        );
+
+        assertThat(response.flashcardId()).isEqualTo(1L);
+        assertThat(response.starred()).isFalse();
+
+        verify(flashcardService).unstarFlashcard(1L);
+    }
+
+    @Test
+    void starFlashcard_ShouldReturnNotFound_WhenFlashcardDoesNotExist() throws Exception {
+        // given
+        when(flashcardService.starFlashcard(999L))
+                .thenThrow(new NoSuchElementException("Flashcard with id 999 not found"));
+
+        // when
+        MvcResult result = mockMvc.perform(post("/flashcards/999/starred"))
+                .andReturn();
+
+        // then
+        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+
+        ErrorDTO errorResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ErrorDTO.class
+        );
+
+        assertThat(errorResponse.message()).isEqualTo("Flashcard with id 999 not found");
+        assertThat(errorResponse.status()).isEqualTo("NOT_FOUND");
+        assertThat(errorResponse.timestamp()).isNotNull();
     }
 
 

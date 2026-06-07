@@ -101,6 +101,24 @@ VALUES (2, 'S2-Term 1', 'Definition 1'),
        (2, 'S2-Term 9', 'Definition 9'),
        (2, 'S2-Term 10', 'Definition 10');
 
+CREATE TABLE USER_STARRED_FLASHCARD
+(
+    user_id      INTEGER                             NOT NULL,
+    flashcard_id INTEGER                             NOT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (user_id, flashcard_id),
+
+    CONSTRAINT user_starred_flashcard_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES "user" (user_id) ON DELETE CASCADE,
+
+    CONSTRAINT user_starred_flashcard_flashcard_id_fkey
+        FOREIGN KEY (flashcard_id) REFERENCES FLASHCARD (flashcard_id) ON DELETE CASCADE
+);
+
+INSERT INTO USER_STARRED_FLASHCARD (user_id, flashcard_id, created_at)
+VALUES (2, 1, CURRENT_TIMESTAMP);
+
 ALTER TABLE "user"
     ALTER COLUMN user_id RESTART WITH 100;
 ALTER TABLE FLASHCARD_SET

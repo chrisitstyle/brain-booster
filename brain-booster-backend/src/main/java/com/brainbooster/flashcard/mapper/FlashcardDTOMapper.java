@@ -6,14 +6,19 @@ import java.util.function.Function;
 import org.springframework.stereotype.Component;
 @Component
 public class FlashcardDTOMapper implements Function<Flashcard, FlashcardDTO> {
+
     @Override
     public FlashcardDTO apply(Flashcard flashcard) {
+        return toDto(flashcard, false);
+    }
+
+    public FlashcardDTO toDto(Flashcard flashcard, boolean starred) {
         return new FlashcardDTO(
                 flashcard.getFlashcardId(),
                 flashcard.getFlashcardSet() != null ? flashcard.getFlashcardSet().getSetId() : null,
                 flashcard.getTerm(),
-                flashcard.getDefinition()
+                flashcard.getDefinition(),
+                starred
         );
-
     }
 }

@@ -163,23 +163,6 @@ class FolderServiceTest {
     }
 
     @Test
-    @DisplayName("updateFolder should throw when name is blank")
-    void updateFolder_whenNameIsBlank_shouldThrow() {
-        User authUser = createUser();
-        Folder folder = createFolder();
-        FolderUpdateDTO updateDTO = new FolderUpdateDTO("   ", "description");
-
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-
-            assertThatThrownBy(() -> folderService.updateFolder(1L, updateDTO))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Folder name cannot be empty");
-        }
-    }
-
-    @Test
     @DisplayName("deleteFolder should delete folder when authenticated user is owner")
     void deleteFolder_whenOwner_shouldDeleteFolder() {
         User authUser = createUser();

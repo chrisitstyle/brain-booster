@@ -3,6 +3,7 @@ package com.brainbooster.flashcardset;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
+import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class FlashcardSetService {
     private final UserRepository userRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardRepository flashcardRepository;
+    private final UserStarredFlashcardRepository starredFlashcardRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final FlashcardDTOMapper flashcardDTOMapper;
 
@@ -64,9 +67,21 @@ public class FlashcardSetService {
             throw new NoSuchElementException("FlashcardSet with id: " + setId + " not found");
         }
 
+        User authUser = SecurityUtils.getAuthenticatedUserOrNull();
+
+        Set<Long> starredFlashcardIds = authUser == null
+                ? Set.of()
+                : starredFlashcardRepository.findStarredFlashcardIdsByUserIdAndSetId(
+                authUser.getUserId(),
+                setId
+        );
+
         return flashcardRepository.findAllByFlashcardSet_SetId(setId)
                 .stream()
-                .map(flashcardDTOMapper)
+                .map(flashcard -> flashcardDTOMapper.toDto(
+                        flashcard,
+                        starredFlashcardIds.contains(flashcard.getFlashcardId())
+                ))
                 .toList();
     }
 

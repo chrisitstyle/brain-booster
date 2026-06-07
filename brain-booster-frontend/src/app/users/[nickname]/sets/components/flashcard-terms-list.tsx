@@ -11,6 +11,7 @@ interface FlashcardTermsListProps {
   areTermsHidden: boolean;
   areDefinitionsHidden: boolean;
   revealedFlashcardIds: Set<number>;
+  pendingStarFlashcardIds: Set<number>;
   onRevealFlashcardText: (flashcardId: number) => void;
   onEditTermChange: (value: string) => void;
   onEditDefinitionChange: (value: string) => void;
@@ -29,6 +30,7 @@ export default function FlashcardTermsList({
   areTermsHidden,
   areDefinitionsHidden,
   revealedFlashcardIds,
+  pendingStarFlashcardIds,
   onRevealFlashcardText,
   onEditTermChange,
   onEditDefinitionChange,
@@ -55,6 +57,7 @@ export default function FlashcardTermsList({
             areTermsHidden={areTermsHidden}
             areDefinitionsHidden={areDefinitionsHidden}
             isTextRevealed={revealedFlashcardIds.has(flashcard.flashcardId)}
+            isStarPending={pendingStarFlashcardIds.has(flashcard.flashcardId)}
             onRevealText={() => onRevealFlashcardText(flashcard.flashcardId)}
             onEditTermChange={onEditTermChange}
             onEditDefinitionChange={onEditDefinitionChange}

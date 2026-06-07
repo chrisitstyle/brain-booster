@@ -28,6 +28,11 @@ public record FlashcardDTO(
                 description = "Flashcard definition or answer",
                 example = "went - gone"
         )
-        String definition
+        String definition,
+        @Schema(
+                description = "Whether the flashcard is marked as starred",
+                example = "false"
+        )
+        boolean starred
 ) {
 }

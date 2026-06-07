@@ -2,10 +2,10 @@
 
 import { Pencil, Star, Volume2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import type { StudyFlashcard } from "../[id]/types";
 
@@ -17,6 +17,7 @@ interface EditableFlashcardRowProps {
   areTermsHidden: boolean;
   areDefinitionsHidden: boolean;
   isTextRevealed: boolean;
+  isStarPending: boolean;
   onRevealText: () => void;
   onEditTermChange: (value: string) => void;
   onEditDefinitionChange: (value: string) => void;
@@ -35,6 +36,7 @@ export default function EditableFlashcardRow({
   areTermsHidden,
   areDefinitionsHidden,
   isTextRevealed,
+  isStarPending,
   onRevealText,
   onEditTermChange,
   onEditDefinitionChange,
@@ -52,11 +54,12 @@ export default function EditableFlashcardRow({
       <CardContent className="p-4">
         {isEditing ? (
           <div className="space-y-4">
-            <div className="flex-1 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="text-xs font-medium uppercase tracking-wide text-gray-400">
                   Term
                 </label>
+
                 <Input
                   value={editTerm}
                   onChange={(event) => onEditTermChange(event.target.value)}
@@ -68,6 +71,7 @@ export default function EditableFlashcardRow({
                 <label className="text-xs font-medium uppercase tracking-wide text-gray-400">
                   Definition
                 </label>
+
                 <Input
                   value={editDefinition}
                   onChange={(event) =>
@@ -80,6 +84,7 @@ export default function EditableFlashcardRow({
 
             <div className="flex justify-end gap-2 print:hidden">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 className="border-gray-200 text-gray-500 hover:bg-gray-50"
@@ -89,6 +94,7 @@ export default function EditableFlashcardRow({
               </Button>
 
               <Button
+                type="button"
                 size="sm"
                 className="bg-pink-500 text-white hover:bg-pink-600"
                 onClick={onSaveEditing}
@@ -99,7 +105,7 @@ export default function EditableFlashcardRow({
           </div>
         ) : (
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <button
                   type="button"
@@ -145,10 +151,18 @@ export default function EditableFlashcardRow({
 
             <div className="flex items-center gap-1 print:hidden">
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-pink-500"
+                disabled={isStarPending}
+                className={cn(
+                  "h-8 w-8 text-gray-400 hover:text-yellow-500 disabled:cursor-not-allowed disabled:opacity-60",
+                  flashcard.starred && "text-yellow-400 hover:text-yellow-500",
+                )}
                 onClick={onToggleStar}
+                aria-label={
+                  flashcard.starred ? "Unstar flashcard" : "Star flashcard"
+                }
               >
                 <Star
                   className={cn(
@@ -159,19 +173,23 @@ export default function EditableFlashcardRow({
               </Button>
 
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-gray-400 hover:text-pink-500"
                 onClick={onSpeak}
+                aria-label="Read term aloud"
               >
                 <Volume2 className="h-4 w-4" />
               </Button>
 
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-gray-400 hover:text-pink-500"
                 onClick={onStartEditing}
+                aria-label="Edit flashcard"
               >
                 <Pencil className="h-4 w-4" />
               </Button>

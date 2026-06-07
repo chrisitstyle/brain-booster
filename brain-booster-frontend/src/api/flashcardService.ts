@@ -11,7 +11,7 @@ export interface Flashcard {
   setId: number;
   term: string;
   definition: string;
-  starred?: boolean;
+  starred: boolean;
 }
 
 export interface UpdateFlashcardData {
@@ -56,6 +56,7 @@ export async function addFlashcard(
 
 export async function getFlashcardsBySetId(
   setId: string | number,
+  token?: string | null,
 ): Promise<Flashcard[]> {
   const response = await fetch(
     `${getApiBaseUrl()}/flashcard-sets/${setId}/flashcards`,
@@ -63,6 +64,7 @@ export async function getFlashcardsBySetId(
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     },
   );
@@ -121,4 +123,51 @@ export async function deleteFlashcard(
     );
     throw new Error(message);
   }
+}
+
+export async function starFlashcard(
+  flashcardId: string | number,
+  token: string,
+): Promise<Flashcard> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/flashcards/${flashcardId}/starred`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response, "Failed to star flashcard");
+    throw new Error(message);
+  }
+
+  return await response.json();
+}
+
+export async function unstarFlashcard(
+  flashcardId: string | number,
+  token: string,
+): Promise<Flashcard> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/flashcards/${flashcardId}/starred`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const message = await getErrorMessage(
+      response,
+      "Failed to unstar flashcard",
+    );
+    throw new Error(message);
+  }
+
+  return await response.json();
 }
