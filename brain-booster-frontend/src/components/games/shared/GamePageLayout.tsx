@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
@@ -12,6 +12,7 @@ interface GamePageLayoutProps {
   setId: number | string;
   children: ReactNode;
   warnBeforeLeaving?: boolean;
+  storageKeyToClearOnLeave?: string;
 }
 
 export default function GamePageLayout({
@@ -19,9 +20,12 @@ export default function GamePageLayout({
   setId,
   children,
   warnBeforeLeaving = true,
+  storageKeyToClearOnLeave,
 }: GamePageLayoutProps) {
   const router = useRouter();
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+
+  const isRefreshingRef = useRef(false);
 
   const backToSetHref = `/users/${nickname}/sets/${setId}`;
 
@@ -29,6 +33,8 @@ export default function GamePageLayout({
     if (!warnBeforeLeaving) return;
 
     function handleBeforeUnload(event: BeforeUnloadEvent) {
+      isRefreshingRef.current = true;
+
       event.preventDefault();
       event.returnValue = "";
     }
@@ -40,8 +46,25 @@ export default function GamePageLayout({
     };
   }, [warnBeforeLeaving]);
 
+  useEffect(() => {
+    return () => {
+      if (!storageKeyToClearOnLeave) return;
+
+      if (isRefreshingRef.current) return;
+
+      window.sessionStorage.removeItem(storageKeyToClearOnLeave);
+    };
+  }, [storageKeyToClearOnLeave]);
+
+  function clearGameProgress() {
+    if (!storageKeyToClearOnLeave) return;
+
+    window.sessionStorage.removeItem(storageKeyToClearOnLeave);
+  }
+
   function handleBackToSetClick() {
     if (!warnBeforeLeaving) {
+      clearGameProgress();
       router.push(backToSetHref);
       return;
     }
@@ -50,6 +73,7 @@ export default function GamePageLayout({
   }
 
   function handleConfirmLeave() {
+    clearGameProgress();
     setIsLeaveDialogOpen(false);
     router.push(backToSetHref);
   }

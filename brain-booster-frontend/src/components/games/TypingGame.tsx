@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +7,24 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { shuffleArray } from "./game-utils";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 interface TypingGameProps {
   flashcards: Flashcard[];
+  setId: number | string;
 }
 
 type AnswerStatus = "correct" | "incorrect" | "revealed" | null;
+
+interface TypingGameState {
+  questions: Flashcard[];
+  currentIndex: number;
+  userAnswer: string;
+  answerStatus: AnswerStatus;
+  score: number;
+}
 
 function normalizeAnswer(value: string) {
   return value
@@ -24,17 +34,78 @@ function normalizeAnswer(value: string) {
     .replace(/\s+/g, " ");
 }
 
-export default function TypingGame({ flashcards }: TypingGameProps) {
-  const questions = useMemo(() => shuffleArray(flashcards), [flashcards]);
+function createNewTypingGame(flashcards: Flashcard[]): TypingGameState {
+  return {
+    questions: shuffleArray(flashcards),
+    currentIndex: 0,
+    userAnswer: "",
+    answerStatus: null,
+    score: 0,
+  };
+}
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [answerStatus, setAnswerStatus] = useState<AnswerStatus>(null);
-  const [score, setScore] = useState(0);
+export default function TypingGame({ flashcards, setId }: TypingGameProps) {
+  const storageKey = getGameStorageKey(setId, "written");
+
+  const [gameState, setGameState, clearGameState] =
+    usePersistedGameState<TypingGameState>(storageKey, () =>
+      createNewTypingGame(flashcards),
+    );
+
+  const { questions, currentIndex, userAnswer, answerStatus, score } =
+    gameState;
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
   const isAnswered = answerStatus !== null;
+
+  function updateGameState(nextState: Partial<TypingGameState>) {
+    setGameState((previousState) => ({
+      ...previousState,
+      ...nextState,
+    }));
+  }
+
+  function restartGame() {
+    clearGameState();
+    setGameState(createNewTypingGame(flashcards));
+  }
+
+  function handleCheckAnswer() {
+    if (!currentQuestion || isAnswered) return;
+
+    const normalizedUserAnswer = normalizeAnswer(userAnswer);
+    const normalizedCorrectAnswer = normalizeAnswer(currentQuestion.definition);
+
+    if (!normalizedUserAnswer) return;
+
+    if (normalizedUserAnswer === normalizedCorrectAnswer) {
+      updateGameState({
+        answerStatus: "correct",
+        score: score + 1,
+      });
+    } else {
+      updateGameState({
+        answerStatus: "incorrect",
+      });
+    }
+  }
+
+  function handleDontKnow() {
+    if (isAnswered) return;
+
+    updateGameState({
+      answerStatus: "revealed",
+    });
+  }
+
+  function handleNext() {
+    updateGameState({
+      currentIndex: currentIndex + 1,
+      userAnswer: "",
+      answerStatus: null,
+    });
+  }
 
   if (flashcards.length < 1) {
     return (
@@ -51,42 +122,9 @@ export default function TypingGame({ flashcards }: TypingGameProps) {
         total={questions.length}
         progressSuffix="correct"
         primaryActionLabel="Try again"
-        onPrimaryAction={() => {
-          setCurrentIndex(0);
-          setUserAnswer("");
-          setAnswerStatus(null);
-          setScore(0);
-        }}
+        onPrimaryAction={restartGame}
       />
     );
-  }
-
-  function handleCheckAnswer() {
-    if (isAnswered) return;
-
-    const normalizedUserAnswer = normalizeAnswer(userAnswer);
-    const normalizedCorrectAnswer = normalizeAnswer(currentQuestion.definition);
-
-    if (!normalizedUserAnswer) return;
-
-    if (normalizedUserAnswer === normalizedCorrectAnswer) {
-      setAnswerStatus("correct");
-      setScore((previousScore) => previousScore + 1);
-    } else {
-      setAnswerStatus("incorrect");
-    }
-  }
-
-  function handleDontKnow() {
-    if (isAnswered) return;
-
-    setAnswerStatus("revealed");
-  }
-
-  function handleNext() {
-    setCurrentIndex((previousIndex) => previousIndex + 1);
-    setUserAnswer("");
-    setAnswerStatus(null);
   }
 
   return (
@@ -132,7 +170,9 @@ export default function TypingGame({ flashcards }: TypingGameProps) {
             disabled={isAnswered}
             placeholder="Type your answer..."
             className="h-12 rounded-xl border-gray-200 bg-white text-gray-800 placeholder:text-gray-400 focus-visible:ring-pink-400"
-            onChange={(event) => setUserAnswer(event.target.value)}
+            onChange={(event) =>
+              updateGameState({ userAnswer: event.target.value })
+            }
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 if (isAnswered) {

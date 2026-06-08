@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import TypingGame from "@/components/games/TypingGame";
 import GamePageLayout from "@/components/games/shared/GamePageLayout";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 export default function TypingPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -30,14 +31,20 @@ export default function TypingPage() {
   }, [params.id]);
 
   return (
-    <GamePageLayout nickname={params.nickname} setId={params.id}>
+    <GamePageLayout
+      nickname={params.nickname}
+      setId={params.id}
+      storageKeyToClearOnLeave={getGameStorageKey(params.id, "written")}
+    >
       {isLoading && (
         <div className="text-gray-600">Loading written mode...</div>
       )}
 
       {errorMessage && <div className="text-red-500">{errorMessage}</div>}
 
-      {!isLoading && !errorMessage && <TypingGame flashcards={flashcards} />}
+      {!isLoading && !errorMessage && (
+        <TypingGame flashcards={flashcards} setId={params.id} />
+      )}
     </GamePageLayout>
   );
 }

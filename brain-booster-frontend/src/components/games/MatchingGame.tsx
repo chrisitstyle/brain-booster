@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { shuffleArray } from "./game-utils";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 interface MatchingGameProps {
   flashcards: Flashcard[];
+  setId: number | string;
 }
 
 interface MismatchPair {
@@ -18,66 +20,102 @@ interface MismatchPair {
   definitionId: string;
 }
 
+interface MatchingGameState {
+  roundId: number;
+  cardsForRound: Flashcard[];
+  definitionCards: Flashcard[];
+  selectedTermId: string | null;
+  selectedDefinitionId: string | null;
+  matchedIds: string[];
+  mistakes: number;
+  mismatchPair: MismatchPair | null;
+}
+
 function getFlashcardId(card: Flashcard) {
   return String(card.flashcardId);
 }
 
-export default function MatchingGame({ flashcards }: MatchingGameProps) {
-  const [roundId, setRoundId] = useState(0);
-  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
-  const [selectedDefinitionId, setSelectedDefinitionId] = useState<
-    string | null
-  >(null);
-  const [matchedIds, setMatchedIds] = useState<string[]>([]);
-  const [mistakes, setMistakes] = useState(0);
-  const [mismatchPair, setMismatchPair] = useState<MismatchPair | null>(null);
+function createNewMatchingRound(flashcards: Flashcard[], roundId = 0) {
+  const cardsForRound = shuffleArray(flashcards).slice(
+    0,
+    Math.min(6, flashcards.length),
+  );
 
-  const cardsForRound = useMemo(() => {
-    return shuffleArray(flashcards).slice(0, Math.min(6, flashcards.length));
-  }, [flashcards, roundId]);
+  return {
+    roundId,
+    cardsForRound,
+    definitionCards: shuffleArray(cardsForRound),
+    selectedTermId: null,
+    selectedDefinitionId: null,
+    matchedIds: [],
+    mistakes: 0,
+    mismatchPair: null,
+  };
+}
 
-  const definitionCards = useMemo(() => {
-    return shuffleArray(cardsForRound);
-  }, [cardsForRound]);
+export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
+  const storageKey = getGameStorageKey(setId, "matching");
+
+  const [gameState, setGameState, clearGameState] =
+    usePersistedGameState<MatchingGameState>(storageKey, () =>
+      createNewMatchingRound(flashcards),
+    );
+
+  const {
+    roundId,
+    cardsForRound,
+    definitionCards,
+    selectedTermId,
+    selectedDefinitionId,
+    matchedIds,
+    mistakes,
+    mismatchPair,
+  } = gameState;
 
   const isFinished =
     cardsForRound.length > 0 && matchedIds.length === cardsForRound.length;
+
+  function updateGameState(nextState: Partial<MatchingGameState>) {
+    setGameState((previousState) => ({
+      ...previousState,
+      ...nextState,
+    }));
+  }
 
   function isMatched(cardId: string) {
     return matchedIds.includes(cardId);
   }
 
   function resetGame() {
-    setRoundId((previousRoundId) => previousRoundId + 1);
-    setSelectedTermId(null);
-    setSelectedDefinitionId(null);
-    setMatchedIds([]);
-    setMistakes(0);
-    setMismatchPair(null);
+    clearGameState();
+
+    setGameState(createNewMatchingRound(flashcards, roundId + 1));
   }
 
   function checkPair(termId: string, definitionId: string) {
     if (termId === definitionId) {
-      setMatchedIds((previousMatchedIds) => {
-        if (previousMatchedIds.includes(termId)) {
-          return previousMatchedIds;
-        }
-
-        return [...previousMatchedIds, termId];
+      updateGameState({
+        matchedIds: matchedIds.includes(termId)
+          ? matchedIds
+          : [...matchedIds, termId],
+        selectedTermId: null,
+        selectedDefinitionId: null,
       });
 
-      setSelectedTermId(null);
-      setSelectedDefinitionId(null);
       return;
     }
 
-    setMistakes((previousMistakes) => previousMistakes + 1);
-    setMismatchPair({ termId, definitionId });
+    updateGameState({
+      mistakes: mistakes + 1,
+      mismatchPair: { termId, definitionId },
+    });
 
     window.setTimeout(() => {
-      setSelectedTermId(null);
-      setSelectedDefinitionId(null);
-      setMismatchPair(null);
+      updateGameState({
+        selectedTermId: null,
+        selectedDefinitionId: null,
+        mismatchPair: null,
+      });
     }, 600);
   }
 
@@ -86,7 +124,9 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
 
     if (isMatched(cardId) || mismatchPair) return;
 
-    setSelectedTermId(cardId);
+    updateGameState({
+      selectedTermId: cardId,
+    });
 
     if (selectedDefinitionId) {
       checkPair(cardId, selectedDefinitionId);
@@ -98,7 +138,9 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
 
     if (isMatched(cardId) || mismatchPair) return;
 
-    setSelectedDefinitionId(cardId);
+    updateGameState({
+      selectedDefinitionId: cardId,
+    });
 
     if (selectedTermId) {
       checkPair(selectedTermId, cardId);

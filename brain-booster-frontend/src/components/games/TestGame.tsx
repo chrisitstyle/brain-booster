@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,16 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { shuffleArray } from "./game-utils";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 type AnswerWith = "term" | "definition" | "both";
 type TestQuestionType = "trueFalse" | "multipleChoice" | "matching" | "written";
 
 interface TestGameProps {
   flashcards: Flashcard[];
+  setId: number | string;
 }
 
 interface TestConfig {
@@ -32,7 +35,24 @@ interface TestQuestion {
   trueFalseAnswer?: string;
   isTrueStatement?: boolean;
   matchingCards?: Flashcard[];
+  matchingAnswerCards?: Flashcard[];
   answerWith: Exclude<AnswerWith, "both">;
+}
+
+interface TestGameState {
+  config: TestConfig;
+  questions: TestQuestion[];
+  hasStarted: boolean;
+  currentIndex: number;
+  score: number;
+  selectedAnswer: string | null;
+  writtenAnswer: string;
+  isAnswered: boolean;
+  selectedPromptId: number | null;
+  selectedAnswerId: number | null;
+  matchedIds: number[];
+  matchingMistakes: number;
+  mismatchIds: number[];
 }
 
 function normalizeAnswer(value: string) {
@@ -80,6 +100,50 @@ function getPromptValue(
   answerWith: Exclude<AnswerWith, "both">,
 ) {
   return answerWith === "term" ? card.definition : card.term;
+}
+
+function createInitialConfig(maxQuestions: number): TestConfig {
+  return {
+    questionCount: Math.min(20, Math.max(1, maxQuestions)),
+    answerWith: "both",
+    enabledTypes: {
+      trueFalse: false,
+      multipleChoice: true,
+      matching: false,
+      written: false,
+    },
+  };
+}
+
+function createInitialTestState(flashcards: Flashcard[]): TestGameState {
+  return {
+    config: createInitialConfig(flashcards.length),
+    questions: [],
+    hasStarted: false,
+    currentIndex: 0,
+    score: 0,
+    selectedAnswer: null,
+    writtenAnswer: "",
+    isAnswered: false,
+    selectedPromptId: null,
+    selectedAnswerId: null,
+    matchedIds: [],
+    matchingMistakes: 0,
+    mismatchIds: [],
+  };
+}
+
+function getResetQuestionState() {
+  return {
+    selectedAnswer: null,
+    writtenAnswer: "",
+    isAnswered: false,
+    selectedPromptId: null,
+    selectedAnswerId: null,
+    matchedIds: [],
+    matchingMistakes: 0,
+    mismatchIds: [],
+  };
 }
 
 function buildTestQuestions(
@@ -154,6 +218,7 @@ function buildTestQuestions(
         prompt,
         correctAnswer,
         matchingCards,
+        matchingAnswerCards: shuffleArray(matchingCards),
         answerWith,
       };
     }
@@ -168,34 +233,30 @@ function buildTestQuestions(
   });
 }
 
-export default function TestGame({ flashcards }: TestGameProps) {
+export default function TestGame({ flashcards, setId }: TestGameProps) {
   const maxQuestions = flashcards.length;
+  const storageKey = getGameStorageKey(setId, "custom-test");
 
-  const [config, setConfig] = useState<TestConfig>({
-    questionCount: Math.min(20, Math.max(1, maxQuestions)),
-    answerWith: "both",
-    enabledTypes: {
-      trueFalse: false,
-      multipleChoice: true,
-      matching: false,
-      written: false,
-    },
-  });
+  const [gameState, setGameState, clearGameState] =
+    usePersistedGameState<TestGameState>(storageKey, () =>
+      createInitialTestState(flashcards),
+    );
 
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState(0);
-
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [writtenAnswer, setWrittenAnswer] = useState("");
-  const [isAnswered, setIsAnswered] = useState(false);
-
-  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
-  const [selectedAnswerId, setSelectedAnswerId] = useState<number | null>(null);
-  const [matchedIds, setMatchedIds] = useState<number[]>([]);
-  const [matchingMistakes, setMatchingMistakes] = useState(0);
-  const [mismatchIds, setMismatchIds] = useState<number[]>([]);
+  const {
+    config,
+    questions,
+    hasStarted,
+    currentIndex,
+    score,
+    selectedAnswer,
+    writtenAnswer,
+    isAnswered,
+    selectedPromptId,
+    selectedAnswerId,
+    matchedIds,
+    matchingMistakes,
+    mismatchIds,
+  } = gameState;
 
   const currentQuestion = questions[currentIndex];
   const isFinished = hasStarted && currentIndex >= questions.length;
@@ -210,40 +271,48 @@ export default function TestGame({ flashcards }: TestGameProps) {
   }, [currentQuestion]);
 
   const matchingAnswerCards = useMemo(() => {
-    if (!currentQuestion?.matchingCards) return [];
-    return shuffleArray(currentQuestion.matchingCards);
+    if (!currentQuestion?.matchingAnswerCards) return [];
+    return currentQuestion.matchingAnswerCards;
   }, [currentQuestion]);
+
+  function updateGameState(nextState: Partial<TestGameState>) {
+    setGameState((previousState) => ({
+      ...previousState,
+      ...nextState,
+    }));
+  }
+
+  function updateConfig(nextConfig: Partial<TestConfig>) {
+    setGameState((previousState) => ({
+      ...previousState,
+      config: {
+        ...previousState.config,
+        ...nextConfig,
+      },
+    }));
+  }
 
   function updateQuestionCount(value: string) {
     const numberValue = Number(value);
 
     if (Number.isNaN(numberValue)) return;
 
-    setConfig((previousConfig) => ({
-      ...previousConfig,
+    updateConfig({
       questionCount: Math.min(Math.max(numberValue, 1), maxQuestions),
-    }));
+    });
   }
 
   function toggleQuestionType(type: TestQuestionType) {
-    setConfig((previousConfig) => ({
-      ...previousConfig,
-      enabledTypes: {
-        ...previousConfig.enabledTypes,
-        [type]: !previousConfig.enabledTypes[type],
+    setGameState((previousState) => ({
+      ...previousState,
+      config: {
+        ...previousState.config,
+        enabledTypes: {
+          ...previousState.config.enabledTypes,
+          [type]: !previousState.config.enabledTypes[type],
+        },
       },
     }));
-  }
-
-  function resetQuestionState() {
-    setSelectedAnswer(null);
-    setWrittenAnswer("");
-    setIsAnswered(false);
-    setSelectedPromptId(null);
-    setSelectedAnswerId(null);
-    setMatchedIds([]);
-    setMatchingMistakes(0);
-    setMismatchIds([]);
   }
 
   function startTest() {
@@ -251,35 +320,45 @@ export default function TestGame({ flashcards }: TestGameProps) {
 
     const nextQuestions = buildTestQuestions(flashcards, config);
 
-    setQuestions(nextQuestions);
-    setHasStarted(true);
-    setCurrentIndex(0);
-    setScore(0);
-    resetQuestionState();
+    updateGameState({
+      questions: nextQuestions,
+      hasStarted: true,
+      currentIndex: 0,
+      score: 0,
+      ...getResetQuestionState(),
+    });
   }
 
   function goToNextQuestion() {
-    resetQuestionState();
-    setCurrentIndex((previousIndex) => previousIndex + 1);
+    updateGameState({
+      currentIndex: currentIndex + 1,
+      ...getResetQuestionState(),
+    });
   }
 
   function restartSetup() {
-    setHasStarted(false);
-    setQuestions([]);
-    setCurrentIndex(0);
-    setScore(0);
-    resetQuestionState();
+    updateGameState({
+      questions: [],
+      hasStarted: false,
+      currentIndex: 0,
+      score: 0,
+      ...getResetQuestionState(),
+    });
+  }
+
+  function resetEverything() {
+    clearGameState();
+    setGameState(createInitialTestState(flashcards));
   }
 
   function handleAnswer(answer: string) {
     if (!currentQuestion || isAnswered) return;
 
-    setSelectedAnswer(answer);
-    setIsAnswered(true);
-
-    if (answer === currentQuestion.correctAnswer) {
-      setScore((previousScore) => previousScore + 1);
-    }
+    updateGameState({
+      selectedAnswer: answer,
+      isAnswered: true,
+      score: answer === currentQuestion.correctAnswer ? score + 1 : score,
+    });
   }
 
   function handleTrueFalseAnswer(answer: boolean) {
@@ -287,12 +366,11 @@ export default function TestGame({ flashcards }: TestGameProps) {
 
     const isCorrect = answer === currentQuestion.isTrueStatement;
 
-    setSelectedAnswer(answer ? "True" : "False");
-    setIsAnswered(true);
-
-    if (isCorrect) {
-      setScore((previousScore) => previousScore + 1);
-    }
+    updateGameState({
+      selectedAnswer: answer ? "True" : "False",
+      isAnswered: true,
+      score: isCorrect ? score + 1 : score,
+    });
   }
 
   function handleWrittenCheck() {
@@ -302,11 +380,10 @@ export default function TestGame({ flashcards }: TestGameProps) {
       normalizeAnswer(writtenAnswer) ===
       normalizeAnswer(currentQuestion.correctAnswer);
 
-    setIsAnswered(true);
-
-    if (isCorrect) {
-      setScore((previousScore) => previousScore + 1);
-    }
+    updateGameState({
+      isAnswered: true,
+      score: isCorrect ? score + 1 : score,
+    });
   }
 
   function isMatchingCompleted() {
@@ -320,7 +397,9 @@ export default function TestGame({ flashcards }: TestGameProps) {
   function handleMatchingPromptClick(cardId: number) {
     if (matchedIds.includes(cardId) || mismatchIds.length > 0) return;
 
-    setSelectedPromptId(cardId);
+    updateGameState({
+      selectedPromptId: cardId,
+    });
 
     if (selectedAnswerId !== null) {
       checkMatchingPair(cardId, selectedAnswerId);
@@ -330,7 +409,9 @@ export default function TestGame({ flashcards }: TestGameProps) {
   function handleMatchingAnswerClick(cardId: number) {
     if (matchedIds.includes(cardId) || mismatchIds.length > 0) return;
 
-    setSelectedAnswerId(cardId);
+    updateGameState({
+      selectedAnswerId: cardId,
+    });
 
     if (selectedPromptId !== null) {
       checkMatchingPair(selectedPromptId, cardId);
@@ -339,28 +420,37 @@ export default function TestGame({ flashcards }: TestGameProps) {
 
   function checkMatchingPair(promptId: number, answerId: number) {
     if (promptId === answerId) {
-      setMatchedIds((previousMatchedIds) => [...previousMatchedIds, promptId]);
-      setSelectedPromptId(null);
-      setSelectedAnswerId(null);
+      updateGameState({
+        matchedIds: matchedIds.includes(promptId)
+          ? matchedIds
+          : [...matchedIds, promptId],
+        selectedPromptId: null,
+        selectedAnswerId: null,
+      });
+
       return;
     }
 
-    setMatchingMistakes((previousMistakes) => previousMistakes + 1);
-    setMismatchIds([promptId, answerId]);
+    updateGameState({
+      matchingMistakes: matchingMistakes + 1,
+      mismatchIds: [promptId, answerId],
+    });
 
     window.setTimeout(() => {
-      setSelectedPromptId(null);
-      setSelectedAnswerId(null);
-      setMismatchIds([]);
+      updateGameState({
+        selectedPromptId: null,
+        selectedAnswerId: null,
+        mismatchIds: [],
+      });
     }, 550);
   }
 
   function finishMatchingQuestion() {
-    if (matchingMistakes === 0) {
-      setScore((previousScore) => previousScore + 1);
-    }
-
-    goToNextQuestion();
+    updateGameState({
+      score: matchingMistakes === 0 ? score + 1 : score,
+      currentIndex: currentIndex + 1,
+      ...getResetQuestionState(),
+    });
   }
 
   if (flashcards.length < 2) {
@@ -408,10 +498,9 @@ export default function TestGame({ flashcards }: TestGameProps) {
               value={config.answerWith}
               className="h-11 rounded-full border border-pink-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-pink-200 focus:border-pink-400"
               onChange={(event) =>
-                setConfig((previousConfig) => ({
-                  ...previousConfig,
+                updateConfig({
                   answerWith: event.target.value as AnswerWith,
-                }))
+                })
               }
             >
               <option value="term">Term</option>
@@ -460,7 +549,16 @@ export default function TestGame({ flashcards }: TestGameProps) {
           </p>
         )}
 
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex justify-between gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-pink-200 text-pink-500 hover:bg-pink-50"
+            onClick={resetEverything}
+          >
+            Reset
+          </Button>
+
           <Button
             type="button"
             className="rounded-full bg-pink-500 px-6 text-white hover:bg-pink-600"
@@ -614,7 +712,9 @@ export default function TestGame({ flashcards }: TestGameProps) {
               disabled={isAnswered}
               placeholder="Type your answer..."
               className="h-12 rounded-xl border-gray-200 focus-visible:ring-pink-400"
-              onChange={(event) => setWrittenAnswer(event.target.value)}
+              onChange={(event) =>
+                updateGameState({ writtenAnswer: event.target.value })
+              }
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   if (isAnswered) {

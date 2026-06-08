@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import MatchingGame from "@/components/games/MatchingGame";
 import GamePageLayout from "@/components/games/shared/GamePageLayout";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 export default function MatchingPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -30,14 +31,20 @@ export default function MatchingPage() {
   }, [params.id]);
 
   return (
-    <GamePageLayout nickname={params.nickname} setId={params.id}>
+    <GamePageLayout
+      nickname={params.nickname}
+      setId={params.id}
+      storageKeyToClearOnLeave={getGameStorageKey(params.id, "matching")}
+    >
       {isLoading && (
         <div className="text-gray-600">Loading matching mode...</div>
       )}
 
       {errorMessage && <div className="text-red-500">{errorMessage}</div>}
 
-      {!isLoading && !errorMessage && <MatchingGame flashcards={flashcards} />}
+      {!isLoading && !errorMessage && (
+        <MatchingGame flashcards={flashcards} setId={params.id} />
+      )}
     </GamePageLayout>
   );
 }
