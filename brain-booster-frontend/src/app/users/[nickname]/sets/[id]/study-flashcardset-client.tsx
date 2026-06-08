@@ -23,6 +23,7 @@ import StudyProgress from "../components/study-progress";
 import StudySetAuthorInfo from "../components/study-set-author-info";
 import FlashcardTermsList from "../components/flashcard-terms-list";
 import StudyVisibilityControls from "../components/study-visibility-controls";
+import StudyGamesSection from "../components/study-games-section";
 
 type HiddenFlashcardSide = "terms" | "definitions" | null;
 
@@ -354,10 +355,11 @@ export default function StudyFlashcardSetClient({
       <div className="container mx-auto px-4 pt-6 pb-28 print:px-0 print:py-0">
         <StudySetHeader
           nickname={nickname}
-          setId={studySet.setId}
           setName={studySet.setName}
           description={studySet.description}
         />
+
+        <StudyGamesSection nickname={nickname} setId={studySet.setId} />
 
         {flashcards.length > 0 ? (
           <div className="mx-auto max-w-2xl print:hidden">
