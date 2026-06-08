@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import TypingGame from "@/components/games/TypingGame";
+import GamePageLayout from "@/components/games/shared/GamePageLayout";
 
 export default function TypingPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -28,17 +29,15 @@ export default function TypingPage() {
     void loadFlashcards();
   }, [params.id]);
 
-  if (isLoading) {
-    return <div className="p-8 text-gray-600">Loading typing mode...</div>;
-  }
-
-  if (errorMessage) {
-    return <div className="p-8 text-red-500">{errorMessage}</div>;
-  }
-
   return (
-    <main className="p-8">
-      <TypingGame flashcards={flashcards} />
-    </main>
+    <GamePageLayout nickname={params.nickname} setId={params.id}>
+      {isLoading && (
+        <div className="text-gray-600">Loading written mode...</div>
+      )}
+
+      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+
+      {!isLoading && !errorMessage && <TypingGame flashcards={flashcards} />}
+    </GamePageLayout>
   );
 }

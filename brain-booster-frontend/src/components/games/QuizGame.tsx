@@ -3,6 +3,10 @@
 import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
+import GameEmptyState from "@/components/games/shared/GameEmptyState";
+import GameProgress from "@/components/games/shared/GameProgress";
+import GameResultCard from "@/components/games/shared/GameResultCard";
+import GameShell from "@/components/games/shared/GameShell";
 import { buildQuizQuestions } from "./game-utils";
 
 interface QuizGameProps {
@@ -18,79 +22,31 @@ export default function QuizGame({ flashcards }: QuizGameProps) {
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
-
-  const progressPercentage =
-    questions.length > 0 ? (score / questions.length) * 100 : 0;
+  const isAnswered = selectedAnswer !== null;
 
   if (flashcards.length < 2) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center text-gray-700 shadow-sm">
-        Add at least 2 flashcards to start the quiz.
-      </div>
+      <GameEmptyState message="Add at least 2 flashcards to start multiple choice mode." />
     );
   }
 
   if (isFinished || !currentQuestion) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">Quiz completed</h1>
-
-        <p className="mt-4 text-lg text-gray-700">
-          Your score:{" "}
-          <span className="font-semibold text-pink-500">
-            {score} / {questions.length}
-          </span>
-        </p>
-
-        <div className="mt-6 space-y-2">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>Progress</span>
-            <span>
-              {score} / {questions.length} correct
-            </span>
-          </div>
-
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-pink-500 transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        <Button
-          className="mt-6 bg-pink-500 text-white hover:bg-pink-600"
-          onClick={() => {
-            setCurrentIndex(0);
-            setSelectedAnswer(null);
-            setScore(0);
-          }}
-        >
-          Try again
-        </Button>
-
-        <style jsx>{`
-          div {
-            animation: quiz-fade-in 260ms ease-out;
-          }
-
-          @keyframes quiz-fade-in {
-            from {
-              opacity: 0;
-              transform: translateY(10px) scale(0.98);
-            }
-
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-        `}</style>
-      </div>
+      <GameResultCard
+        title="Multiple choice completed"
+        scoreLabel="Your score"
+        score={score}
+        total={questions.length}
+        progressSuffix="correct"
+        primaryActionLabel="Try again"
+        onPrimaryAction={() => {
+          setCurrentIndex(0);
+          setSelectedAnswer(null);
+          setScore(0);
+        }}
+      />
     );
   }
-
-  const isAnswered = selectedAnswer !== null;
 
   function handleAnswer(answer: string) {
     if (isAnswered) return;
@@ -114,24 +70,10 @@ export default function QuizGame({ flashcards }: QuizGameProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 rounded-2xl border border-pink-100 bg-white p-6 shadow-sm">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Progress</span>
-          <span>
-            {score} / {questions.length} correct
-          </span>
-        </div>
+    <GameShell>
+      <GameProgress current={score} total={questions.length} suffix="correct" />
 
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full rounded-full bg-pink-500 transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-
-      <div key={currentIndex} className="quiz-question-enter space-y-6">
+      <div key={currentIndex} className="game-enter space-y-6">
         <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
           {!isAnswered && (
             <Button
@@ -204,24 +146,6 @@ export default function QuizGame({ flashcards }: QuizGameProps) {
           Next question
         </Button>
       )}
-
-      <style jsx>{`
-        .quiz-question-enter {
-          animation: quiz-card-enter 280ms ease-out;
-        }
-
-        @keyframes quiz-card-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-      `}</style>
-    </div>
+    </GameShell>
   );
 }
