@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import QuizGame from "@/components/games/QuizGame";
 import GamePageLayout from "@/components/games/shared/GamePageLayout";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 export default function QuizPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -30,14 +31,20 @@ export default function QuizPage() {
   }, [params.id]);
 
   return (
-    <GamePageLayout nickname={params.nickname} setId={params.id}>
+    <GamePageLayout
+      nickname={params.nickname}
+      setId={params.id}
+      storageKeyToClearOnLeave={getGameStorageKey(params.id, "multiple-choice")}
+    >
       {isLoading && (
         <div className="text-gray-600">Loading multiple choice...</div>
       )}
 
       {errorMessage && <div className="text-red-500">{errorMessage}</div>}
 
-      {!isLoading && !errorMessage && <QuizGame flashcards={flashcards} />}
+      {!isLoading && !errorMessage && (
+        <QuizGame flashcards={flashcards} setId={params.id} />
+      )}
     </GamePageLayout>
   );
 }

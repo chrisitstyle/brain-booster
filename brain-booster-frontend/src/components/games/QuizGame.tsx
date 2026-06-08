@@ -1,28 +1,91 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { buildQuizQuestions } from "./game-utils";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 
 interface QuizGameProps {
   flashcards: Flashcard[];
+  setId: number | string;
 }
 
-export default function QuizGame({ flashcards }: QuizGameProps) {
-  const questions = useMemo(() => buildQuizQuestions(flashcards), [flashcards]);
+interface QuizGameState {
+  currentIndex: number;
+  selectedAnswer: string | null;
+  score: number;
+  questions: ReturnType<typeof buildQuizQuestions>;
+}
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [score, setScore] = useState(0);
+export default function QuizGame({ flashcards, setId }: QuizGameProps) {
+  const storageKey = getGameStorageKey(setId, "multiple-choice");
+
+  const initialQuestions = useMemo(
+    () => buildQuizQuestions(flashcards),
+    [flashcards],
+  );
+
+  const [gameState, setGameState, clearGameState] =
+    usePersistedGameState<QuizGameState>(storageKey, () => ({
+      currentIndex: 0,
+      selectedAnswer: null,
+      score: 0,
+      questions: initialQuestions,
+    }));
+
+  const { currentIndex, selectedAnswer, score, questions } = gameState;
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
   const isAnswered = selectedAnswer !== null;
+
+  function updateGameState(nextState: Partial<QuizGameState>) {
+    setGameState((previousState) => ({
+      ...previousState,
+      ...nextState,
+    }));
+  }
+
+  function restartGame() {
+    clearGameState();
+
+    setGameState({
+      currentIndex: 0,
+      selectedAnswer: null,
+      score: 0,
+      questions: buildQuizQuestions(flashcards),
+    });
+  }
+
+  function handleAnswer(answer: string) {
+    if (!currentQuestion || isAnswered) return;
+
+    updateGameState({
+      selectedAnswer: answer,
+      score: answer === currentQuestion.correctAnswer ? score + 1 : score,
+    });
+  }
+
+  function handleDontKnow() {
+    if (!currentQuestion || isAnswered) return;
+
+    updateGameState({
+      selectedAnswer: currentQuestion.correctAnswer,
+    });
+  }
+
+  function handleNext() {
+    updateGameState({
+      selectedAnswer: null,
+      currentIndex: currentIndex + 1,
+    });
+  }
 
   if (flashcards.length < 2) {
     return (
@@ -39,34 +102,9 @@ export default function QuizGame({ flashcards }: QuizGameProps) {
         total={questions.length}
         progressSuffix="correct"
         primaryActionLabel="Try again"
-        onPrimaryAction={() => {
-          setCurrentIndex(0);
-          setSelectedAnswer(null);
-          setScore(0);
-        }}
+        onPrimaryAction={restartGame}
       />
     );
-  }
-
-  function handleAnswer(answer: string) {
-    if (isAnswered) return;
-
-    setSelectedAnswer(answer);
-
-    if (answer === currentQuestion.correctAnswer) {
-      setScore((previousScore) => previousScore + 1);
-    }
-  }
-
-  function handleDontKnow() {
-    if (isAnswered) return;
-
-    setSelectedAnswer(currentQuestion.correctAnswer);
-  }
-
-  function handleNext() {
-    setSelectedAnswer(null);
-    setCurrentIndex((previousIndex) => previousIndex + 1);
   }
 
   return (
