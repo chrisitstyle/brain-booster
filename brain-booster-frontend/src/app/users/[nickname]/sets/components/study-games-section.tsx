@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Keyboard, Layers, MousePointerClick } from "lucide-react";
+import {
+  FileQuestion,
+  Keyboard,
+  Layers,
+  MousePointerClick,
+} from "lucide-react";
 
 interface StudyGamesSectionProps {
   nickname: string;
@@ -24,6 +29,11 @@ const games = [
     href: "match",
     icon: Layers,
   },
+  {
+    name: "Test",
+    href: "test",
+    icon: FileQuestion,
+  },
 ];
 
 export default function StudyGamesSection({
@@ -37,7 +47,7 @@ export default function StudyGamesSection({
           Practice modes
         </h2>
 
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
           {games.map((game) => {
             const Icon = game.icon;
 
