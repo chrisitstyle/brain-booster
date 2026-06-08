@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import GameEmptyState from "@/components/games/shared/GameEmptyState";
+import GameProgress from "@/components/games/shared/GameProgress";
+import GameResultCard from "@/components/games/shared/GameResultCard";
+import GameShell from "@/components/games/shared/GameShell";
 import { shuffleArray } from "./game-utils";
 
 interface TypingGameProps {
@@ -30,63 +34,30 @@ export default function TypingGame({ flashcards }: TypingGameProps) {
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
-
-  const progressPercentage =
-    questions.length > 0 ? (score / questions.length) * 100 : 0;
-
   const isAnswered = answerStatus !== null;
 
   if (flashcards.length < 1) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center text-gray-700 shadow-sm">
-        Add at least 1 flashcard to start typing mode.
-      </div>
+      <GameEmptyState message="Add at least 1 flashcard to start written mode." />
     );
   }
 
   if (isFinished || !currentQuestion) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Typing mode completed
-        </h1>
-
-        <p className="mt-4 text-lg text-gray-700">
-          Your score:{" "}
-          <span className="font-semibold text-pink-500">
-            {score} / {questions.length}
-          </span>
-        </p>
-
-        <div className="mt-6 space-y-2">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>Progress</span>
-            <span>
-              {score} / {questions.length} correct
-            </span>
-          </div>
-
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-pink-500 transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          className="mt-6 bg-pink-500 text-white hover:bg-pink-600"
-          onClick={() => {
-            setCurrentIndex(0);
-            setUserAnswer("");
-            setAnswerStatus(null);
-            setScore(0);
-          }}
-        >
-          Try again
-        </Button>
-      </div>
+      <GameResultCard
+        title="Written mode completed"
+        scoreLabel="Your score"
+        score={score}
+        total={questions.length}
+        progressSuffix="correct"
+        primaryActionLabel="Try again"
+        onPrimaryAction={() => {
+          setCurrentIndex(0);
+          setUserAnswer("");
+          setAnswerStatus(null);
+          setScore(0);
+        }}
+      />
     );
   }
 
@@ -119,24 +90,10 @@ export default function TypingGame({ flashcards }: TypingGameProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 rounded-2xl border border-pink-100 bg-white p-6 shadow-sm">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Progress</span>
-          <span>
-            {score} / {questions.length} correct
-          </span>
-        </div>
+    <GameShell>
+      <GameProgress current={score} total={questions.length} suffix="correct" />
 
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full rounded-full bg-pink-500 transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-
-      <div key={currentIndex} className="typing-question-enter space-y-6">
+      <div key={currentIndex} className="game-enter space-y-6">
         <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
           {!isAnswered && (
             <Button
@@ -232,24 +189,6 @@ export default function TypingGame({ flashcards }: TypingGameProps) {
           Next question
         </Button>
       )}
-
-      <style jsx>{`
-        .typing-question-enter {
-          animation: typing-card-enter 280ms ease-out;
-        }
-
-        @keyframes typing-card-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-      `}</style>
-    </div>
+    </GameShell>
   );
 }

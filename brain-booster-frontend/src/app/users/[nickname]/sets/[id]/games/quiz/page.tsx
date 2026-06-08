@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import QuizGame from "@/components/games/QuizGame";
+import GamePageLayout from "@/components/games/shared/GamePageLayout";
 
 export default function QuizPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -28,17 +29,15 @@ export default function QuizPage() {
     void loadFlashcards();
   }, [params.id]);
 
-  if (isLoading) {
-    return <div className="p-8">Loading quiz...</div>;
-  }
-
-  if (errorMessage) {
-    return <div className="p-8 text-red-500">{errorMessage}</div>;
-  }
-
   return (
-    <main className="p-8">
-      <QuizGame flashcards={flashcards} />
-    </main>
+    <GamePageLayout nickname={params.nickname} setId={params.id}>
+      {isLoading && (
+        <div className="text-gray-600">Loading multiple choice...</div>
+      )}
+
+      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+
+      {!isLoading && !errorMessage && <QuizGame flashcards={flashcards} />}
+    </GamePageLayout>
   );
 }

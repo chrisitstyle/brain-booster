@@ -3,6 +3,10 @@
 import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
+import GameEmptyState from "@/components/games/shared/GameEmptyState";
+import GameProgress from "@/components/games/shared/GameProgress";
+import GameResultCard from "@/components/games/shared/GameResultCard";
+import GameShell from "@/components/games/shared/GameShell";
 import { shuffleArray } from "./game-utils";
 
 interface MatchingGameProps {
@@ -38,11 +42,6 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
 
   const isFinished =
     cardsForRound.length > 0 && matchedIds.length === cardsForRound.length;
-
-  const progressPercentage =
-    cardsForRound.length > 0
-      ? (matchedIds.length / cardsForRound.length) * 100
-      : 0;
 
   function isMatched(cardId: string) {
     return matchedIds.includes(cardId);
@@ -115,7 +114,7 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
   }
 
   function getMismatchButtonClass() {
-    return "matching-shake h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-red-300 bg-red-50 px-4 py-3 text-left leading-relaxed text-red-700 transition disabled:opacity-100";
+    return "game-shake h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-red-300 bg-red-50 px-4 py-3 text-left leading-relaxed text-red-700 transition disabled:opacity-100";
   }
 
   function getMatchedButtonClass() {
@@ -160,72 +159,38 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
 
   if (flashcards.length < 2) {
     return (
-      <div className="mx-auto max-w-4xl rounded-2xl border border-pink-100 bg-white p-6 text-center text-gray-700 shadow-sm">
-        Add at least 2 flashcards to start matching mode.
-      </div>
+      <GameEmptyState
+        maxWidth="xl"
+        message="Add at least 2 flashcards to start matching mode."
+      />
     );
   }
 
   if (isFinished) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">Matching completed</h1>
-
-        <p className="mt-4 text-lg text-gray-700">
-          Matched pairs:{" "}
-          <span className="font-semibold text-pink-500">
-            {matchedIds.length} / {cardsForRound.length}
-          </span>
-        </p>
-
+      <GameResultCard
+        title="Matching completed"
+        scoreLabel="Matched pairs"
+        score={matchedIds.length}
+        total={cardsForRound.length}
+        progressSuffix="matched"
+        primaryActionLabel="Try again"
+        onPrimaryAction={resetGame}
+      >
         <p className="mt-2 text-sm text-gray-500">Mistakes: {mistakes}</p>
-
-        <div className="mt-6 space-y-2">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>Progress</span>
-            <span>
-              {matchedIds.length} / {cardsForRound.length} matched
-            </span>
-          </div>
-
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-pink-500 transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          className="mt-6 bg-pink-500 text-white hover:bg-pink-600"
-          onClick={resetGame}
-        >
-          Try again
-        </Button>
-      </div>
+      </GameResultCard>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 rounded-2xl border border-pink-100 bg-white p-6 shadow-sm">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Progress</span>
-          <span>
-            {matchedIds.length} / {cardsForRound.length} matched
-          </span>
-        </div>
+    <GameShell maxWidth="xl">
+      <GameProgress
+        current={matchedIds.length}
+        total={cardsForRound.length}
+        suffix="matched"
+      />
 
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full rounded-full bg-pink-500 transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-
-      <div key={roundId} className="matching-game-enter space-y-6">
+      <div key={roundId} className="game-enter space-y-6">
         <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -299,50 +264,6 @@ export default function MatchingGame({ flashcards }: MatchingGameProps) {
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .matching-game-enter {
-          animation: matching-game-enter 280ms ease-out;
-        }
-
-        .matching-shake {
-          animation: matching-shake 260ms ease-in-out;
-        }
-
-        @keyframes matching-game-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes matching-shake {
-          0% {
-            transform: translateX(0);
-          }
-
-          25% {
-            transform: translateX(-4px);
-          }
-
-          50% {
-            transform: translateX(4px);
-          }
-
-          75% {
-            transform: translateX(-3px);
-          }
-
-          100% {
-            transform: translateX(0);
-          }
-        }
-      `}</style>
-    </div>
+    </GameShell>
   );
 }

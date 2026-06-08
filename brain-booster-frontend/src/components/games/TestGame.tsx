@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import type { Flashcard } from "@/api/flashcardService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import GameEmptyState from "@/components/games/shared/GameEmptyState";
+import GameProgress from "@/components/games/shared/GameProgress";
+import GameResultCard from "@/components/games/shared/GameResultCard";
+import GameShell from "@/components/games/shared/GameShell";
 import { shuffleArray } from "./game-utils";
 
 type AnswerWith = "term" | "definition" | "both";
@@ -200,9 +204,6 @@ export default function TestGame({ flashcards }: TestGameProps) {
     Boolean,
   ).length;
 
-  const progressPercentage =
-    questions.length > 0 ? (currentIndex / questions.length) * 100 : 0;
-
   const matchingPromptCards = useMemo(() => {
     if (!currentQuestion?.matchingCards) return [];
     return currentQuestion.matchingCards;
@@ -234,6 +235,17 @@ export default function TestGame({ flashcards }: TestGameProps) {
     }));
   }
 
+  function resetQuestionState() {
+    setSelectedAnswer(null);
+    setWrittenAnswer("");
+    setIsAnswered(false);
+    setSelectedPromptId(null);
+    setSelectedAnswerId(null);
+    setMatchedIds([]);
+    setMatchingMistakes(0);
+    setMismatchIds([]);
+  }
+
   function startTest() {
     if (enabledTypesCount === 0) return;
 
@@ -244,17 +256,6 @@ export default function TestGame({ flashcards }: TestGameProps) {
     setCurrentIndex(0);
     setScore(0);
     resetQuestionState();
-  }
-
-  function resetQuestionState() {
-    setSelectedAnswer(null);
-    setWrittenAnswer("");
-    setIsAnswered(false);
-    setSelectedPromptId(null);
-    setSelectedAnswerId(null);
-    setMatchedIds([]);
-    setMatchingMistakes(0);
-    setMismatchIds([]);
   }
 
   function goToNextQuestion() {
@@ -364,17 +365,15 @@ export default function TestGame({ flashcards }: TestGameProps) {
 
   if (flashcards.length < 2) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center text-gray-700 shadow-sm">
-        Add at least 2 flashcards to start test mode.
-      </div>
+      <GameEmptyState message="Add at least 2 flashcards to start custom test mode." />
     );
   }
 
   if (!hasStarted) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 shadow-sm">
+      <GameShell>
         <div className="mb-8">
-          <p className="text-sm font-semibold text-pink-500">Test mode</p>
+          <p className="text-sm font-semibold text-pink-500">Custom test</p>
           <h1 className="mt-1 text-3xl font-bold text-gray-800">
             Set up your test
           </h1>
@@ -471,65 +470,37 @@ export default function TestGame({ flashcards }: TestGameProps) {
             Start test
           </Button>
         </div>
-      </div>
+      </GameShell>
     );
   }
 
   if (isFinished) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">Test completed</h1>
-
-        <p className="mt-4 text-lg text-gray-700">
-          Your score:{" "}
-          <span className="font-semibold text-pink-500">
-            {score} / {questions.length}
-          </span>
-        </p>
-
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full border-pink-200 text-pink-500 hover:bg-pink-50"
-            onClick={restartSetup}
-          >
-            Change settings
-          </Button>
-
-          <Button
-            type="button"
-            className="w-full bg-pink-500 text-white hover:bg-pink-600"
-            onClick={startTest}
-          >
-            Try again
-          </Button>
-        </div>
-      </div>
+      <GameResultCard
+        title="Custom test completed"
+        scoreLabel="Your score"
+        score={score}
+        total={questions.length}
+        progressSuffix="correct"
+        primaryActionLabel="Try again"
+        onPrimaryAction={startTest}
+        secondaryActionLabel="Change settings"
+        onSecondaryAction={restartSetup}
+      />
     );
   }
 
   if (!currentQuestion) return null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 rounded-2xl border border-pink-100 bg-white p-6 shadow-sm">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Progress</span>
-          <span>
-            {currentIndex} / {questions.length} answered
-          </span>
-        </div>
+    <GameShell maxWidth="lg">
+      <GameProgress
+        current={currentIndex}
+        total={questions.length}
+        suffix="answered"
+      />
 
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full rounded-full bg-pink-500 transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-
-      <div key={currentQuestion.id} className="test-question-enter space-y-6">
+      <div key={currentQuestion.id} className="game-enter space-y-6">
         <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
           <div className="flex items-center justify-between gap-4 text-sm text-gray-500">
             <span>
@@ -706,7 +677,7 @@ export default function TestGame({ flashcards }: TestGameProps) {
                         isMatched
                           ? "border-green-200 bg-green-50 text-green-700"
                           : isMismatch
-                            ? "test-shake border-red-300 bg-red-50 text-red-700"
+                            ? "game-shake border-red-300 bg-red-50 text-red-700"
                             : isSelected
                               ? "border-pink-400 bg-pink-50 text-pink-600 ring-2 ring-pink-100"
                               : "border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
@@ -741,7 +712,7 @@ export default function TestGame({ flashcards }: TestGameProps) {
                         isMatched
                           ? "border-green-200 bg-green-50 text-green-700"
                           : isMismatch
-                            ? "test-shake border-red-300 bg-red-50 text-red-700"
+                            ? "game-shake border-red-300 bg-red-50 text-red-700"
                             : isSelected
                               ? "border-pink-400 bg-pink-50 text-pink-600 ring-2 ring-pink-100"
                               : "border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
@@ -799,50 +770,6 @@ export default function TestGame({ flashcards }: TestGameProps) {
           </Button>
         )}
       </div>
-
-      <style jsx global>{`
-        .test-question-enter {
-          animation: test-question-enter 280ms ease-out;
-        }
-
-        .test-shake {
-          animation: test-shake 260ms ease-in-out;
-        }
-
-        @keyframes test-question-enter {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes test-shake {
-          0% {
-            transform: translateX(0);
-          }
-
-          25% {
-            transform: translateX(-4px);
-          }
-
-          50% {
-            transform: translateX(4px);
-          }
-
-          75% {
-            transform: translateX(-3px);
-          }
-
-          100% {
-            transform: translateX(0);
-          }
-        }
-      `}</style>
-    </div>
+    </GameShell>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getFlashcardsBySetId, type Flashcard } from "@/api/flashcardService";
 import MatchingGame from "@/components/games/MatchingGame";
+import GamePageLayout from "@/components/games/shared/GamePageLayout";
 
 export default function MatchingPage() {
   const params = useParams<{ nickname: string; id: string }>();
@@ -28,17 +29,15 @@ export default function MatchingPage() {
     void loadFlashcards();
   }, [params.id]);
 
-  if (isLoading) {
-    return <div className="p-8 text-gray-600">Loading matching mode...</div>;
-  }
-
-  if (errorMessage) {
-    return <div className="p-8 text-red-500">{errorMessage}</div>;
-  }
-
   return (
-    <main className="p-8">
-      <MatchingGame flashcards={flashcards} />
-    </main>
+    <GamePageLayout nickname={params.nickname} setId={params.id}>
+      {isLoading && (
+        <div className="text-gray-600">Loading matching mode...</div>
+      )}
+
+      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+
+      {!isLoading && !errorMessage && <MatchingGame flashcards={flashcards} />}
+    </GamePageLayout>
   );
 }

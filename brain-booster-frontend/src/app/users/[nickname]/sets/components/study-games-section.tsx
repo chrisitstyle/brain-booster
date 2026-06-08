@@ -15,22 +15,22 @@ interface StudyGamesSectionProps {
 
 const games = [
   {
-    name: "Quiz",
+    name: "Multiple choice",
     href: "quiz",
     icon: MousePointerClick,
   },
   {
-    name: "Typing",
+    name: "Written",
     href: "typing",
     icon: Keyboard,
   },
   {
-    name: "Match",
+    name: "Matching",
     href: "match",
     icon: Layers,
   },
   {
-    name: "Test",
+    name: "Custom test",
     href: "test",
     icon: FileQuestion,
   },
@@ -61,7 +61,7 @@ export default function StudyGamesSection({
                   <Icon className="h-4 w-4" />
                 </div>
 
-                <span className="text-xs font-semibold text-gray-800 transition group-hover:text-pink-600">
+                <span className="px-2 text-xs font-semibold text-gray-800 transition group-hover:text-pink-600">
                   {game.name}
                 </span>
               </Link>
