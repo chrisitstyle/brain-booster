@@ -5,12 +5,14 @@ import { ChevronLeft } from "lucide-react";
 
 interface StudySetHeaderProps {
   nickname: string;
+  setId: number | string;
   setName: string;
   description?: string | null;
 }
 
 export default function StudySetHeader({
   nickname,
+  setId,
   setName,
   description,
 }: StudySetHeaderProps) {
@@ -24,12 +26,21 @@ export default function StudySetHeader({
         Back to {nickname}&apos;s profile
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 md:text-3xl">
-          {setName}
-        </h1>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 md:text-3xl">
+            {setName}
+          </h1>
 
-        {description && <p className="mt-2 text-gray-600">{description}</p>}
+          {description && <p className="mt-2 text-gray-600">{description}</p>}
+        </div>
+
+        <Link
+          href={`/users/${nickname}/sets/${setId}/quiz`}
+          className="inline-flex w-fit items-center justify-center rounded-lg bg-pink-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 print:hidden"
+        >
+          Test
+        </Link>
       </div>
     </div>
   );

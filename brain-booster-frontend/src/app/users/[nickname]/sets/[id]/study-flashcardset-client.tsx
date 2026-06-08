@@ -354,6 +354,7 @@ export default function StudyFlashcardSetClient({
       <div className="container mx-auto px-4 pt-6 pb-28 print:px-0 print:py-0">
         <StudySetHeader
           nickname={nickname}
+          setId={studySet.setId}
           setName={studySet.setName}
           description={studySet.description}
         />
