@@ -7,7 +7,12 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import GameTimer from "@/components/games/shared/GameTimer";
 import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import { buildQuizQuestions } from "./game-utils";
@@ -23,6 +28,8 @@ interface QuizGameState {
   score: number;
   questions: ReturnType<typeof buildQuizQuestions>;
   isResultSaved: boolean;
+  startedAt: number;
+  finishedAt: number | null;
 }
 
 export default function QuizGame({ flashcards, setId }: QuizGameProps) {
@@ -40,14 +47,29 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       score: 0,
       questions: initialQuestions,
       isResultSaved: false,
+      startedAt: Date.now(),
+      finishedAt: null,
     }));
 
-  const { currentIndex, selectedAnswer, score, questions, isResultSaved } =
-    gameState;
+  const {
+    currentIndex,
+    selectedAnswer,
+    score,
+    questions,
+    isResultSaved,
+    startedAt,
+    finishedAt,
+  } = gameState;
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
   const isAnswered = selectedAnswer !== null;
+
+  const elapsedSeconds = useGameElapsedSeconds(startedAt, finishedAt);
+
+  const durationSeconds = isFinished
+    ? getElapsedGameSeconds(startedAt, finishedAt)
+    : undefined;
 
   function updateGameState(nextState: Partial<QuizGameState>) {
     setGameState((previousState) => ({
@@ -61,6 +83,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     mode: "multiple-choice",
     score,
     totalQuestions: questions.length,
+    durationSeconds,
     isFinished,
     isResultSaved,
     onSaved: () => {
@@ -79,6 +102,8 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       score: 0,
       questions: buildQuizQuestions(flashcards),
       isResultSaved: false,
+      startedAt: Date.now(),
+      finishedAt: null,
     });
   }
 
@@ -100,9 +125,12 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
   }
 
   function handleNext() {
+    const nextIndex = currentIndex + 1;
+
     updateGameState({
       selectedAnswer: null,
-      currentIndex: currentIndex + 1,
+      currentIndex: nextIndex,
+      finishedAt: nextIndex >= questions.length ? Date.now() : finishedAt,
     });
   }
 
@@ -122,13 +150,21 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
         progressSuffix="correct"
         primaryActionLabel="Try again"
         onPrimaryAction={restartGame}
-      />
+      >
+        <div className="mt-4 flex justify-center">
+          <GameTimer seconds={elapsedSeconds} />
+        </div>
+      </GameResultCard>
     );
   }
 
   return (
     <GameShell>
       <GameProgress current={score} total={questions.length} suffix="correct" />
+
+      <div className="flex justify-end">
+        <GameTimer seconds={elapsedSeconds} />
+      </div>
 
       <div key={currentIndex} className="game-enter space-y-6">
         <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">

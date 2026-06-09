@@ -59,7 +59,7 @@ class GameResultServiceTest {
                 GameMode.MULTIPLE_CHOICE,
                 8,
                 10,
-                null
+                120
         );
 
         GameResultDTO expectedDto = createGameResultDTO(
@@ -69,7 +69,7 @@ class GameResultServiceTest {
                 GameMode.MULTIPLE_CHOICE,
                 8,
                 10,
-                null
+                120
         );
 
         when(flashcardSetRepository.findById(11L))
@@ -103,7 +103,7 @@ class GameResultServiceTest {
         assertThat(savedGameResult.getMode()).isEqualTo(GameMode.MULTIPLE_CHOICE);
         assertThat(savedGameResult.getScore()).isEqualTo(8);
         assertThat(savedGameResult.getTotalQuestions()).isEqualTo(10);
-        assertThat(savedGameResult.getDurationSeconds()).isNull();
+        assertThat(savedGameResult.getDurationSeconds()).isEqualTo(120);
         assertThat(savedGameResult.getCompletedAt()).isNotNull();
     }
 

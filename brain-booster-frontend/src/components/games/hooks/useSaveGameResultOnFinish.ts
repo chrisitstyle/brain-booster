@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { saveGameResult, type GameMode } from "@/api/gameResultService";
+import {
+  saveGameResult,
+  type GameMode,
+  type SaveGameResultRequest,
+} from "@/api/gameResultService";
 import { useAuth } from "@/context/AuthContext";
 
 interface UseSaveGameResultOnFinishParams {
@@ -50,16 +54,15 @@ export function useSaveGameResultOnFinish({
         setIsSavingResult(true);
         setSaveResultError(null);
 
-        await saveGameResult(
-          {
-            setId: Number(setId),
-            mode,
-            score,
-            totalQuestions,
-            durationSeconds,
-          },
-          authToken,
-        );
+        const request: SaveGameResultRequest = {
+          setId: Number(setId),
+          mode,
+          score,
+          totalQuestions,
+          ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        };
+
+        await saveGameResult(request, authToken);
 
         if (!isCancelled) {
           onSavedRef.current();
