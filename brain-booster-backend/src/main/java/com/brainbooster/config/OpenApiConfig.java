@@ -78,4 +78,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi gameApi() {
+        return GroupedOpenApi.builder()
+                .group("game-results")
+                .pathsToMatch("/game-results/**")
+                .build();
+    }
+
 }
