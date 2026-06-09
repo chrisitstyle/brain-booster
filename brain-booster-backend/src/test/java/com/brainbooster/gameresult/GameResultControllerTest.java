@@ -50,7 +50,7 @@ class GameResultControllerTest {
                 GameMode.MULTIPLE_CHOICE,
                 8,
                 10,
-                null
+                120
         );
 
         GameResultDTO response = createGameResultDTO(
@@ -60,7 +60,7 @@ class GameResultControllerTest {
                 GameMode.MULTIPLE_CHOICE,
                 8,
                 10,
-                null
+                120
         );
 
         when(gameResultService.saveGameResult(any(SaveGameResultRequest.class)))
@@ -76,7 +76,7 @@ class GameResultControllerTest {
                 .andExpect(jsonPath("$.mode").value("multiple-choice"))
                 .andExpect(jsonPath("$.score").value(8))
                 .andExpect(jsonPath("$.totalQuestions").value(10))
-                .andExpect(jsonPath("$.durationSeconds").doesNotExist());
+                .andExpect(jsonPath("$.durationSeconds").value(120));
 
         ArgumentCaptor<SaveGameResultRequest> requestCaptor =
                 ArgumentCaptor.forClass(SaveGameResultRequest.class);

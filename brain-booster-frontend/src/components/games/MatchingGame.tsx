@@ -6,7 +6,12 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import GameTimer from "@/components/games/shared/GameTimer";
 import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import { shuffleArray } from "./game-utils";
@@ -31,6 +36,8 @@ interface MatchingGameState {
   mistakes: number;
   mismatchPair: MismatchPair | null;
   isResultSaved: boolean;
+  startedAt: number;
+  finishedAt: number | null;
 }
 
 function getFlashcardId(card: Flashcard) {
@@ -56,6 +63,8 @@ function createNewMatchingRound(
     mistakes: 0,
     mismatchPair: null,
     isResultSaved: false,
+    startedAt: Date.now(),
+    finishedAt: null,
   };
 }
 
@@ -77,12 +86,20 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
     mistakes,
     mismatchPair,
     isResultSaved,
+    startedAt,
+    finishedAt,
   } = gameState;
 
   const isFinished =
     cardsForRound.length > 0 && matchedIds.length === cardsForRound.length;
 
   const finalScore = Math.max(cardsForRound.length - mistakes, 0);
+
+  const elapsedSeconds = useGameElapsedSeconds(startedAt, finishedAt);
+
+  const durationSeconds = isFinished
+    ? getElapsedGameSeconds(startedAt, finishedAt)
+    : undefined;
 
   function updateGameState(nextState: Partial<MatchingGameState>) {
     setGameState((previousState) => ({
@@ -96,6 +113,7 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
     mode: "matching",
     score: finalScore,
     totalQuestions: cardsForRound.length,
+    durationSeconds,
     isFinished,
     isResultSaved,
     onSaved: () => {
@@ -117,12 +135,18 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
 
   function checkPair(termId: string, definitionId: string) {
     if (termId === definitionId) {
+      const nextMatchedIds = matchedIds.includes(termId)
+        ? matchedIds
+        : [...matchedIds, termId];
+
       updateGameState({
-        matchedIds: matchedIds.includes(termId)
-          ? matchedIds
-          : [...matchedIds, termId],
+        matchedIds: nextMatchedIds,
         selectedTermId: null,
         selectedDefinitionId: null,
+        finishedAt:
+          nextMatchedIds.length === cardsForRound.length
+            ? Date.now()
+            : finishedAt,
       });
 
       return;
@@ -242,6 +266,10 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
         primaryActionLabel="Try again"
         onPrimaryAction={resetGame}
       >
+        <div className="mt-4 flex justify-center">
+          <GameTimer seconds={elapsedSeconds} />
+        </div>
+
         <p className="mt-2 text-sm text-gray-500">
           Matched pairs: {matchedIds.length} / {cardsForRound.length}
         </p>
@@ -257,6 +285,10 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
         total={cardsForRound.length}
         suffix="matched"
       />
+
+      <div className="flex justify-end">
+        <GameTimer seconds={elapsedSeconds} />
+      </div>
 
       <div key={roundId} className="game-enter space-y-6">
         <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
