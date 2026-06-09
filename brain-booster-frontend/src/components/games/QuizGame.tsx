@@ -7,9 +7,10 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { buildQuizQuestions } from "./game-utils";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
+import { buildQuizQuestions } from "./game-utils";
 
 interface QuizGameProps {
   flashcards: Flashcard[];
@@ -21,6 +22,7 @@ interface QuizGameState {
   selectedAnswer: string | null;
   score: number;
   questions: ReturnType<typeof buildQuizQuestions>;
+  isResultSaved: boolean;
 }
 
 export default function QuizGame({ flashcards, setId }: QuizGameProps) {
@@ -37,9 +39,11 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       selectedAnswer: null,
       score: 0,
       questions: initialQuestions,
+      isResultSaved: false,
     }));
 
-  const { currentIndex, selectedAnswer, score, questions } = gameState;
+  const { currentIndex, selectedAnswer, score, questions, isResultSaved } =
+    gameState;
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
@@ -52,6 +56,20 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     }));
   }
 
+  useSaveGameResultOnFinish({
+    setId,
+    mode: "multiple-choice",
+    score,
+    totalQuestions: questions.length,
+    isFinished,
+    isResultSaved,
+    onSaved: () => {
+      updateGameState({
+        isResultSaved: true,
+      });
+    },
+  });
+
   function restartGame() {
     clearGameState();
 
@@ -60,6 +78,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       selectedAnswer: null,
       score: 0,
       questions: buildQuizQuestions(flashcards),
+      isResultSaved: false,
     });
   }
 

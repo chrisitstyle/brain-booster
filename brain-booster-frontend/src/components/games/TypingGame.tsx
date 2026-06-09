@@ -7,6 +7,7 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { shuffleArray } from "./game-utils";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
@@ -24,6 +25,7 @@ interface TypingGameState {
   userAnswer: string;
   answerStatus: AnswerStatus;
   score: number;
+  isResultSaved: boolean;
 }
 
 function normalizeAnswer(value: string) {
@@ -41,6 +43,7 @@ function createNewTypingGame(flashcards: Flashcard[]): TypingGameState {
     userAnswer: "",
     answerStatus: null,
     score: 0,
+    isResultSaved: false,
   };
 }
 
@@ -52,8 +55,14 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
       createNewTypingGame(flashcards),
     );
 
-  const { questions, currentIndex, userAnswer, answerStatus, score } =
-    gameState;
+  const {
+    questions,
+    currentIndex,
+    userAnswer,
+    answerStatus,
+    score,
+    isResultSaved,
+  } = gameState;
 
   const isFinished = currentIndex >= questions.length;
   const currentQuestion = questions[currentIndex];
@@ -65,6 +74,20 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
       ...nextState,
     }));
   }
+
+  useSaveGameResultOnFinish({
+    setId,
+    mode: "written",
+    score,
+    totalQuestions: questions.length,
+    isFinished,
+    isResultSaved,
+    onSaved: () => {
+      updateGameState({
+        isResultSaved: true,
+      });
+    },
+  });
 
   function restartGame() {
     clearGameState();

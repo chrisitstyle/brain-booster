@@ -96,6 +96,9 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, FOLDER_SET_BY_ID).authenticated()
                         .requestMatchers(HttpMethod.DELETE, FOLDER_SET_BY_ID).authenticated()
 
+                        // game results
+                        .requestMatchers("/game-results/**").authenticated()
+
 
                         .anyRequest().hasAuthority(Role.ADMIN.name())
                 )

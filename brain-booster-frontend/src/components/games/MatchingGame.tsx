@@ -6,9 +6,10 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { shuffleArray } from "./game-utils";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
+import { shuffleArray } from "./game-utils";
 
 interface MatchingGameProps {
   flashcards: Flashcard[];
@@ -29,13 +30,17 @@ interface MatchingGameState {
   matchedIds: string[];
   mistakes: number;
   mismatchPair: MismatchPair | null;
+  isResultSaved: boolean;
 }
 
 function getFlashcardId(card: Flashcard) {
   return String(card.flashcardId);
 }
 
-function createNewMatchingRound(flashcards: Flashcard[], roundId = 0) {
+function createNewMatchingRound(
+  flashcards: Flashcard[],
+  roundId = 0,
+): MatchingGameState {
   const cardsForRound = shuffleArray(flashcards).slice(
     0,
     Math.min(6, flashcards.length),
@@ -50,6 +55,7 @@ function createNewMatchingRound(flashcards: Flashcard[], roundId = 0) {
     matchedIds: [],
     mistakes: 0,
     mismatchPair: null,
+    isResultSaved: false,
   };
 }
 
@@ -70,10 +76,13 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
     matchedIds,
     mistakes,
     mismatchPair,
+    isResultSaved,
   } = gameState;
 
   const isFinished =
     cardsForRound.length > 0 && matchedIds.length === cardsForRound.length;
+
+  const finalScore = Math.max(cardsForRound.length - mistakes, 0);
 
   function updateGameState(nextState: Partial<MatchingGameState>) {
     setGameState((previousState) => ({
@@ -81,6 +90,20 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
       ...nextState,
     }));
   }
+
+  useSaveGameResultOnFinish({
+    setId,
+    mode: "matching",
+    score: finalScore,
+    totalQuestions: cardsForRound.length,
+    isFinished,
+    isResultSaved,
+    onSaved: () => {
+      updateGameState({
+        isResultSaved: true,
+      });
+    },
+  });
 
   function isMatched(cardId: string) {
     return matchedIds.includes(cardId);
@@ -212,14 +235,17 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
     return (
       <GameResultCard
         title="Matching completed"
-        scoreLabel="Matched pairs"
-        score={matchedIds.length}
+        scoreLabel="Your score"
+        score={finalScore}
         total={cardsForRound.length}
-        progressSuffix="matched"
+        progressSuffix="correct"
         primaryActionLabel="Try again"
         onPrimaryAction={resetGame}
       >
-        <p className="mt-2 text-sm text-gray-500">Mistakes: {mistakes}</p>
+        <p className="mt-2 text-sm text-gray-500">
+          Matched pairs: {matchedIds.length} / {cardsForRound.length}
+        </p>
+        <p className="mt-1 text-sm text-gray-500">Mistakes: {mistakes}</p>
       </GameResultCard>
     );
   }

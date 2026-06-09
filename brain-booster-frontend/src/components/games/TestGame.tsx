@@ -8,6 +8,7 @@ import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { shuffleArray } from "./game-utils";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
@@ -53,6 +54,7 @@ interface TestGameState {
   matchedIds: number[];
   matchingMistakes: number;
   mismatchIds: number[];
+  isResultSaved: boolean;
 }
 
 function normalizeAnswer(value: string) {
@@ -130,6 +132,7 @@ function createInitialTestState(flashcards: Flashcard[]): TestGameState {
     matchedIds: [],
     matchingMistakes: 0,
     mismatchIds: [],
+    isResultSaved: false,
   };
 }
 
@@ -256,6 +259,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
     matchedIds,
     matchingMistakes,
     mismatchIds,
+    isResultSaved,
   } = gameState;
 
   const currentQuestion = questions[currentIndex];
@@ -281,6 +285,20 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
       ...nextState,
     }));
   }
+
+  useSaveGameResultOnFinish({
+    setId,
+    mode: "custom-test",
+    score,
+    totalQuestions: questions.length,
+    isFinished,
+    isResultSaved,
+    onSaved: () => {
+      updateGameState({
+        isResultSaved: true,
+      });
+    },
+  });
 
   function updateConfig(nextConfig: Partial<TestConfig>) {
     setGameState((previousState) => ({
@@ -325,6 +343,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
       hasStarted: true,
       currentIndex: 0,
       score: 0,
+      isResultSaved: false,
       ...getResetQuestionState(),
     });
   }
@@ -342,6 +361,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
       hasStarted: false,
       currentIndex: 0,
       score: 0,
+      isResultSaved: false,
       ...getResetQuestionState(),
     });
   }

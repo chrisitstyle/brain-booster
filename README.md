@@ -510,6 +510,18 @@ The backend exposes a REST API under the following base path:
 | POST   | `/folders/{folderId}/sets/{setId}` | Add flashcard set to folder        | Authenticated user |
 | DELETE | `/folders/{folderId}/sets/{setId}` | Remove flashcard set from folder   | Authenticated user |
 
+### Game Results
+
+| Method | Endpoint                         | Description                                                        | Access                |
+| ------ | -------------------------------- | ------------------------------------------------------------------ | --------------------- |
+| POST   | `/game-results`                  | Save or update the authenticated user's latest game result         | Authenticated user    |
+| GET    | `/game-results/me`               | Get all game results of the authenticated user                     | Authenticated user    |
+| GET    | `/game-results/me?setId={setId}` | Get authenticated user's game results for a specific flashcard set | Authenticated user    |
+| GET    | `/game-results`                  | Get all game results                                               | Admin                 |
+| GET    | `/game-results?setId={setId}`    | Get all game results for a specific flashcard set                  | Admin                 |
+| GET    | `/game-results/{resultId}`       | Get game result by ID                                              | Result owner or admin |
+| DELETE | `/game-results/{resultId}`       | Delete game result by ID                                           | Result owner or admin |
+
 ## 📖 OpenAPI / Swagger
 
 The backend provides automatically generated OpenAPI documentation using Springdoc OpenAPI and Swagger UI.

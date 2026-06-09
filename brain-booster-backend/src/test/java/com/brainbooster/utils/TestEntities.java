@@ -15,6 +15,10 @@ import com.brainbooster.folder.dto.FlashcardSetInFolderDTO;
 import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
+import com.brainbooster.gameresult.GameMode;
+import com.brainbooster.gameresult.GameResult;
+import com.brainbooster.gameresult.dto.GameResultDTO;
+import com.brainbooster.gameresult.SaveGameResultRequest;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserCreationDTO;
@@ -258,6 +262,32 @@ public class TestEntities {
     }
 
     /**
+     * Creates a fully instantiated {@link FlashcardSet} entity with custom ID.
+     *
+     * @param setId ID of the flashcard set.
+     * @return a FlashcardSet entity with the provided ID.
+     */
+    public static FlashcardSet createFlashcardSet(Long setId) {
+        return flashcardSetBuilder()
+                .setId(setId)
+                .build();
+    }
+
+    /**
+     * Creates a fully instantiated {@link FlashcardSet} entity with custom ID and owner.
+     *
+     * @param setId ID of the flashcard set.
+     * @param user  owner of the flashcard set.
+     * @return a FlashcardSet entity with the provided ID and owner.
+     */
+    public static FlashcardSet createFlashcardSet(Long setId, User user) {
+        return flashcardSetBuilder()
+                .setId(setId)
+                .user(user)
+                .build();
+    }
+
+    /**
      * Creates a {@link FlashcardSetDTO} with data corresponding to the default FlashcardSet entity.
      * <p>
      * Includes the full UserDTO inside.
@@ -301,6 +331,173 @@ public class TestEntities {
         return new FlashcardSetUpdateDTO(
                 "Updated Set",
                 "Updated description"
+        );
+    }
+
+    // GAME RESULT METHODS
+
+    /**
+     * Creates a {@link GameResult.GameResultBuilder} pre-configured with default test data.
+     * <p>
+     * Defaults: ID=1L, user=default User, set=default FlashcardSet,
+     * mode=MULTIPLE_CHOICE, score=8, totalQuestions=10, durationSeconds=null.
+     *
+     * @return a builder instance with default game result data.
+     */
+    public static GameResult.GameResultBuilder gameResultBuilder() {
+        return GameResult.builder()
+                .resultId(1L)
+                .user(createUser())
+                .set(createFlashcardSet())
+                .mode(GameMode.MULTIPLE_CHOICE)
+                .score(8)
+                .totalQuestions(10)
+                .durationSeconds(null)
+                .completedAt(LocalDateTime.of(2026, 1, 19, 23, 0));
+    }
+
+    /**
+     * Creates a fully instantiated {@link GameResult} entity with default test data.
+     *
+     * @return a GameResult entity.
+     * @see #gameResultBuilder()
+     */
+    public static GameResult createGameResult() {
+        return gameResultBuilder().build();
+    }
+
+    /**
+     * Creates a fully instantiated {@link GameResult} entity for the given user,
+     * flashcard set, and game mode.
+     *
+     * @param user         owner of the game result.
+     * @param flashcardSet flashcard set related to the result.
+     * @param mode         game mode related to the result.
+     * @return a GameResult entity.
+     */
+    public static GameResult createGameResult(
+            User user,
+            FlashcardSet flashcardSet,
+            GameMode mode
+    ) {
+        return gameResultBuilder()
+                .user(user)
+                .set(flashcardSet)
+                .mode(mode)
+                .build();
+    }
+
+    /**
+     * Creates a {@link SaveGameResultRequest} with default test data.
+     * <p>
+     * Defaults: setId=1L, mode=MULTIPLE_CHOICE, score=8, totalQuestions=10,
+     * durationSeconds=null.
+     *
+     * @return a SaveGameResultRequest object.
+     */
+    public static SaveGameResultRequest createSaveGameResultRequest() {
+        return new SaveGameResultRequest(
+                1L,
+                GameMode.MULTIPLE_CHOICE,
+                8,
+                10,
+                null
+        );
+    }
+
+    /**
+     * Creates a {@link SaveGameResultRequest} with custom test data.
+     *
+     * @param setId           ID of the flashcard set.
+     * @param mode            game mode.
+     * @param score           achieved score.
+     * @param totalQuestions  total number of questions.
+     * @param durationSeconds optional duration in seconds.
+     * @return a SaveGameResultRequest object.
+     */
+    public static SaveGameResultRequest createSaveGameResultRequest(
+            Long setId,
+            GameMode mode,
+            Integer score,
+            Integer totalQuestions,
+            Integer durationSeconds
+    ) {
+        return new SaveGameResultRequest(
+                setId,
+                mode,
+                score,
+                totalQuestions,
+                durationSeconds
+        );
+    }
+
+    /**
+     * Creates a {@link GameResultDTO} with default test data.
+     *
+     * @return a GameResultDTO object.
+     */
+    public static GameResultDTO createGameResultDTO() {
+        return new GameResultDTO(
+                1L,
+                1L,
+                1L,
+                GameMode.MULTIPLE_CHOICE,
+                8,
+                10,
+                null,
+                LocalDateTime.of(2026, 1, 19, 23, 0)
+        );
+    }
+
+    /**
+     * Creates a {@link GameResultDTO} from a {@link GameResult} entity.
+     *
+     * @param gameResult source entity.
+     * @return a GameResultDTO object containing data from the entity.
+     */
+    public static GameResultDTO createGameResultDTO(GameResult gameResult) {
+        return new GameResultDTO(
+                gameResult.getResultId(),
+                gameResult.getUser().getUserId(),
+                gameResult.getSet().getSetId(),
+                gameResult.getMode(),
+                gameResult.getScore(),
+                gameResult.getTotalQuestions(),
+                gameResult.getDurationSeconds(),
+                gameResult.getCompletedAt()
+        );
+    }
+
+    /**
+     * Creates a {@link GameResultDTO} with custom test data.
+     *
+     * @param resultId        ID of the game result.
+     * @param userId          ID of the result owner.
+     * @param setId           ID of the related flashcard set.
+     * @param mode            game mode.
+     * @param score           achieved score.
+     * @param totalQuestions  total number of questions.
+     * @param durationSeconds optional duration in seconds.
+     * @return a GameResultDTO object.
+     */
+    public static GameResultDTO createGameResultDTO(
+            Long resultId,
+            Long userId,
+            Long setId,
+            GameMode mode,
+            Integer score,
+            Integer totalQuestions,
+            Integer durationSeconds
+    ) {
+        return new GameResultDTO(
+                resultId,
+                userId,
+                setId,
+                mode,
+                score,
+                totalQuestions,
+                durationSeconds,
+                LocalDateTime.of(2026, 1, 19, 23, 0)
         );
     }
 
