@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveGameResult,
   type GameMode,
+  type SaveGameQuestionResultRequest,
   type SaveGameResultRequest,
 } from "@/api/gameResultService";
 import { useAuth } from "@/context/AuthContext";
@@ -16,6 +17,7 @@ interface UseSaveGameResultOnFinishParams {
   isFinished: boolean;
   isResultSaved: boolean;
   durationSeconds?: number;
+  questionResults?: SaveGameQuestionResultRequest[];
   onSaved: () => void;
 }
 
@@ -27,6 +29,7 @@ export function useSaveGameResultOnFinish({
   isFinished,
   isResultSaved,
   durationSeconds,
+  questionResults,
   onSaved,
 }: UseSaveGameResultOnFinishParams) {
   const { token } = useAuth();
@@ -60,6 +63,7 @@ export function useSaveGameResultOnFinish({
           score,
           totalQuestions,
           ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+          ...(questionResults !== undefined ? { questionResults } : {}),
         };
 
         await saveGameResult(request, authToken);
@@ -92,6 +96,7 @@ export function useSaveGameResultOnFinish({
     score,
     totalQuestions,
     durationSeconds,
+    questionResults,
     isFinished,
     isResultSaved,
   ]);

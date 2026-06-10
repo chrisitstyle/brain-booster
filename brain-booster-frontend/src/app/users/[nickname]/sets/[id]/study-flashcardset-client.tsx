@@ -89,32 +89,37 @@ export default function StudyFlashcardSetClient({
   );
 
   useEffect(() => {
-    if (!token) {
-      setFlashcards(initialFlashcards);
-      setStudyFlashcardIds(
-        initialFlashcards.map((flashcard) => flashcard.flashcardId),
-      );
-      return;
-    }
+    if (!token) return;
 
-    const fetchFlashcardsWithUserStarredStatus = async () => {
+    const authToken = token;
+    let isCancelled = false;
+
+    async function fetchFlashcardsWithUserStarredStatus() {
       try {
         const flashcardsWithStarredStatus = await getFlashcardsBySetId(
           studySet.setId,
-          token,
+          authToken,
         );
 
-        setFlashcards(flashcardsWithStarredStatus);
-        setStudyFlashcardIds(
-          flashcardsWithStarredStatus.map((flashcard) => flashcard.flashcardId),
-        );
+        if (!isCancelled) {
+          setFlashcards(flashcardsWithStarredStatus);
+          setStudyFlashcardIds(
+            flashcardsWithStarredStatus.map(
+              (flashcard) => flashcard.flashcardId,
+            ),
+          );
+        }
       } catch (error) {
         console.error("Error fetching flashcards with starred status:", error);
       }
-    };
+    }
 
     void fetchFlashcardsWithUserStarredStatus();
-  }, [initialFlashcards, studySet.setId, token]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [studySet.setId, token]);
 
   const toggleHiddenFlashcardSide = (
     sideToToggle: Exclude<HiddenFlashcardSide, null>,

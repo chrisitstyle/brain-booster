@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Flashcard } from "@/api/flashcardService";
+import type { SaveGameQuestionResultRequest } from "@/api/gameResultService";
 import { Button } from "@/components/ui/button";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
@@ -15,6 +16,7 @@ import {
 } from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
 import { getGameStorageKey } from "@/components/games/shared/game-storage";
+import { createDefinitionAnswerQuestionResult } from "@/components/games/utils/gameQuestionResults";
 import { buildQuizQuestions } from "./game-utils";
 
 interface QuizGameProps {
@@ -27,6 +29,7 @@ interface QuizGameState {
   selectedAnswer: string | null;
   score: number;
   questions: ReturnType<typeof buildQuizQuestions>;
+  questionResults: SaveGameQuestionResultRequest[];
   isResultSaved: boolean;
   startedAt: number;
   finishedAt: number | null;
@@ -46,6 +49,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       selectedAnswer: null,
       score: 0,
       questions: initialQuestions,
+      questionResults: [],
       isResultSaved: false,
       startedAt: Date.now(),
       finishedAt: null,
@@ -56,6 +60,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     selectedAnswer,
     score,
     questions,
+    questionResults,
     isResultSaved,
     startedAt,
     finishedAt,
@@ -71,6 +76,14 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     ? getElapsedGameSeconds(startedAt, finishedAt)
     : undefined;
 
+  const currentFlashcard = currentQuestion
+    ? flashcards.find(
+        (flashcard) =>
+          flashcard.term === currentQuestion.prompt &&
+          flashcard.definition === currentQuestion.correctAnswer,
+      )
+    : undefined;
+
   function updateGameState(nextState: Partial<QuizGameState>) {
     setGameState((previousState) => ({
       ...previousState,
@@ -84,6 +97,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     score,
     totalQuestions: questions.length,
     durationSeconds,
+    questionResults,
     isFinished,
     isResultSaved,
     onSaved: () => {
@@ -101,26 +115,62 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
       selectedAnswer: null,
       score: 0,
       questions: buildQuizQuestions(flashcards),
+      questionResults: [],
       isResultSaved: false,
       startedAt: Date.now(),
       finishedAt: null,
     });
   }
 
+  function createCurrentQuestionResult({
+    userAnswer,
+    wasCorrect,
+  }: {
+    userAnswer: string;
+    wasCorrect: boolean;
+  }) {
+    if (!currentFlashcard) return null;
+
+    return createDefinitionAnswerQuestionResult({
+      flashcard: currentFlashcard,
+      questionOrder: currentIndex,
+      questionType: "multiple-choice",
+      userAnswer,
+      wasCorrect,
+    });
+  }
+
   function handleAnswer(answer: string) {
     if (!currentQuestion || isAnswered) return;
 
+    const isCorrect = answer === currentQuestion.correctAnswer;
+    const questionResult = createCurrentQuestionResult({
+      userAnswer: answer,
+      wasCorrect: isCorrect,
+    });
+
     updateGameState({
       selectedAnswer: answer,
-      score: answer === currentQuestion.correctAnswer ? score + 1 : score,
+      score: isCorrect ? score + 1 : score,
+      questionResults: questionResult
+        ? [...questionResults, questionResult]
+        : questionResults,
     });
   }
 
   function handleDontKnow() {
     if (!currentQuestion || isAnswered) return;
 
+    const questionResult = createCurrentQuestionResult({
+      userAnswer: "I don't know",
+      wasCorrect: false,
+    });
+
     updateGameState({
       selectedAnswer: currentQuestion.correctAnswer,
+      questionResults: questionResult
+        ? [...questionResults, questionResult]
+        : questionResults,
     });
   }
 
@@ -151,21 +201,22 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
         primaryActionLabel="Try again"
         onPrimaryAction={restartGame}
       >
+        {" "}
         <div className="mt-4 flex justify-center">
-          <GameTimer seconds={elapsedSeconds} />
-        </div>
+          {" "}
+          <GameTimer seconds={elapsedSeconds} />{" "}
+        </div>{" "}
       </GameResultCard>
     );
   }
 
   return (
     <GameShell>
+      {" "}
       <GameProgress current={score} total={questions.length} suffix="correct" />
-
       <div className="flex justify-end">
         <GameTimer seconds={elapsedSeconds} />
       </div>
-
       <div key={currentIndex} className="game-enter space-y-6">
         <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
           {!isAnswered && (
@@ -229,7 +280,6 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
           })}
         </div>
       </div>
-
       {isAnswered && (
         <Button
           type="button"

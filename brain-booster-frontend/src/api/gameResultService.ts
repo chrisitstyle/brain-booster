@@ -1,10 +1,43 @@
 import { getApiBaseUrl } from "./apiConfig";
+import type {
+  GameMode,
+  GameQuestionType,
+  QuestionAnswerSide,
+} from "@/types/gameResultTypes";
 
-export type GameMode =
-  | "multiple-choice"
-  | "written"
-  | "matching"
-  | "custom-test";
+export type {
+  GameMode,
+  GameQuestionType,
+  QuestionAnswerSide,
+} from "@/types/gameResultTypes";
+
+export interface GameQuestionResult {
+  questionResultId: number;
+  attemptId: number;
+  flashcardId: number;
+  questionKey?: string | null;
+  questionOrder: number;
+  questionType: GameQuestionType;
+  answerWith?: QuestionAnswerSide | null;
+  prompt?: string | null;
+  userAnswer?: string | null;
+  correctAnswer?: string | null;
+  wasCorrect: boolean;
+  mistakesCount: number;
+  answeredAt: string;
+}
+
+export interface GameAttempt {
+  attemptId: number;
+  userId: number;
+  setId: number;
+  mode: GameMode;
+  score: number;
+  totalQuestions: number;
+  durationSeconds?: number | null;
+  completedAt: string;
+  questionResults: GameQuestionResult[];
+}
 
 export interface GameResult {
   resultId: number;
@@ -17,12 +50,26 @@ export interface GameResult {
   completedAt: string;
 }
 
+export interface SaveGameQuestionResultRequest {
+  flashcardId: number;
+  questionKey?: string;
+  questionOrder: number;
+  questionType: GameQuestionType;
+  answerWith?: QuestionAnswerSide;
+  prompt?: string;
+  userAnswer?: string;
+  correctAnswer?: string;
+  wasCorrect: boolean;
+  mistakesCount?: number;
+}
+
 export interface SaveGameResultRequest {
   setId: number;
   mode: GameMode;
   score: number;
   totalQuestions: number;
   durationSeconds?: number;
+  questionResults?: SaveGameQuestionResultRequest[];
 }
 
 export async function saveGameResult(
