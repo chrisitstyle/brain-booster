@@ -1,5 +1,6 @@
-package com.brainbooster.gameresult;
+package com.brainbooster.gameresult.dto;
 
+import com.brainbooster.gameresult.GameMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
