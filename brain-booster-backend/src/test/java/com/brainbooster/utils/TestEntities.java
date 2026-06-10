@@ -18,7 +18,7 @@ import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.gameresult.GameMode;
 import com.brainbooster.gameresult.GameResult;
 import com.brainbooster.gameresult.dto.GameResultDTO;
-import com.brainbooster.gameresult.SaveGameResultRequest;
+import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserCreationDTO;

@@ -3,6 +3,7 @@ package com.brainbooster.gameresult;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.gameresult.dto.GameResultDTO;
+import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import com.brainbooster.gameresult.mapper.GameResultMapper;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;

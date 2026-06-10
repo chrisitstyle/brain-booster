@@ -2,6 +2,7 @@ package com.brainbooster.gameresult;
 
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.gameresult.dto.GameResultDTO;
+import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
