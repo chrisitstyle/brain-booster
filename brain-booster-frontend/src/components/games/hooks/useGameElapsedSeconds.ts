@@ -25,17 +25,13 @@ export function useGameElapsedSeconds(
   startedAt: number | null | undefined,
   finishedAt?: number | null,
 ) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
-    getElapsedGameSeconds(startedAt, finishedAt),
-  );
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
 
   useEffect(() => {
-    setElapsedSeconds(getElapsedGameSeconds(startedAt, finishedAt));
-
     if (!startedAt || finishedAt) return;
 
     const intervalId = window.setInterval(() => {
-      setElapsedSeconds(getElapsedGameSeconds(startedAt, finishedAt));
+      setCurrentTime(Date.now());
     }, 1000);
 
     return () => {
@@ -43,5 +39,9 @@ export function useGameElapsedSeconds(
     };
   }, [startedAt, finishedAt]);
 
-  return elapsedSeconds;
+  if (!startedAt) return 0;
+
+  const endTime = finishedAt ?? currentTime ?? startedAt;
+
+  return Math.max(0, Math.floor((endTime - startedAt) / 1000));
 }

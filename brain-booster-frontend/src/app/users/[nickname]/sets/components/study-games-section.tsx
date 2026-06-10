@@ -76,10 +76,7 @@ export default function StudyGamesSection({
   const [isLoadingResults, setIsLoadingResults] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setGameResults([]);
-      return;
-    }
+    if (!token) return;
 
     const authToken = token;
     let isCancelled = false;
@@ -110,16 +107,19 @@ export default function StudyGamesSection({
   }, [token, setId]);
 
   const resultByMode = useMemo(() => {
-    return new Map(gameResults.map((result) => [result.mode, result]));
-  }, [gameResults]);
+    const visibleGameResults = token ? gameResults : [];
+
+    return new Map(visibleGameResults.map((result) => [result.mode, result]));
+  }, [token, gameResults]);
 
   return (
     <section className="mb-8 print:hidden">
+      {" "}
       <div className="mx-auto max-w-[550px]">
+        {" "}
         <h2 className="mb-3 text-base font-bold text-gray-800">
-          Practice modes
+          Practice modes{" "}
         </h2>
-
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
           {games.map((game) => {
             const Icon = game.icon;
