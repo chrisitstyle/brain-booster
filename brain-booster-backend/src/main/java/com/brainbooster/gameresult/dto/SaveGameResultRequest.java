@@ -2,8 +2,11 @@ package com.brainbooster.gameresult.dto;
 
 import com.brainbooster.gameresult.GameMode;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 
 @Schema(description = "Request used to save or update the latest game result for a study set and game mode.")
 public record SaveGameResultRequest(
@@ -50,6 +53,27 @@ public record SaveGameResultRequest(
                 minimum = "0"
         )
         @Min(0)
-        Integer durationSeconds
+        Integer durationSeconds,
+
+        @Schema(description = "Optional question-level results recorded during this attempt.")
+        @Valid
+        List<SaveGameQuestionResultRequest> questionResults
 ) {
+
+    public SaveGameResultRequest(
+            Long setId,
+            GameMode mode,
+            Integer score,
+            Integer totalQuestions,
+            Integer durationSeconds
+    ) {
+        this(
+                setId,
+                mode,
+                score,
+                totalQuestions,
+                durationSeconds,
+                List.of()
+        );
+    }
 }
