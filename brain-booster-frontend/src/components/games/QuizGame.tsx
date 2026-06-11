@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { Flashcard } from "@/api/flashcardService";
-import type { SaveGameQuestionResultRequest } from "@/api/gameResultService";
+import type { SaveGameQuestionResultRequest } from "@/types/games";
 import { Button } from "@/components/ui/button";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";

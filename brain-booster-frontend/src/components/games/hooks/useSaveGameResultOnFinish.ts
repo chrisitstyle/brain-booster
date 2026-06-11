@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  saveGameResult,
-  type GameMode,
-  type SaveGameQuestionResultRequest,
-  type SaveGameResultRequest,
-} from "@/api/gameResultService";
+import type {
+  GameMode,
+  SaveGameQuestionResultRequest,
+  SaveGameResultRequest,
+} from "@/types/games";
+import { saveGameResult } from "@/api/game-results/gameResultService";
 import { useAuth } from "@/context/AuthContext";
 
 interface UseSaveGameResultOnFinishParams {

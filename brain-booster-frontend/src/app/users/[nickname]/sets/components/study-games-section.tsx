@@ -9,16 +9,19 @@ import {
   MousePointerClick,
 } from "lucide-react";
 
-import {
-  getMyGameResults,
-  type GameMode,
-  type GameResult,
-} from "@/api/gameResultService";
+import { getMyGameResultsBySetId } from "@/api/game-results/gameResultService";
 import { useAuth } from "@/context/AuthContext";
+import type { GameMode, GameResult } from "@/types/games";
 
 interface StudyGamesSectionProps {
   nickname: string;
   setId: number | string;
+}
+
+interface GameResultsState {
+  data: GameResult[];
+  dataKey: string | null;
+  errorKey: string | null;
 }
 
 const games: {
@@ -72,30 +75,69 @@ export default function StudyGamesSection({
 }: StudyGamesSectionProps) {
   const { token } = useAuth();
 
-  const [gameResults, setGameResults] = useState<GameResult[]>([]);
-  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const numericSetId = useMemo(() => {
+    const parsedSetId = Number(setId);
+
+    return Number.isFinite(parsedSetId) && parsedSetId > 0 ? parsedSetId : null;
+  }, [setId]);
+
+  const queryKey =
+    token && numericSetId ? `game-results:${numericSetId}:${token}` : null;
+
+  const [gameResultsState, setGameResultsState] = useState<GameResultsState>({
+    data: [],
+    dataKey: null,
+    errorKey: null,
+  });
+
+  const gameResults = useMemo(() => {
+    if (!queryKey || gameResultsState.dataKey !== queryKey) {
+      return [];
+    }
+
+    return gameResultsState.data;
+  }, [queryKey, gameResultsState.dataKey, gameResultsState.data]);
+
+  const isLoadingResults = Boolean(
+    queryKey &&
+    gameResultsState.dataKey !== queryKey &&
+    gameResultsState.errorKey !== queryKey,
+  );
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !numericSetId || !queryKey) {
+      return;
+    }
 
     const authToken = token;
+    const currentSetId = numericSetId;
+
     let isCancelled = false;
 
     async function loadGameResults() {
       try {
-        setIsLoadingResults(true);
+        const results = await getMyGameResultsBySetId(currentSetId, authToken);
 
-        const results = await getMyGameResults(authToken, setId);
-
-        if (!isCancelled) {
-          setGameResults(results);
+        if (isCancelled) {
+          return;
         }
+
+        setGameResultsState({
+          data: results,
+          dataKey: queryKey,
+          errorKey: null,
+        });
       } catch (error) {
         console.error("Failed to load game results:", error);
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingResults(false);
+
+        if (isCancelled) {
+          return;
         }
+
+        setGameResultsState((previousState) => ({
+          ...previousState,
+          errorKey: queryKey,
+        }));
       }
     }
 
@@ -104,22 +146,19 @@ export default function StudyGamesSection({
     return () => {
       isCancelled = true;
     };
-  }, [token, setId]);
+  }, [token, numericSetId, queryKey]);
 
   const resultByMode = useMemo(() => {
-    const visibleGameResults = token ? gameResults : [];
-
-    return new Map(visibleGameResults.map((result) => [result.mode, result]));
-  }, [token, gameResults]);
+    return new Map(gameResults.map((result) => [result.mode, result]));
+  }, [gameResults]);
 
   return (
     <section className="mb-8 print:hidden">
-      {" "}
       <div className="mx-auto max-w-[550px]">
-        {" "}
         <h2 className="mb-3 text-base font-bold text-gray-800">
-          Practice modes{" "}
+          Practice modes
         </h2>
+
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
           {games.map((game) => {
             const Icon = game.icon;
@@ -139,11 +178,11 @@ export default function StudyGamesSection({
                   {game.name}
                 </span>
 
-                {token && (
+                {token ? (
                   <span className="mt-1 rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-400 transition group-hover:bg-pink-100 group-hover:text-pink-500">
                     {isLoadingResults ? "Loading..." : getResultLabel(result)}
                   </span>
-                )}
+                ) : null}
               </Link>
             );
           })}

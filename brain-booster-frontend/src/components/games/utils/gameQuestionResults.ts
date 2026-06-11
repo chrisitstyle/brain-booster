@@ -1,9 +1,9 @@
 import type { Flashcard } from "@/api/flashcardService";
-import type { SaveGameQuestionResultRequest } from "@/api/gameResultService";
+import type { SaveGameQuestionResultRequest } from "@/types/games";
 import type {
   GameQuestionType,
   QuestionAnswerSide,
-} from "@/types/gameResultTypes";
+} from "@/types/games/gameModeTypes";
 
 interface CreateQuestionResultParams {
   flashcardId: number;

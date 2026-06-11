@@ -175,6 +175,7 @@ public class GameAnalyticsService {
                 : 0.0;
 
         return new GameProgressPointDTO(
+                attempt.getAttemptId(),
                 attempt.getCompletedAt(),
                 attempt.getScore(),
                 attempt.getTotalQuestions(),
