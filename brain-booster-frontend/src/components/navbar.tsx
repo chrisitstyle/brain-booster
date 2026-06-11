@@ -11,6 +11,7 @@ import {
   Settings,
   BookOpen,
   FolderOpen,
+  TrendingUp,
   LogOut,
 } from "lucide-react";
 
@@ -245,6 +246,18 @@ export default function Navbar({
                       </Link>
                     </DropdownMenuItem>
 
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/profile/stats"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                      >
+                        <TrendingUp className="h-4 w-4 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          My Stats
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+
                     <DropdownMenuSeparator className="my-2" />
 
                     <DropdownMenuItem asChild>
@@ -366,13 +379,14 @@ export default function Navbar({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start text-gray-600 hover:text-pink-500"
+                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
                           asChild
                         >
                           <Link
                             href="/profile"
                             onClick={() => setIsOpen(false)}
                           >
+                            <User className="h-4 w-4" />
                             Profile
                           </Link>
                         </Button>
@@ -380,13 +394,14 @@ export default function Navbar({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start text-gray-600 hover:text-pink-500"
+                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
                           asChild
                         >
                           <Link
-                            href="/profile"
+                            href="/profile/sets"
                             onClick={() => setIsOpen(false)}
                           >
+                            <BookOpen className="h-4 w-4" />
                             My Sets
                           </Link>
                         </Button>
@@ -394,26 +409,43 @@ export default function Navbar({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start text-gray-600 hover:text-pink-500"
+                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
                           asChild
                         >
                           <Link
                             href="/profile/folders"
                             onClick={() => setIsOpen(false)}
                           >
+                            <FolderOpen className="h-4 w-4" />
                             My Folders
+                          </Link>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link
+                            href="/profile/stats"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                            My Stats
                           </Link>
                         </Button>
 
                         <Button
                           variant="outline"
                           size="sm"
-                          className="justify-start border-gray-300 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                          className="justify-start gap-2 border-gray-300 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           onClick={() => {
                             logout();
                             setIsOpen(false);
                           }}
                         >
+                          <LogOut className="h-4 w-4" />
                           Logout
                         </Button>
                       </>

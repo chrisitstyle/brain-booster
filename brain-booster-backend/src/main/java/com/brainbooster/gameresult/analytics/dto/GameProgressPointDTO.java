@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 @Schema(description = "Single progress point based on a completed game attempt.")
 public record GameProgressPointDTO(
 
+        @Schema(description = "Unique game attempt identifier.", example = "15")
+        Long attemptId,
+
         @Schema(description = "Date and time when the attempt was completed.")
         LocalDateTime completedAt,
 
