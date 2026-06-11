@@ -18,22 +18,6 @@ import java.util.Optional;
 public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> {
 
     @EntityGraph(attributePaths = {"user", "set"})
-    List<GameAttempt> findByUser_UserIdOrderByCompletedAtDesc(Long userId);
-
-    @EntityGraph(attributePaths = {"user", "set"})
-    List<GameAttempt> findByUser_UserIdAndSet_SetIdOrderByCompletedAtDesc(
-            Long userId,
-            Long setId
-    );
-
-    @EntityGraph(attributePaths = {"user", "set"})
-    List<GameAttempt> findByUser_UserIdAndSet_SetIdAndModeOrderByCompletedAtDesc(
-            Long userId,
-            Long setId,
-            GameMode mode
-    );
-
-    @EntityGraph(attributePaths = {"user", "set"})
     @Query("""
             SELECT attempt
             FROM GameAttempt attempt
@@ -54,6 +38,7 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
 
     @Override
     @EntityGraph(attributePaths = {"user", "set"})
+    @NonNull
     Optional<GameAttempt> findById(@NonNull Long attemptId);
 
     @EntityGraph(attributePaths = {"user",
