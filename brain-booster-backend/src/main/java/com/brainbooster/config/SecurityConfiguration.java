@@ -98,6 +98,8 @@ public class SecurityConfiguration {
 
                         // game results
                         .requestMatchers("/game-results/**").authenticated()
+                        // game attempts
+                        .requestMatchers("/game-attempts/**").authenticated()
 
 
                         .anyRequest().hasAuthority(Role.ADMIN.name())
