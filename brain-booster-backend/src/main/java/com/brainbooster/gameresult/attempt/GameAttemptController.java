@@ -1,6 +1,7 @@
 package com.brainbooster.gameresult.attempt;
 
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
+import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/game-attempts")
@@ -105,5 +107,13 @@ public class GameAttemptController {
             @PathVariable Long attemptId
     ) {
         return ResponseEntity.ok(gameAttemptService.getGameAttemptById(attemptId));
+    }
+
+    @GetMapping("/{attemptId}/question-results")
+    @Operation(summary = "Get question-level results for a single game attempt")
+    public ResponseEntity<List<GameQuestionResultDTO>> getQuestionResultsByAttemptId(
+            @PathVariable Long attemptId
+    ) {
+        return ResponseEntity.ok(gameAttemptService.getQuestionResultsByAttemptId(attemptId));
     }
 }

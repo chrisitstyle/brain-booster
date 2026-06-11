@@ -524,11 +524,12 @@ The backend exposes a REST API under the following base path:
 
 ### Game Attempts
 
-| Method | Endpoint                         | Description                                                                        | Access                 |
-| ------ | -------------------------------- | ---------------------------------------------------------------------------------- | ---------------------- |
-| GET    | `/game-attempts/me`              | Get paginated game attempts of the authenticated user                              | Authenticated user     |
-| GET    | `/game-attempts/me/sets/{setId}` | Get paginated game attempts of the authenticated user for a specific flashcard set | Authenticated user     |
-| GET    | `/game-attempts/{attemptId}`     | Get details of a single game attempt, including question-level results             | Attempt owner or admin |
+| Method | Endpoint                                      | Description                                                                        | Access                 |
+| ------ | --------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/game-attempts/me`                           | Get paginated game attempts of the authenticated user                              | Authenticated user     |
+| GET    | `/game-attempts/me/sets/{setId}`              | Get paginated game attempts of the authenticated user for a specific flashcard set | Authenticated user     |
+| GET    | `/game-attempts/{attemptId}`                  | Get details of a single game attempt, including question-level results             | Attempt owner or admin |
+| GET    | `/game-attempts/{attemptId}/question-results` | Get question-level results for a single game attempt                               | Attempt owner or admin |
 
 #### Game Attempts Query Parameters
 

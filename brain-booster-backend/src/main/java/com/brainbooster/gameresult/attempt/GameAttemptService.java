@@ -2,7 +2,10 @@ package com.brainbooster.gameresult.attempt;
 
 import com.brainbooster.gameresult.GameMode;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
+import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import com.brainbooster.gameresult.mapper.GameAttemptMapper;
+import com.brainbooster.gameresult.mapper.GameQuestionResultMapper;
+import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ public class GameAttemptService {
 
     private final GameAttemptRepository gameAttemptRepository;
     private final GameAttemptMapper gameAttemptMapper;
+    private final GameQuestionResultRepository gameQuestionResultRepository;
+    private final GameQuestionResultMapper gameQuestionResultMapper;
 
     @Transactional(readOnly = true)
     public Page<GameAttemptDTO> getMyGameAttempts(
@@ -98,6 +104,25 @@ public class GameAttemptService {
                 .map(gameAttemptMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(Long attemptId) {
+        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+
+        GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Game attempt not found"
+                ));
+
+        verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
+
+        return gameQuestionResultRepository
+                .findByAttempt_AttemptIdOrderByQuestionOrderAsc(attemptId)
+                .stream()
+                .map(gameQuestionResultMapper::toDto)
+                .toList();
+    }
+
     private GameMode parseGameMode(String mode) {
         if (mode == null || mode.isBlank()) {
             return null;
@@ -105,7 +130,7 @@ public class GameAttemptService {
 
         try {
             return GameMode.fromValue(mode);
-        } catch (IllegalArgumentException exception) {
+        } catch (IllegalArgumentException _) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid game mode: " + mode
