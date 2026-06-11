@@ -524,11 +524,45 @@ The backend exposes a REST API under the following base path:
 
 ### Game Attempts
 
-| Method | Endpoint                         | Description                                                            | Access                 |
-| ------ | -------------------------------- | ---------------------------------------------------------------------- | ---------------------- |
-| GET    | `/game-attempts/me`              | Get all game attempts of the authenticated user                        | Authenticated user     |
-| GET    | `/game-attempts/me/sets/{setId}` | Get authenticated user's game attempts for a specific flashcard set    | Authenticated user     |
-| GET    | `/game-attempts/{attemptId}`     | Get details of a single game attempt, including question-level results | Attempt owner or admin |
+| Method | Endpoint                         | Description                                                                        | Access                 |
+| ------ | -------------------------------- | ---------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/game-attempts/me`              | Get paginated game attempts of the authenticated user                              | Authenticated user     |
+| GET    | `/game-attempts/me/sets/{setId}` | Get paginated game attempts of the authenticated user for a specific flashcard set | Authenticated user     |
+| GET    | `/game-attempts/{attemptId}`     | Get details of a single game attempt, including question-level results             | Attempt owner or admin |
+
+#### Game Attempts Query Parameters
+
+The `/game-attempts/me` endpoint supports optional query parameters for pagination and filtering.
+
+| Query Parameter | Description                                                                   | Example           |
+| --------------- | ----------------------------------------------------------------------------- | ----------------- |
+| `page`          | Page number for paginated results. Page indexing starts from `0`              | `page=0`          |
+| `size`          | Number of attempts returned per page                                          | `size=20`         |
+| `setId`         | Filters attempts by flashcard set ID                                          | `setId=12`        |
+| `mode`          | Filters attempts by game mode                                                 | `mode=written`    |
+| `from`          | Filters attempts completed on or after the given date in `YYYY-MM-DD` format  | `from=2026-01-01` |
+| `to`            | Filters attempts completed on or before the given date in `YYYY-MM-DD` format | `to=2026-01-31`   |
+
+Supported `mode` values:
+
+```txt
+multiple-choice
+written
+matching
+custom-test
+```
+
+#### Examples
+
+Examples for `/game-attempts/me`:
+
+```http
+GET /game-attempts/me?page=0&size=20
+GET /game-attempts/me?page=0&size=20&setId=12
+GET /game-attempts/me?page=0&size=20&mode=multiple-choice
+GET /game-attempts/me?page=0&size=20&from=2026-01-01&to=2026-01-31
+GET /game-attempts/me?page=0&size=20&setId=12&mode=written&from=2026-01-01&to=2026-01-31
+```
 
 ## 📖 OpenAPI / Swagger
 

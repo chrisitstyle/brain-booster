@@ -1,17 +1,21 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.gameresult.GameMode;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
 import com.brainbooster.gameresult.mapper.GameAttemptMapper;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,28 +25,37 @@ public class GameAttemptService {
     private final GameAttemptMapper gameAttemptMapper;
 
     @Transactional(readOnly = true)
-    public List<GameAttemptDTO> getMyGameAttempts() {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
-
-        return gameAttemptRepository
-                .findByUser_UserIdOrderByCompletedAtDesc(authenticatedUser.getUserId())
-                .stream()
-                .map(gameAttemptMapper::toDto)
-                .toList();
+    public Page<GameAttemptDTO> getMyGameAttempts(
+            Long setId,
+            String mode,
+            LocalDate from,
+            LocalDate to,
+            Pageable pageable
+    ) {
+        return getMyGameAttemptsWithFilters(
+                setId,
+                mode,
+                from,
+                to,
+                pageable
+        );
     }
 
     @Transactional(readOnly = true)
-    public List<GameAttemptDTO> getMyGameAttemptsBySetId(Long setId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
-
-        return gameAttemptRepository
-                .findByUser_UserIdAndSet_SetIdOrderByCompletedAtDesc(
-                        authenticatedUser.getUserId(),
-                        setId
-                )
-                .stream()
-                .map(gameAttemptMapper::toDto)
-                .toList();
+    public Page<GameAttemptDTO> getMyGameAttemptsBySetId(
+            Long setId,
+            String mode,
+            LocalDate from,
+            LocalDate to,
+            Pageable pageable
+    ) {
+        return getMyGameAttemptsWithFilters(
+                setId,
+                mode,
+                from,
+                to,
+                pageable
+        );
     }
 
     @Transactional(readOnly = true)
@@ -58,6 +71,62 @@ public class GameAttemptService {
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
 
         return gameAttemptMapper.toDto(gameAttempt);
+    }
+
+    private Page<GameAttemptDTO> getMyGameAttemptsWithFilters(
+            Long setId,
+            String mode,
+            LocalDate from,
+            LocalDate to,
+            Pageable pageable
+    ) {
+        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+
+        GameMode parsedMode = parseGameMode(mode);
+        LocalDateTime fromDateTime = toStartOfDay(from);
+        LocalDateTime toDateTimeExclusive = toExclusiveEndDate(to);
+
+        return gameAttemptRepository
+                .findByUserIdWithFilters(
+                        authenticatedUser.getUserId(),
+                        setId,
+                        parsedMode,
+                        fromDateTime,
+                        toDateTimeExclusive,
+                        pageable
+                )
+                .map(gameAttemptMapper::toDto);
+    }
+
+    private GameMode parseGameMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return null;
+        }
+
+        try {
+            return GameMode.fromValue(mode);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid game mode: " + mode
+            );
+        }
+    }
+
+    private LocalDateTime toStartOfDay(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.atStartOfDay();
+    }
+
+    private LocalDateTime toExclusiveEndDate(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.plusDays(1).atStartOfDay();
     }
 
     private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
