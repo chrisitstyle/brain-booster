@@ -565,6 +565,17 @@ GET /game-attempts/me?page=0&size=20&from=2026-01-01&to=2026-01-31
 GET /game-attempts/me?page=0&size=20&setId=12&mode=written&from=2026-01-01&to=2026-01-31
 ```
 
+### Game Analytics
+
+| Method | Endpoint                                          | Description                                                          | Access             |
+| ------ | ------------------------------------------------- | -------------------------------------------------------------------- | ------------------ |
+| GET    | `/game-analytics/me/sets/{setId}/summary`         | Get summary analytics for the authenticated user's attempts in a set | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/progress`        | Get progress data for the authenticated user's attempts in a set     | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/weak-flashcards` | Get weak flashcards based on the authenticated user's attempts       | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/question-types`  | Get question type analytics for the authenticated user's attempts    | Authenticated user |
+
+> **Note:** These endpoints return analytics only for the currently authenticated user's own game attempts.
+
 ## 📖 OpenAPI / Swagger
 
 The backend provides automatically generated OpenAPI documentation using Springdoc OpenAPI and Swagger UI.

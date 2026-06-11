@@ -61,4 +61,17 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
             "questionResults",
             "questionResults.flashcard"})
     Optional<GameAttempt> findWithQuestionResultsByAttemptId(Long attemptId);
+
+    @EntityGraph(attributePaths = {"user", "set"})
+    @Query("""
+        SELECT attempt
+        FROM GameAttempt attempt
+        WHERE attempt.user.userId = :userId
+          AND attempt.set.setId = :setId
+        ORDER BY attempt.completedAt ASC
+        """)
+    List<GameAttempt> findByUserIdAndSetIdOrderByCompletedAtAsc(
+            @Param("userId") Long userId,
+            @Param("setId") Long setId
+    );
 }
