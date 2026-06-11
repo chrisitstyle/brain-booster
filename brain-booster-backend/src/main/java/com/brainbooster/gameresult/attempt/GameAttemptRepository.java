@@ -31,4 +31,10 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
     @Override
     @EntityGraph(attributePaths = {"user", "set"})
     Optional<GameAttempt> findById(@NonNull Long attemptId);
+
+    @EntityGraph(attributePaths = {"user",
+            "set",
+            "questionResults",
+            "questionResults.flashcard"})
+    Optional<GameAttempt> findWithQuestionResultsByAttemptId(Long attemptId);
 }

@@ -522,6 +522,14 @@ The backend exposes a REST API under the following base path:
 | GET    | `/game-results/{resultId}`       | Get game result by ID                                              | Result owner or admin |
 | DELETE | `/game-results/{resultId}`       | Delete game result by ID                                           | Result owner or admin |
 
+### Game Attempts
+
+| Method | Endpoint                         | Description                                                            | Access                 |
+| ------ | -------------------------------- | ---------------------------------------------------------------------- | ---------------------- |
+| GET    | `/game-attempts/me`              | Get all game attempts of the authenticated user                        | Authenticated user     |
+| GET    | `/game-attempts/me/sets/{setId}` | Get authenticated user's game attempts for a specific flashcard set    | Authenticated user     |
+| GET    | `/game-attempts/{attemptId}`     | Get details of a single game attempt, including question-level results | Attempt owner or admin |
+
 ## 📖 OpenAPI / Swagger
 
 The backend provides automatically generated OpenAPI documentation using Springdoc OpenAPI and Swagger UI.
