@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   ArrowLeft,
@@ -22,6 +21,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useGameAttempt, useGameQuestionResults } from "@/hooks/game-results";
 import type { GameQuestionResult } from "@/types/games";
+
+interface AttemptDetailsClientProps {
+  setId: number;
+  attemptId: number;
+}
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
@@ -129,6 +133,7 @@ function MetricCard({
       <div className="flex items-start justify-between gap-3 p-5">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>
+
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
             {value}
           </p>
@@ -177,6 +182,7 @@ function AnswerBlock({
   return (
     <div className="rounded-2xl bg-gray-50 p-4">
       <p className={`text-xs font-semibold ${labelClassName}`}>{label}</p>
+
       <p className="mt-2 text-sm text-slate-950">{value || "No answer"}</p>
     </div>
   );
@@ -255,6 +261,7 @@ function QuestionResultCard({
               <MessageCircle size={15} />
               <span>Question key</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {questionResult.questionKey || "No key"}
             </p>
@@ -265,6 +272,7 @@ function QuestionResultCard({
               <XCircle size={15} />
               <span>Mistakes</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {questionResult.mistakesCount}
             </p>
@@ -275,6 +283,7 @@ function QuestionResultCard({
               <Clock3 size={15} />
               <span>Answered at</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {formatDateTime(questionResult.answeredAt)}
             </p>
@@ -285,29 +294,37 @@ function QuestionResultCard({
   );
 }
 
-export default function AttemptDetailsClient() {
-  const params = useParams<{ attemptId: string }>();
+export default function AttemptDetailsClient({
+  setId,
+  attemptId,
+}: AttemptDetailsClientProps) {
   const { token, isAuthenticated, isAuthLoading } = useAuth();
-
-  const attemptId = Number(params.attemptId);
-  const safeAttemptId =
-    Number.isFinite(attemptId) && attemptId > 0 ? attemptId : null;
 
   const {
     data: attempt,
     isLoading: isAttemptLoading,
     error: attemptError,
-  } = useGameAttempt(safeAttemptId, token);
+  } = useGameAttempt(attemptId, token);
 
   const {
     data: questionResults,
     isLoading: areQuestionResultsLoading,
     error: questionResultsError,
-  } = useGameQuestionResults(safeAttemptId, token);
+  } = useGameQuestionResults(attemptId, token);
 
   const accuracy = attempt
     ? getAccuracy(attempt.score, attempt.totalQuestions)
     : 0;
+
+  const attemptsHref = `/profile/sets/${setId}/attempts`;
+  const statsHref = `/profile/sets/${setId}/stats`;
+
+  const hasAttemptSetMismatch = Boolean(attempt && attempt.setId !== setId);
+
+  const canDisplayAttempt = Boolean(attempt) && !hasAttemptSetMismatch;
+
+  const canDisplayQuestionResults =
+    !isAttemptLoading && !attemptError && canDisplayAttempt;
 
   if (isAuthLoading) {
     return (
@@ -331,30 +348,23 @@ export default function AttemptDetailsClient() {
     );
   }
 
-  if (!safeAttemptId) {
-    return (
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
-        <div className="mx-auto max-w-6xl px-4 py-10">
-          <StatusMessage type="error">Invalid attempt ID.</StatusMessage>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
-        <div>
+        <div className="flex flex-wrap items-center gap-4">
           <Link
-            href={
-              attempt
-                ? `/profile/stats?setId=${attempt.setId}`
-                : "/profile/stats"
-            }
+            href={attemptsHref}
             className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-pink-500"
           >
             <ArrowLeft size={16} />
-            Back to stats
+            Back to attempts
+          </Link>
+
+          <Link
+            href={statsHref}
+            className="text-sm font-medium text-pink-500 transition hover:text-pink-600"
+          >
+            View set statistics
           </Link>
         </div>
 
@@ -366,11 +376,12 @@ export default function AttemptDetailsClient() {
             </p>
 
             <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-              Attempt #{safeAttemptId}
+              Attempt #{attemptId}
             </h1>
 
             <p className="mt-3 flex max-w-2xl items-start gap-2 text-slate-500">
               <BookOpen size={18} className="mt-0.5 shrink-0 text-pink-500" />
+
               <span>
                 Review score, duration, mode, and every question from this
                 completed attempt.
@@ -387,7 +398,14 @@ export default function AttemptDetailsClient() {
           <StatusMessage type="error">{attemptError}</StatusMessage>
         ) : null}
 
-        {attempt ? (
+        {!isAttemptLoading && !attemptError && hasAttemptSetMismatch ? (
+          <StatusMessage type="error">
+            This attempt does not belong to the flashcard set from the current
+            URL.
+          </StatusMessage>
+        ) : null}
+
+        {canDisplayAttempt && attempt ? (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard
@@ -423,6 +441,7 @@ export default function AttemptDetailsClient() {
                     <Layers3 size={16} />
                     Set ID
                   </p>
+
                   <p className="mt-1 font-semibold text-slate-950">
                     #{attempt.setId}
                   </p>
@@ -433,6 +452,7 @@ export default function AttemptDetailsClient() {
                     <Clock3 size={16} />
                     Completed at
                   </p>
+
                   <p className="mt-1 font-semibold text-slate-950">
                     {formatDateTime(attempt.completedAt)}
                   </p>
@@ -443,6 +463,7 @@ export default function AttemptDetailsClient() {
                     <BookOpen size={16} />
                     User ID
                   </p>
+
                   <p className="mt-1 font-semibold text-slate-950">
                     #{attempt.userId}
                   </p>
@@ -452,47 +473,56 @@ export default function AttemptDetailsClient() {
           </>
         ) : null}
 
-        <section className="space-y-4">
-          <div className="flex items-start gap-3">
-            <IconBox>
-              <ClipboardList size={20} />
-            </IconBox>
+        {canDisplayQuestionResults ? (
+          <section className="space-y-4">
+            <div className="flex items-start gap-3">
+              <IconBox>
+                <ClipboardList size={20} />
+              </IconBox>
 
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                Question results
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Detailed result for each question in this attempt.
-              </p>
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-slate-950">
+                  Question results
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Detailed result for each question in this attempt.
+                </p>
+              </div>
             </div>
-          </div>
 
-          {areQuestionResultsLoading ? (
-            <StatusMessage>Loading question results...</StatusMessage>
-          ) : null}
+            {areQuestionResultsLoading ? (
+              <StatusMessage>Loading question results...</StatusMessage>
+            ) : null}
 
-          {questionResultsError ? (
-            <StatusMessage type="error">{questionResultsError}</StatusMessage>
-          ) : null}
+            {questionResultsError ? (
+              <StatusMessage type="error">{questionResultsError}</StatusMessage>
+            ) : null}
 
-          {questionResults && questionResults.length > 0 ? (
-            <div className="space-y-4">
-              {questionResults.map((questionResult) => (
-                <QuestionResultCard
-                  key={questionResult.questionResultId}
-                  questionResult={questionResult}
-                />
-              ))}
-            </div>
-          ) : null}
+            {!areQuestionResultsLoading &&
+            !questionResultsError &&
+            questionResults &&
+            questionResults.length > 0 ? (
+              <div className="space-y-4">
+                {questionResults.map((questionResult) => (
+                  <QuestionResultCard
+                    key={questionResult.questionResultId}
+                    questionResult={questionResult}
+                  />
+                ))}
+              </div>
+            ) : null}
 
-          {questionResults && questionResults.length === 0 ? (
-            <StatusMessage>
-              No question results found for this attempt.
-            </StatusMessage>
-          ) : null}
-        </section>
+            {!areQuestionResultsLoading &&
+            !questionResultsError &&
+            questionResults &&
+            questionResults.length === 0 ? (
+              <StatusMessage>
+                No question results found for this attempt.
+              </StatusMessage>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </main>
   );

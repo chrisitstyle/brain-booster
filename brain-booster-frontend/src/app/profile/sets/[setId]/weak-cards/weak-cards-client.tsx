@@ -320,7 +320,7 @@ export default function WeakCardsClient() {
     <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
       <div className="mx-auto max-w-5xl px-4 pt-8 pb-28">
         <Link
-          href={`/profile/stats?setId=${setId}`}
+          href={`/profile/sets/${setId}/stats`}
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-pink-500"
         >
           <ArrowLeft size={16} />
@@ -476,7 +476,7 @@ export default function WeakCardsClient() {
                   </button>
 
                   <Link
-                    href={`/profile/stats?setId=${setId}`}
+                    href={`/profile/sets/${setId}/stats`}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
                   >
                     <CheckCircle2 size={17} />
