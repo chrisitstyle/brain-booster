@@ -12,33 +12,24 @@ import {
   Plus,
   Settings,
   Trophy,
-  User,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
-import { parseJwt } from "@/utils/jwt";
-import { getUserFlashcardSetsByUserId } from "@/api/userService";
 import { deleteFlashcardSet } from "@/api/flashcardSetService";
 import {
   deleteFolderById,
   getMyFolders,
   type Folder as FolderDTO,
 } from "@/api/folderService";
+import { getCurrentUser, type UserDTO } from "@/api/profileService";
+import { getUserFlashcardSetsByUserId } from "@/api/userService";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import EditFolderForm from "@/app/profile/folders/components/edit-folder-form";
+import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,9 +40,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
-import EditFolderForm from "@/app/profile/folders/components/edit-folder-form";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface StudySet {
   id: string;
@@ -80,28 +79,90 @@ interface DashboardFolder {
   setCount: number;
 }
 
+interface ProfileDashboardData {
+  user: UserDTO;
+  sets: StudySet[];
+  folders: DashboardFolder[];
+}
+
 const achievements = [
-  { icon: Flame, label: "7 Day Streak", value: "7", color: "text-orange-500" },
+  {
+    icon: Flame,
+    label: "7 Day Streak",
+    value: "7",
+    color: "text-orange-500",
+  },
   {
     icon: Trophy,
     label: "Sets Mastered",
     value: "12",
     color: "text-yellow-500",
   },
-  { icon: Zap, label: "Terms Learned", value: "847", color: "text-pink-500" },
+  {
+    icon: Zap,
+    label: "Terms Learned",
+    value: "847",
+    color: "text-pink-500",
+  },
 ];
+
+async function getProfileDashboardData(
+  token: string,
+): Promise<ProfileDashboardData> {
+  const user = await getCurrentUser(token);
+
+  const [setsData, foldersData] = await Promise.all([
+    getUserFlashcardSetsByUserId(user.userId, token),
+    getMyFolders(token),
+  ]);
+
+  const formattedSets: StudySet[] = setsData.map((set: FlashcardSetDTO) => ({
+    id: set.setId.toString(),
+    title: set.setName,
+    description: set.description,
+    termCount: set.termCount,
+    author: set.user.nickname || user.nickname,
+    lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+  }));
+
+  const formattedFolders: DashboardFolder[] = foldersData.map(
+    (folder: FolderDTO) => ({
+      id: folder.folderId.toString(),
+      title: folder.name,
+      description: folder.description ?? "",
+      setCount: folder.setCount,
+    }),
+  );
+
+  return {
+    user,
+    sets: formattedSets,
+    folders: formattedFolders,
+  };
+}
 
 export function ProfileDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("sets");
   const { token } = useAuth();
+
+  const [activeTab, setActiveTab] = useState("sets");
+
+  const [currentUser, setCurrentUser] = useState<UserDTO | null>(null);
 
   const [sets, setSets] = useState<StudySet[]>([]);
   const [folders, setFolders] = useState<DashboardFolder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [loadedContentToken, setLoadedContentToken] = useState<string | null>(
+    null,
+  );
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const [setToDelete, setSetToDelete] = useState<string | null>(null);
+
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isFolderDeleteDialogOpen, setIsFolderDeleteDialogOpen] =
@@ -125,55 +186,36 @@ export function ProfileDashboard() {
     null,
   );
 
+  const isContentLoading = Boolean(token && loadedContentToken !== token);
+
   useEffect(() => {
-    const fetchUserContent = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+    if (!token) {
+      return;
+    }
 
-      const decoded = parseJwt(token);
+    let isCancelled = false;
+    const requestToken = token;
 
-      if (!decoded?.id) {
-        setIsLoading(false);
-        return;
-      }
+    void getProfileDashboardData(requestToken)
+      .then(({ user, sets: loadedSets, folders: loadedFolders }) => {
+        if (isCancelled) {
+          return;
+        }
 
-      try {
-        setIsLoading(true);
+        setCurrentUser(user);
+        setSets(loadedSets);
+        setFolders(loadedFolders);
+      })
+      .catch((error: unknown) => {
+        if (isCancelled) {
+          return;
+        }
 
-        const [setsData, foldersData] = await Promise.all([
-          getUserFlashcardSetsByUserId(decoded.id, token),
-          getMyFolders(token),
-        ]);
-
-        const formattedSets: StudySet[] = setsData.map(
-          (set: FlashcardSetDTO) => ({
-            id: set.setId.toString(),
-            title: set.setName,
-            description: set.description,
-            termCount: set.termCount,
-            author: set.user.nickname || "You",
-            lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            }),
-          }),
-        );
-
-        const formattedFolders: DashboardFolder[] = foldersData.map(
-          (folder: FolderDTO) => ({
-            id: folder.folderId.toString(),
-            title: folder.name,
-            description: folder.description ?? "",
-            setCount: folder.setCount,
-          }),
-        );
-
-        setSets(formattedSets);
-        setFolders(formattedFolders);
-      } catch (error) {
         console.error("Error fetching profile content:", error);
+
+        setCurrentUser(null);
+        setSets([]);
+        setFolders([]);
 
         toast.error("Failed to load profile content.", {
           style: {
@@ -181,16 +223,69 @@ export function ProfileDashboard() {
             color: "white",
           },
         });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoadedContentToken(requestToken);
+        }
+      });
 
-    void fetchUserContent();
+    return () => {
+      isCancelled = true;
+    };
   }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let isCancelled = false;
+    const requestToken = token;
+
+    function handleProfileUpdated() {
+      void getProfileDashboardData(requestToken)
+        .then(({ user, sets: loadedSets, folders: loadedFolders }) => {
+          if (isCancelled) {
+            return;
+          }
+
+          setCurrentUser(user);
+          setSets(loadedSets);
+          setFolders(loadedFolders);
+        })
+        .catch((error: unknown) => {
+          if (isCancelled) {
+            return;
+          }
+
+          console.error("Error refreshing profile content:", error);
+
+          toast.error("Failed to refresh profile content.");
+        });
+    }
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
+
+    return () => {
+      isCancelled = true;
+
+      window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
+    };
+  }, [token]);
+
+  const avatarFallback =
+    currentUser?.nickname.trim().charAt(0).toUpperCase() || "?";
+
+  const memberSince = currentUser?.createdAt
+    ? new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        year: "numeric",
+      }).format(new Date(currentUser.createdAt))
+    : "";
+
   const handleEditSetClick = (set: StudySet) => {
-    router.push(`/users/${set.author}/sets/${set.id}/edit`);
+    router.push(`/users/${encodeURIComponent(set.author)}/sets/${set.id}/edit`);
   };
 
   const handleAddToFolderClick = (set: StudySet) => {
@@ -204,8 +299,8 @@ export function ProfileDashboard() {
   };
 
   const handleFolderUpdated = (updatedFolder: FolderDTO) => {
-    setFolders((prevFolders) =>
-      prevFolders.map((folder) =>
+    setFolders((previousFolders) =>
+      previousFolders.map((folder) =>
         folder.id === updatedFolder.folderId.toString()
           ? {
               ...folder,
@@ -219,30 +314,24 @@ export function ProfileDashboard() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!setToDelete || !token) return;
+    if (!setToDelete || !token) {
+      return;
+    }
 
     try {
       setIsDeleting(true);
 
       await deleteFlashcardSet(setToDelete, token);
 
-      setSets((prevSets) => prevSets.filter((set) => set.id !== setToDelete));
+      setSets((previousSets) =>
+        previousSets.filter((set) => set.id !== setToDelete),
+      );
 
-      toast.success("Set deleted successfully", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
+      toast.success("Set deleted successfully");
     } catch (error) {
       console.error("Failed to delete set:", error);
 
-      toast.error("Failed to delete set. Please try again.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error("Failed to delete set. Please try again.");
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
@@ -271,39 +360,33 @@ export function ProfileDashboard() {
   };
 
   const handleFolderDeleteCancel = () => {
-    if (isDeletingFolder) return;
+    if (isDeletingFolder) {
+      return;
+    }
 
     setFolderToDelete(null);
     setIsFolderDeleteDialogOpen(false);
   };
 
   const handleFolderDeleteConfirm = async () => {
-    if (!folderToDelete || !token) return;
+    if (!folderToDelete || !token) {
+      return;
+    }
 
     try {
       setIsDeletingFolder(true);
 
       await deleteFolderById(folderToDelete.id, token);
 
-      setFolders((prevFolders) =>
-        prevFolders.filter((folder) => folder.id !== folderToDelete.id),
+      setFolders((previousFolders) =>
+        previousFolders.filter((folder) => folder.id !== folderToDelete.id),
       );
 
-      toast.success("Folder deleted successfully", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
+      toast.success("Folder deleted successfully");
     } catch (error) {
       console.error("Failed to delete folder:", error);
 
-      toast.error("Failed to delete folder. Please try again.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error("Failed to delete folder. Please try again.");
     } finally {
       setIsDeletingFolder(false);
       setIsFolderDeleteDialogOpen(false);
@@ -317,23 +400,42 @@ export function ProfileDashboard() {
         <div className="mb-8 flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 border-4 border-pink-200">
-              <AvatarImage
-                src="/placeholder.svg?height=80&width=80"
-                alt="User avatar"
-              />
-
-              <AvatarFallback className="bg-pink-100 text-2xl text-pink-500">
-                JD
+              <AvatarFallback className="bg-pink-100 text-2xl font-medium text-pink-500">
+                {isContentLoading && !currentUser ? "" : avatarFallback}
               </AvatarFallback>
             </Avatar>
 
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">John Doe</h1>
-              <p className="text-gray-500">@johndoe</p>
-              <p className="mt-1 text-sm text-gray-400">
-                Member since January 2024
-              </p>
-            </div>
+            {currentUser ? (
+              <div className="min-w-0">
+                <h1 className="truncate text-2xl font-bold text-gray-800">
+                  {currentUser.nickname}
+                </h1>
+
+                <p className="truncate text-gray-500">{currentUser.email}</p>
+
+                {memberSince && (
+                  <p className="mt-1 text-sm text-gray-400">
+                    Member since {memberSince}
+                  </p>
+                )}
+              </div>
+            ) : isContentLoading ? (
+              <div className="space-y-2">
+                <div className="h-7 w-36 animate-pulse rounded bg-gray-100" />
+                <div className="h-5 w-48 animate-pulse rounded bg-gray-100" />
+                <div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
+              </div>
+            ) : (
+              <div>
+                <h1 className="text-xl font-semibold text-gray-800">
+                  Profile unavailable
+                </h1>
+
+                <p className="text-sm text-gray-500">
+                  User information could not be loaded.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">
@@ -341,9 +443,12 @@ export function ProfileDashboard() {
               variant="outline"
               size="sm"
               className="border-gray-200 text-gray-600 hover:border-pink-200 hover:text-pink-500"
+              asChild
             >
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+              <Link href="/profile/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
             </Button>
 
             <Button
@@ -394,6 +499,7 @@ export function ProfileDashboard() {
           <CardContent>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-gray-500">5 of 7 days studied</span>
+
               <span className="text-sm font-medium text-pink-500">71%</span>
             </div>
 
@@ -462,7 +568,7 @@ export function ProfileDashboard() {
           </TabsList>
 
           <TabsContent value="sets" className="mt-0">
-            {isLoading ? (
+            {isContentLoading ? (
               <div className="py-10 text-center text-gray-500">
                 Downloading flashcard sets...
               </div>
@@ -492,7 +598,7 @@ export function ProfileDashboard() {
           </TabsContent>
 
           <TabsContent value="folders" className="mt-0">
-            {isLoading ? (
+            {isContentLoading ? (
               <div className="py-10 text-center text-gray-500">
                 Downloading folders...
               </div>
@@ -586,8 +692,9 @@ export function ProfileDashboard() {
 
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              folder &quot;{folderToDelete?.title}&quot;. Your flashcard sets
-              will not be deleted, only removed from this folder.
+              folder &quot;
+              {folderToDelete?.title}&quot;. Your flashcard sets will not be
+              deleted, only removed from this folder.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -645,13 +752,15 @@ function StudySetCard({
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  const authorInitial = set.author.trim().charAt(0).toUpperCase() || "?";
+
   return (
     <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
       <CardContent className="p-4">
         <div className="mb-3 flex items-start justify-between">
           <div className="flex-1">
             <Link
-              href={`/users/${set.author}/sets/${set.id}`}
+              href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
               className="line-clamp-1 font-semibold text-gray-800 hover:text-pink-500"
             >
               {set.title}
@@ -727,7 +836,7 @@ function StudySetCard({
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
-              <User className="h-3 w-3" />
+              {authorInitial}
             </AvatarFallback>
           </Avatar>
 
@@ -831,7 +940,7 @@ function RecentActivityItem({ set }: { set: StudySet }) {
 
         <div>
           <Link
-            href={`/users/${set.author}/sets/${set.id}`}
+            href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
             className="font-medium text-gray-800 hover:text-pink-500"
           >
             {set.title}
@@ -849,7 +958,11 @@ function RecentActivityItem({ set }: { set: StudySet }) {
           className="bg-pink-500 text-white hover:bg-pink-600"
           asChild
         >
-          <Link href={`/users/${set.author}/sets/${set.id}`}>Study</Link>
+          <Link
+            href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
+          >
+            Study
+          </Link>
         </Button>
       </div>
     </div>

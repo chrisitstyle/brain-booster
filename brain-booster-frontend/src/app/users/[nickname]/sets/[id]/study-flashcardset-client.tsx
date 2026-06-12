@@ -30,19 +30,20 @@ type HiddenFlashcardSide = "terms" | "definitions" | null;
 interface StudyFlashcardSetClientProps {
   studySet: FlashcardSet;
   initialFlashcards: Flashcard[];
-  nickname: string;
 }
 
 export default function StudyFlashcardSetClient({
   studySet,
   initialFlashcards,
-  nickname,
 }: StudyFlashcardSetClientProps) {
   const { token } = useAuth();
   const router = useRouter();
 
+  const ownerNickname = studySet.user.nickname;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+
   const [isProgressTrackingEnabled, setIsProgressTrackingEnabled] =
     useState(true);
 
@@ -89,7 +90,9 @@ export default function StudyFlashcardSetClient({
   );
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
 
     const authToken = token;
     let isCancelled = false;
@@ -101,14 +104,18 @@ export default function StudyFlashcardSetClient({
           authToken,
         );
 
-        if (!isCancelled) {
-          setFlashcards(flashcardsWithStarredStatus);
-          setStudyFlashcardIds(
-            flashcardsWithStarredStatus.map(
-              (flashcard) => flashcard.flashcardId,
-            ),
-          );
+        if (isCancelled) {
+          return;
         }
+
+        setFlashcards(flashcardsWithStarredStatus);
+
+        setStudyFlashcardIds(
+          flashcardsWithStarredStatus.map((flashcard) => flashcard.flashcardId),
+        );
+
+        setCurrentIndex(0);
+        setIsFlipped(false);
       } catch (error) {
         console.error("Error fetching flashcards with starred status:", error);
       }
@@ -134,7 +141,9 @@ export default function StudyFlashcardSetClient({
   const revealFlashcardText = (flashcardId: number) => {
     setRevealedFlashcardIds((previousRevealedFlashcardIds) => {
       const nextRevealedFlashcardIds = new Set(previousRevealedFlashcardIds);
+
       nextRevealedFlashcardIds.add(flashcardId);
+
       return nextRevealedFlashcardIds;
     });
   };
@@ -144,17 +153,21 @@ export default function StudyFlashcardSetClient({
   };
 
   const handlePreviousCard = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((previousIndex) => previousIndex - 1);
-      setIsFlipped(false);
+    if (currentIndex <= 0) {
+      return;
     }
+
+    setCurrentIndex((previousIndex) => previousIndex - 1);
+    setIsFlipped(false);
   };
 
   const handleNextCard = () => {
-    if (currentIndex < studyFlashcardIds.length - 1) {
-      setCurrentIndex((previousIndex) => previousIndex + 1);
-      setIsFlipped(false);
+    if (currentIndex >= studyFlashcardIds.length - 1) {
+      return;
     }
+
+    setCurrentIndex((previousIndex) => previousIndex + 1);
+    setIsFlipped(false);
   };
 
   const handleKnownCard = () => {
@@ -165,13 +178,17 @@ export default function StudyFlashcardSetClient({
     if (isProgressTrackingEnabled) {
       setKnownFlashcards((previousKnownFlashcards) => {
         const nextKnownFlashcards = new Set(previousKnownFlashcards);
+
         nextKnownFlashcards.add(currentFlashcard.flashcardId);
+
         return nextKnownFlashcards;
       });
 
       setUnknownFlashcards((previousUnknownFlashcards) => {
         const nextUnknownFlashcards = new Set(previousUnknownFlashcards);
+
         nextUnknownFlashcards.delete(currentFlashcard.flashcardId);
+
         return nextUnknownFlashcards;
       });
     }
@@ -187,13 +204,17 @@ export default function StudyFlashcardSetClient({
     if (isProgressTrackingEnabled) {
       setUnknownFlashcards((previousUnknownFlashcards) => {
         const nextUnknownFlashcards = new Set(previousUnknownFlashcards);
+
         nextUnknownFlashcards.add(currentFlashcard.flashcardId);
+
         return nextUnknownFlashcards;
       });
 
       setKnownFlashcards((previousKnownFlashcards) => {
         const nextKnownFlashcards = new Set(previousKnownFlashcards);
+
         nextKnownFlashcards.delete(currentFlashcard.flashcardId);
+
         return nextKnownFlashcards;
       });
     }
@@ -205,12 +226,12 @@ export default function StudyFlashcardSetClient({
     setStudyFlashcardIds((previousIds) => {
       const shuffledIds = [...previousIds];
 
-      for (let i = shuffledIds.length - 1; i > 0; i -= 1) {
-        const randomIndex = Math.floor(Math.random() * (i + 1));
+      for (let index = shuffledIds.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
 
-        [shuffledIds[i], shuffledIds[randomIndex]] = [
+        [shuffledIds[index], shuffledIds[randomIndex]] = [
           shuffledIds[randomIndex],
-          shuffledIds[i],
+          shuffledIds[index],
         ];
       }
 
@@ -243,14 +264,19 @@ export default function StudyFlashcardSetClient({
 
     setPendingStarFlashcardIds((previousIds) => {
       const nextIds = new Set(previousIds);
+
       nextIds.add(flashcardId);
+
       return nextIds;
     });
 
     setFlashcards((previousFlashcards) =>
       previousFlashcards.map((flashcard) =>
         flashcard.flashcardId === flashcardId
-          ? { ...flashcard, starred: nextStarredValue }
+          ? {
+              ...flashcard,
+              starred: nextStarredValue,
+            }
           : flashcard,
       ),
     );
@@ -263,7 +289,10 @@ export default function StudyFlashcardSetClient({
       setFlashcards((previousFlashcards) =>
         previousFlashcards.map((flashcard) =>
           flashcard.flashcardId === flashcardId
-            ? { ...flashcard, starred: updatedFlashcard.starred }
+            ? {
+                ...flashcard,
+                starred: updatedFlashcard.starred,
+              }
             : flashcard,
         ),
       );
@@ -273,7 +302,10 @@ export default function StudyFlashcardSetClient({
       setFlashcards((previousFlashcards) =>
         previousFlashcards.map((flashcard) =>
           flashcard.flashcardId === flashcardId
-            ? { ...flashcard, starred: !nextStarredValue }
+            ? {
+                ...flashcard,
+                starred: !nextStarredValue,
+              }
             : flashcard,
         ),
       );
@@ -282,17 +314,24 @@ export default function StudyFlashcardSetClient({
     } finally {
       setPendingStarFlashcardIds((previousIds) => {
         const nextIds = new Set(previousIds);
+
         nextIds.delete(flashcardId);
+
         return nextIds;
       });
     }
   };
 
   const speakText = (text: string) => {
-    if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      speechSynthesis.speak(utterance);
+    if (!("speechSynthesis" in window)) {
+      return;
     }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    window.speechSynthesis.speak(utterance);
   };
 
   const startEditing = (flashcard: StudyFlashcard) => {
@@ -313,17 +352,32 @@ export default function StudyFlashcardSetClient({
       return;
     }
 
+    const normalizedTerm = editTerm.trim();
+    const normalizedDefinition = editDefinition.trim();
+
+    if (!normalizedTerm || !normalizedDefinition) {
+      toast.error("Term and definition cannot be empty.");
+      return;
+    }
+
     try {
-      await updateFlashcardById(
+      const updatedFlashcard = await updateFlashcardById(
         flashcardId,
-        { term: editTerm, definition: editDefinition },
+        {
+          term: normalizedTerm,
+          definition: normalizedDefinition,
+        },
         token,
       );
 
       setFlashcards((previousFlashcards) =>
         previousFlashcards.map((flashcard) =>
           flashcard.flashcardId === flashcardId
-            ? { ...flashcard, term: editTerm, definition: editDefinition }
+            ? {
+                ...flashcard,
+                term: updatedFlashcard.term,
+                definition: updatedFlashcard.definition,
+              }
             : flashcard,
         ),
       );
@@ -335,12 +389,15 @@ export default function StudyFlashcardSetClient({
       toast.success("Flashcard updated successfully.");
     } catch (error) {
       console.error("Error updating flashcard:", error);
+
       toast.error("Failed to update flashcard. Please try again.");
     }
   };
 
   const handleEditSet = () => {
-    router.push(`/users/${nickname}/sets/${studySet.setId}/edit`);
+    router.push(
+      `/users/${encodeURIComponent(ownerNickname)}/sets/${studySet.setId}/edit`,
+    );
   };
 
   const handleMakeCopy = () => {
@@ -357,14 +414,14 @@ export default function StudyFlashcardSetClient({
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
-      <div className="container mx-auto px-4 pt-6 pb-28 print:px-0 print:py-0">
+      <div className="container mx-auto px-4 pb-28 pt-6 print:px-0 print:py-0">
         <StudySetHeader
-          nickname={nickname}
+          nickname={ownerNickname}
           setName={studySet.setName}
           description={studySet.description}
         />
 
-        <StudyGamesSection nickname={nickname} setId={studySet.setId} />
+        <StudyGamesSection nickname={ownerNickname} setId={studySet.setId} />
 
         {flashcards.length > 0 ? (
           <div className="mx-auto max-w-2xl print:hidden">
@@ -407,7 +464,7 @@ export default function StudyFlashcardSetClient({
             )}
 
             <StudySetAuthorInfo
-              nickname={studySet.user.nickname}
+              nickname={ownerNickname}
               createdAt={studySet.createdAt}
             />
           </div>

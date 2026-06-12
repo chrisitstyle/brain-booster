@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, SyntheticEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,9 +18,10 @@ import {
   getCurrentUser,
   updateEmail,
   updateNickname,
+  type UserDTO,
 } from "@/api/profileService";
-import type { UserDTO } from "@/api/profileService";
 import { useAuth } from "@/context/AuthContext";
+import { notifyProfileUpdated } from "@/utils/profile-events";
 
 type ProfileLoadingState = "loading" | "success" | "error";
 
@@ -46,42 +47,47 @@ export function ProfileSettings() {
     }
   }, [isAuthLoading, isAuthenticated, router]);
 
-  const loadCurrentUser = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-
-    const currentToken = token;
-
-    try {
-      setProfileLoadingState("loading");
-      setProfileError("");
-
-      const user = await getCurrentUser(currentToken);
-
-      setCurrentUser(user);
-      setNickname(user.nickname);
-      setEmail(user.email);
-      setProfileLoadingState("success");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load user profile";
-
-      setCurrentUser(null);
-      setProfileError(message);
-      setProfileLoadingState("error");
-
-      toast.error(message);
-    }
-  }, [token]);
-
   useEffect(() => {
     if (!token) {
       return;
     }
 
-    void loadCurrentUser();
-  }, [token, loadCurrentUser]);
+    let isCancelled = false;
+    const requestToken = token;
+
+    void getCurrentUser(requestToken)
+      .then((user) => {
+        if (isCancelled) {
+          return;
+        }
+
+        setCurrentUser(user);
+        setNickname(user.nickname);
+        setEmail(user.email);
+        setProfileError("");
+        setProfileLoadingState("success");
+      })
+      .catch((error: unknown) => {
+        if (isCancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load user profile";
+
+        setCurrentUser(null);
+        setProfileError(message);
+        setProfileLoadingState("error");
+
+        toast.error(message);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token]);
 
   const avatarFallback = useMemo(() => {
     const firstLetter = currentUser?.nickname.trim().charAt(0);
@@ -120,6 +126,38 @@ export function ProfileSettings() {
     setEmail(currentUser.email);
   }
 
+  function handleRetry() {
+    if (!token) {
+      return;
+    }
+
+    const requestToken = token;
+
+    setProfileLoadingState("loading");
+    setProfileError("");
+
+    void getCurrentUser(requestToken)
+      .then((user) => {
+        setCurrentUser(user);
+        setNickname(user.nickname);
+        setEmail(user.email);
+        setProfileError("");
+        setProfileLoadingState("success");
+      })
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load user profile";
+
+        setCurrentUser(null);
+        setProfileError(message);
+        setProfileLoadingState("error");
+
+        toast.error(message);
+      });
+  }
+
   async function handleSave(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -140,6 +178,8 @@ export function ProfileSettings() {
 
         setCurrentUser(updatedUser);
         setNickname(updatedUser.nickname);
+
+        notifyProfileUpdated();
       }
 
       if (emailHasChanged) {
@@ -154,6 +194,7 @@ export function ProfileSettings() {
         setEmail(response.email);
 
         replaceToken(response.token);
+        notifyProfileUpdated();
       }
 
       const message =
@@ -221,7 +262,7 @@ export function ProfileSettings() {
 
             <button
               type="button"
-              onClick={() => void loadCurrentUser()}
+              onClick={handleRetry}
               className="inline-flex h-10 items-center justify-center rounded-md bg-pink-500 px-4 text-sm font-medium text-white transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:ring-offset-2"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -235,7 +276,6 @@ export function ProfileSettings() {
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
-      {/* Back link */}
       <Link
         href="/profile"
         className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-pink-500"
@@ -250,7 +290,6 @@ export function ProfileSettings() {
         <p className="mt-1 text-gray-500">Manage your account information</p>
       </div>
 
-      {/* Profile summary */}
       <section className="mb-6 flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-pink-200 bg-pink-100 text-xl font-semibold text-pink-500">
           {avatarFallback}
@@ -265,7 +304,6 @@ export function ProfileSettings() {
         </div>
       </section>
 
-      {/* Account settings */}
       <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-6 py-5">
           <h2 className="text-lg font-semibold text-gray-800">Personal info</h2>
