@@ -6,7 +6,6 @@ import com.brainbooster.folder.FolderService;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
-import com.brainbooster.user.dto.UserNicknameUpdateDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,6 +50,15 @@ public class UserController {
                 .toUri();
 
         return ResponseEntity.created(location).body(savedUser);
+    }
+
+    @Operation(summary = "Get authenticated user", description = "Returns information about the currently authenticated user.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "Authenticated user fetched successfully")
+    @ApiResponse(responseCode = "401", description = "User is not authenticated")
+    @ApiResponse(responseCode = "404", description = "Authenticated user does not exist")
+    @GetMapping("/me")
+    public UserDTO getCurrentUser() {
+        return userService.getCurrentUser();
     }
 
     @Operation(
@@ -121,23 +129,6 @@ public class UserController {
             @PathVariable String nickname) {
 
         return folderService.getFoldersByNickname(nickname);
-    }
-
-    @Operation(
-            summary = "Update user nickname",
-            description = "Updates nickname of the selected user. The user must be authenticated.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponse(responseCode = "200", description = "Nickname updated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid request body or validation error")
-    @ApiResponse(responseCode = "401", description = "User is not authenticated")
-    @ApiResponse(responseCode = "403", description = "User does not have permission to update this nickname")
-    @ApiResponse(responseCode = "404", description = "User not found")
-    @PatchMapping("/{userId}/nickname")
-    public UserDTO updateUserNickname(@Valid @RequestBody UserNicknameUpdateDTO updatedUserNickname,
-                                      @Parameter(description = "ID of the user", example = "1")
-                                      @PathVariable Long userId) {
-        return userService.updateUserNickname(updatedUserNickname, userId);
     }
 
     @Operation(

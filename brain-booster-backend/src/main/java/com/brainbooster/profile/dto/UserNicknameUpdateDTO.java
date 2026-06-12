@@ -1,4 +1,4 @@
-package com.brainbooster.user.dto;
+package com.brainbooster.profile.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +11,7 @@ public record UserNicknameUpdateDTO(
                 example = "john_updated"
         )
         @NotBlank(message = "Nickname cannot be empty")
-        String nickname
+        String newNickname
 ) {
 }
 

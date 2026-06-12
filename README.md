@@ -1,7 +1,7 @@
 # 🧠 Brain Booster
 
-Brain Booster is a full-stack web application for creating, managing, and studying with flashcards.  
-The project allows users to learn effectively through interactive flashcard sets and share their collections with others.
+Brain Booster is a full-stack learning platform for creating, managing, sharing, and studying flashcards.  
+In addition to classic flashcard review, the application provides multiple learning games, detailed attempt history, question-level results, progress analytics, and focused weak-card review sessions.
 
 ## 📌 Table of Contents
 
@@ -14,6 +14,7 @@ The project allows users to learn effectively through interactive flashcard sets
 - [Running with Docker](#-running-with-docker)
 - [Running with Makefile](#-running-with-makefile)
 - [Roles and Authorization](#-roles-and-authorization)
+- [Learning Games and Analytics](#-learning-games-and-analytics)
 - [API Overview](#-api-overview)
 - [OpenAPI / Swagger](#-openapi--swagger)
 - [Roadmap](#-roadmap)
@@ -26,22 +27,43 @@ The project allows users to learn effectively through interactive flashcard sets
   Secure user registration and login using JWT tokens.
 
 - **Flashcard Set Management**  
-  Users can create, edit, and delete their own flashcard sets.
+  Users can create, edit, delete, and share their own flashcard sets.
 
 - **Flashcard Management**  
-  Users can add, update, and remove flashcards inside their sets.
+  Users can add, update, remove, and study flashcards inside their sets.
 
-- **Study Mode**  
-  Interactive learning mode for reviewing flashcards and checking knowledge.
+- **Folder Organization**  
+  Flashcard sets can be grouped into user-owned folders.
 
-- **User Profiles**  
-  Users can browse public profiles and view public flashcard sets created by other users.
+- **Classic Study Mode**  
+  Interactive flashcard review with card flipping, navigation, text-to-speech, shuffling, and local known/unknown progress tracking.
 
-- **Public Flashcard Sets**  
-  Users can browse public learning materials created by others.
+- **Learning Games**  
+  Four supported game modes: Multiple Choice, Written, Matching, and Custom Test.
+
+- **Custom Test Questions**  
+  Custom tests can combine multiple-choice, written, matching, and true/false questions.
+
+- **Score and Time Tracking**  
+  Completed games store the score, number of questions, duration, game mode, and completion time.
+
+- **Attempt History**  
+  Every completed game creates a separate attempt that can be reviewed later.
+
+- **Question-Level Results**  
+  Attempt details include prompts, user answers, correct answers, correctness, mistake counts, answer side, and question type.
+
+- **Learning Analytics**  
+  Per-set analytics include total attempts, accuracy, average and best scores, average duration, progress over time, and question-type performance.
+
+- **Weak Flashcards**  
+  The application identifies cards with low accuracy and provides a focused weak-card review session.
+
+- **User Profiles and Public Sets**  
+  Users can browse public profiles, folders, and public flashcard sets created by other users.
 
 - **Role-Based Access Control**  
-  The application supports user and admin roles.
+  The application supports regular user and administrator roles.
 
 - **Responsive UI**  
   Modern, clean, and responsive interface for desktop and mobile devices.
@@ -69,6 +91,8 @@ The project allows users to learn effectively through interactive flashcard sets
 - React
 - Tailwind CSS
 - Shadcn UI
+- Recharts
+- Lucide React
 - pnpm
 
 ## 📂 Project Structure
@@ -115,11 +139,16 @@ Main backend domains include:
 - `user`
 - `flashcard`
 - `flashcardset`
+- `folder`
+- `gameresult`
+  - `attempt`
+  - `questionresult`
+  - `analytics`
 
 ### Frontend
 
-`brain-booster-frontend/` contains the client application built with Next.js.  
-Routing is handled by the Next.js routing system, and API services are separated inside the `src/api/` directory.
+`brain-booster-frontend/` contains the client application built with the Next.js App Router.  
+API services are separated inside `src/api/`, reusable data hooks are stored inside `src/hooks/`, and game-related TypeScript models are stored inside `src/types/`.
 
 ## ✅ Prerequisites
 
@@ -432,20 +461,89 @@ The application supports two user roles:
 
 A regular user can:
 
-- browse public resources,
+- browse public profiles, folders, flashcard sets, and flashcards,
 - manage their own profile,
 - create, edit, and delete their own flashcard sets,
-- create, edit, and delete flashcards inside their own sets.
+- create, edit, and delete flashcards inside their own sets,
+- organize sets into folders,
+- study accessible flashcard sets,
+- complete learning games,
+- view their own results and attempt history,
+- review question-level attempt details,
+- view their own learning analytics,
+- review weak flashcards.
 
 ### `ADMIN`
 
-An admin has all user permissions and additional access to administrative API endpoints for managing users.
+An admin has all user permissions and additional access to administrative API endpoints for managing users and viewing system-wide game results.
 
 Authorization is based on JWT tokens sent in the request header:
 
 ```txt
 Authorization: Bearer <token>
 ```
+
+## 🎮 Learning Games and Analytics
+
+Brain Booster supports four game modes:
+
+| Game Mode       | API Value         | Description                                      |
+| --------------- | ----------------- | ------------------------------------------------ |
+| Multiple Choice | `multiple-choice` | Select the correct answer from available options |
+| Written         | `written`         | Type the answer manually                         |
+| Matching        | `matching`        | Match related terms and definitions              |
+| Custom Test     | `custom-test`     | Build a mixed test from supported question types |
+
+Custom Test supports the following question types:
+
+```txt
+multiple-choice
+written
+matching
+true-false
+```
+
+### Result Persistence
+
+Submitting a completed game to `POST /game-results` performs two related operations:
+
+1. The latest result for the authenticated user, flashcard set, and game mode is created or updated.
+2. A new immutable game attempt is saved for the attempt history.
+
+When question results are included in the request, each answer is also stored with its question type, prompt, user answer, correct answer, correctness, mistake count, and related flashcard.
+
+The backend stores learning data in three layers:
+
+- `game_results` — the latest result for each user, set, and game mode,
+- `game_attempts` — every completed game attempt,
+- `game_question_results` — individual answers belonging to an attempt.
+
+### Learning Analytics
+
+Analytics are calculated only from the authenticated user's own attempts and include:
+
+- total attempts,
+- overall accuracy,
+- average score,
+- best score,
+- average duration,
+- date of the latest attempt,
+- score percentage progress over time,
+- weak flashcards,
+- accuracy grouped by question type.
+
+Weak-flashcard accuracy is calculated from the user's correct and total answers for a particular flashcard. The focused review page uses these results to create a practice session containing only cards that need additional work.
+
+### Frontend Learning Routes
+
+| Route                                        | Description                                                |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| `/profile/settings`                          | Manage the authenticated user's nickname and email address |
+| `/profile/stats`                             | Entry page for selecting a flashcard set                   |
+| `/profile/sets/{setId}/stats`                | Detailed learning analytics for a set                      |
+| `/profile/sets/{setId}/attempts`             | Attempt history for a set                                  |
+| `/profile/sets/{setId}/attempts/{attemptId}` | Summary and question-level details of an attempt           |
+| `/profile/sets/{setId}/weak-cards`           | Focused weak-card review session                           |
 
 ## 📡 API Overview
 
@@ -464,17 +562,26 @@ The backend exposes a REST API under the following base path:
 
 ### Users
 
-| Method | Endpoint                                    | Description                         | Access             |
-| ------ | ------------------------------------------- | ----------------------------------- | ------------------ |
-| GET    | `/users`                                    | Get all users                       | Admin              |
-| POST   | `/users`                                    | Create a new user                   | Admin              |
-| GET    | `/users/nickname/{nickname}/flashcard-sets` | Get flashcard sets by user nickname | Public             |
-| GET    | `/users/{nickname}/folders`                 | Get folders by user nickname        | Public             |
-| GET    | `/users/{userId}`                           | Get user by ID                      | Admin              |
-| PUT    | `/users/{userId}`                           | Update user by ID                   | Admin              |
-| DELETE | `/users/{userId}`                           | Delete user by ID                   | Admin              |
-| GET    | `/users/{userId}/flashcard-sets`            | Get flashcard sets by user ID       | Public             |
-| PATCH  | `/users/{userId}/nickname`                  | Update user nickname                | Authenticated user |
+| Method | Endpoint                                    | Description                          | Access             |
+| ------ | ------------------------------------------- | ------------------------------------ | ------------------ |
+| GET    | `/users/me`                                 | Get authenticated user's information | Authenticated user |
+| GET    | `/users`                                    | Get all users                        | Admin              |
+| POST   | `/users`                                    | Create a new user                    | Admin              |
+| GET    | `/users/nickname/{nickname}/flashcard-sets` | Get flashcard sets by user nickname  | Public             |
+| GET    | `/users/{nickname}/folders`                 | Get folders by user nickname         | Public             |
+| GET    | `/users/{userId}`                           | Get user by ID                       | Admin              |
+| PUT    | `/users/{userId}`                           | Update user by ID                    | Admin              |
+| DELETE | `/users/{userId}`                           | Delete user by ID                    | Admin              |
+| GET    | `/users/{userId}/flashcard-sets`            | Get flashcard sets by user ID        | Public             |
+
+### Profile Settings
+
+| Method | Endpoint                     | Description          | Access             |
+| ------ | ---------------------------- | -------------------- | ------------------ |
+| PATCH  | `/profile/settings/nickname` | Update user nickname | Authenticated user |
+| PATCH  | `/profile/settings/email`    | Update user email    | Authenticated user |
+
+> **Note:** After a successful email update, the endpoint returns a new JWT token because the email address is used as the authentication username.
 
 ### Flashcards
 
@@ -512,39 +619,50 @@ The backend exposes a REST API under the following base path:
 
 ### Game Results
 
-| Method | Endpoint                         | Description                                                        | Access                |
-| ------ | -------------------------------- | ------------------------------------------------------------------ | --------------------- |
-| POST   | `/game-results`                  | Save or update the authenticated user's latest game result         | Authenticated user    |
-| GET    | `/game-results/me`               | Get all game results of the authenticated user                     | Authenticated user    |
-| GET    | `/game-results/me?setId={setId}` | Get authenticated user's game results for a specific flashcard set | Authenticated user    |
-| GET    | `/game-results`                  | Get all game results                                               | Admin                 |
-| GET    | `/game-results?setId={setId}`    | Get all game results for a specific flashcard set                  | Admin                 |
-| GET    | `/game-results/{resultId}`       | Get game result by ID                                              | Result owner or admin |
-| DELETE | `/game-results/{resultId}`       | Delete game result by ID                                           | Result owner or admin |
+`POST /game-results` updates the latest result for a user, set, and mode while also creating a new game attempt. If the request contains question results, they are persisted together with the attempt.
+
+| Method | Endpoint                         | Description                                                                 | Access                |
+| ------ | -------------------------------- | --------------------------------------------------------------------------- | --------------------- |
+| POST   | `/game-results`                  | Save the latest result and create a new attempt with optional question data | Authenticated user    |
+| GET    | `/game-results/me`               | Get the authenticated user's latest results                                 | Authenticated user    |
+| GET    | `/game-results/me?setId={setId}` | Get the authenticated user's latest results for a specific flashcard set    | Authenticated user    |
+| GET    | `/game-results`                  | Get all latest game results                                                 | Admin                 |
+| GET    | `/game-results?setId={setId}`    | Get all latest game results for a specific flashcard set                    | Admin                 |
+| GET    | `/game-results/{resultId}`       | Get a latest game result by ID                                              | Result owner or admin |
+| DELETE | `/game-results/{resultId}`       | Delete a latest game result by ID                                           | Result owner or admin |
 
 ### Game Attempts
 
-| Method | Endpoint                                      | Description                                                                        | Access                 |
-| ------ | --------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------- |
-| GET    | `/game-attempts/me`                           | Get paginated game attempts of the authenticated user                              | Authenticated user     |
-| GET    | `/game-attempts/me/sets/{setId}`              | Get paginated game attempts of the authenticated user for a specific flashcard set | Authenticated user     |
-| GET    | `/game-attempts/{attemptId}`                  | Get details of a single game attempt, including question-level results             | Attempt owner or admin |
-| GET    | `/game-attempts/{attemptId}/question-results` | Get question-level results for a single game attempt                               | Attempt owner or admin |
+| Method | Endpoint                                      | Description                                          | Access                 |
+| ------ | --------------------------------------------- | ---------------------------------------------------- | ---------------------- |
+| GET    | `/game-attempts/me`                           | Get paginated attempts of the authenticated user     | Authenticated user     |
+| GET    | `/game-attempts/me/sets/{setId}`              | Get paginated attempts for a specific flashcard set  | Authenticated user     |
+| GET    | `/game-attempts/{attemptId}`                  | Get the summary of a single game attempt             | Attempt owner or admin |
+| GET    | `/game-attempts/{attemptId}/question-results` | Get question-level results for a single game attempt | Attempt owner or admin |
 
-#### Game Attempts Query Parameters
+#### Game Attempt Query Parameters
 
-The `/game-attempts/me` endpoint supports optional query parameters for pagination and filtering.
+`GET /game-attempts/me` supports filtering, pagination, and sorting:
 
-| Query Parameter | Description                                                                   | Example           |
-| --------------- | ----------------------------------------------------------------------------- | ----------------- |
-| `page`          | Page number for paginated results. Page indexing starts from `0`              | `page=0`          |
-| `size`          | Number of attempts returned per page                                          | `size=20`         |
-| `setId`         | Filters attempts by flashcard set ID                                          | `setId=12`        |
-| `mode`          | Filters attempts by game mode                                                 | `mode=written`    |
-| `from`          | Filters attempts completed on or after the given date in `YYYY-MM-DD` format  | `from=2026-01-01` |
-| `to`            | Filters attempts completed on or before the given date in `YYYY-MM-DD` format | `to=2026-01-31`   |
+| Query Parameter | Description                                                              | Example                 |
+| --------------- | ------------------------------------------------------------------------ | ----------------------- |
+| `page`          | Zero-based page number                                                   | `page=0`                |
+| `size`          | Number of attempts returned per page. The default is `20`                | `size=20`               |
+| `sort`          | Spring Data sort expression                                              | `sort=completedAt,desc` |
+| `setId`         | Filter attempts by flashcard set ID                                      | `setId=12`              |
+| `mode`          | Filter attempts by game mode                                             | `mode=written`          |
+| `from`          | Include attempts completed on or after this date in `YYYY-MM-DD` format  | `from=2026-01-01`       |
+| `to`            | Include attempts completed on or before this date in `YYYY-MM-DD` format | `to=2026-01-31`         |
 
-Supported `mode` values:
+`GET /game-attempts/me/sets/{setId}` supports the same parameters except for `setId`, which is already part of the path.
+
+The default attempt ordering is:
+
+```txt
+completedAt,DESC
+```
+
+Supported game mode values:
 
 ```txt
 multiple-choice
@@ -553,16 +671,15 @@ matching
 custom-test
 ```
 
-#### Examples
-
-Examples for `/game-attempts/me`:
+Examples:
 
 ```http
 GET /game-attempts/me?page=0&size=20
-GET /game-attempts/me?page=0&size=20&setId=12
-GET /game-attempts/me?page=0&size=20&mode=multiple-choice
-GET /game-attempts/me?page=0&size=20&from=2026-01-01&to=2026-01-31
-GET /game-attempts/me?page=0&size=20&setId=12&mode=written&from=2026-01-01&to=2026-01-31
+GET /game-attempts/me?setId=12&mode=written
+GET /game-attempts/me?from=2026-01-01&to=2026-01-31
+GET /game-attempts/me?setId=12&sort=completedAt,desc
+GET /game-attempts/me/sets/12?page=0&size=20
+GET /game-attempts/me/sets/12?mode=custom-test&from=2026-01-01&to=2026-01-31
 ```
 
 ### Game Analytics
@@ -570,11 +687,11 @@ GET /game-attempts/me?page=0&size=20&setId=12&mode=written&from=2026-01-01&to=20
 | Method | Endpoint                                          | Description                                                          | Access             |
 | ------ | ------------------------------------------------- | -------------------------------------------------------------------- | ------------------ |
 | GET    | `/game-analytics/me/sets/{setId}/summary`         | Get summary analytics for the authenticated user's attempts in a set | Authenticated user |
-| GET    | `/game-analytics/me/sets/{setId}/progress`        | Get progress data for the authenticated user's attempts in a set     | Authenticated user |
-| GET    | `/game-analytics/me/sets/{setId}/weak-flashcards` | Get weak flashcards based on the authenticated user's attempts       | Authenticated user |
-| GET    | `/game-analytics/me/sets/{setId}/question-types`  | Get question type analytics for the authenticated user's attempts    | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/progress`        | Get score percentage progress for attempts in a set                  | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/weak-flashcards` | Get weak flashcards calculated from question-level results           | Authenticated user |
+| GET    | `/game-analytics/me/sets/{setId}/question-types`  | Get accuracy grouped by question type                                | Authenticated user |
 
-> **Note:** These endpoints return analytics only for the currently authenticated user's own game attempts.
+> **Note:** Game attempt and analytics endpoints only expose learning data that belongs to the currently authenticated user, unless an endpoint explicitly allows administrator access.
 
 ## 📖 OpenAPI / Swagger
 
@@ -630,17 +747,17 @@ If Swagger UI is not available, check that:
 
 Planned features and improvements:
 
-- **Quiz / Test Mode**  
-  Add a mode where users can test their knowledge using questions based on their flashcards.
-
-- **Learning Games**  
-  Introduce game-based learning modes to make studying more interactive and engaging.
-
-- **Progress Tracking**  
-  Add statistics for study sessions, completed flashcards, and learning progress over time.
-
 - **Spaced Repetition**  
-  Implement a review system based on spaced repetition to improve long-term memorization.
+  Schedule future reviews based on previous answers and card difficulty.
+
+- **Retry Incorrect Answers**  
+  Start a new practice session directly from incorrect answers in a selected attempt.
+
+- **Daily Goals and Learning Streaks**  
+  Add daily card targets, completion indicators, and consecutive-day streaks.
+
+- **Configurable Weak-Card Thresholds**  
+  Allow users to choose the accuracy threshold used to classify a flashcard as weak.
 
 - **Favorites and Saved Sets**  
   Allow users to save public flashcard sets to their own library.
@@ -648,11 +765,11 @@ Planned features and improvements:
 - **Search, Filtering, and Sorting**  
   Improve browsing public flashcard sets with search, filters, and sorting options.
 
-- **Frontend Route Guards Improvements**  
+- **Frontend Route Guard Improvements**  
   Improve authentication-based and role-based route protection on the frontend.
 
 - **Automated Tests**  
-  Expand backend and frontend test coverage.
+  Expand backend and frontend test coverage for games, attempts, analytics, and authorization.
 
 - **Deployment Improvements**  
   Extend the Docker setup with production deployment configuration and CI/CD automation.

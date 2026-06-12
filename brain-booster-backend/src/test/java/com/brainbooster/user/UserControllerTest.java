@@ -10,7 +10,6 @@ import com.brainbooster.folder.FolderService;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
-import com.brainbooster.user.dto.UserNicknameUpdateDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,6 +85,34 @@ class UserControllerTest {
         assertThat(responseDTO).isNotNull();
         assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
         assertThat(responseDTO.email()).isEqualTo(userDTO.email());
+    }
+
+    @Test
+    void getCurrentUser_ShouldReturnAuthenticatedUserDTO() throws Exception {
+        // given
+        when(userService.getCurrentUser()).thenReturn(userDTO);
+
+        // when
+        MvcResult result = mockMvc.perform(get("/users/me")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+
+        UserDTO responseDTO = objectMapper.readValue(result
+                        .getResponse()
+                        .getContentAsString(),
+                UserDTO.class);
+
+        assertThat(responseDTO).isEqualTo(userDTO);
+        assertThat(responseDTO.userId()).isEqualTo(userDTO.userId());
+        assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
+        assertThat(responseDTO.email()).isEqualTo(userDTO.email());
+        assertThat(responseDTO.role()).isEqualTo(userDTO.role());
+        assertThat(responseDTO.createdAt()).isEqualTo(userDTO.createdAt());
+        verify(userService, times(1)).getCurrentUser();
+
     }
 
     @Test
@@ -208,25 +235,6 @@ class UserControllerTest {
         verify(folderService, times(1)).getFoldersByNickname(nickname);
     }
 
-    @Test
-    void updateUserNickname_ReturnsUpdatedUserDTO() throws Exception {
-        // given
-        long userId = 1L;
-        UserNicknameUpdateDTO nicknameUpdateDTO = new UserNicknameUpdateDTO("NewNickname");
-        when(userService.updateUserNickname(ArgumentMatchers.any(UserNicknameUpdateDTO.class), ArgumentMatchers.eq(userId)))
-                .thenReturn(userDTO);
-
-        // when
-        MvcResult result = mockMvc.perform(patch("/users/" + userId + "/nickname")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(nicknameUpdateDTO)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // then
-        UserDTO responseDTO = objectMapper.readValue(result.getResponse().getContentAsString(), UserDTO.class);
-        assertThat(responseDTO.nickname()).isEqualTo(userDTO.nickname());
-    }
 
     @Test
     void updateUser_ReturnsUpdatedUserDTO() throws Exception {
