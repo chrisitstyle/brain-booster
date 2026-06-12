@@ -1,5 +1,6 @@
 package com.brainbooster.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
  * <p>
  * Replaces individual @ExceptionHandler methods in controllers.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -61,9 +63,24 @@ public class GlobalExceptionHandler {
         return createErrorResponse(ex.getMessage(), HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
+    @ExceptionHandler(NicknameAlreadyExistsException.class)
+    public ResponseEntity<ErrorDTO> handleNicknameAlreadyExists(NicknameAlreadyExistsException ex) {
+        return createErrorResponse(ex.getMessage(), HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler({AccessDeniedException.class, SelfDeletionException.class})
     public ResponseEntity<ErrorDTO> handleForbidden(RuntimeException ex) {
         return createErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDTO> handleUnexpectedException(Exception ex) {
+        log.error("Unexpected server error", ex);
+
+        return createErrorResponse(
+                "An unexpected server error occurred",
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
     }
 
     /**

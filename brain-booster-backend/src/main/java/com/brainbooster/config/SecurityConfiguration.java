@@ -53,15 +53,16 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/users/nickname/*/flashcard-sets").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users/*/folders").permitAll()
 
+                        // users - authenticated
+                        .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/nickname").authenticated()
+
                         // users - only admin
                         .requestMatchers(HttpMethod.GET, "/users").hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, USER_BY_ID).hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.POST, "/users").hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.PUT, USER_BY_ID).hasAuthority(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.DELETE, USER_BY_ID).hasAuthority(Role.ADMIN.name())
-
-                        // users - authenticated
-                        .requestMatchers(HttpMethod.PATCH, "/users/*/nickname").authenticated()
 
                         // flashcards - public
                         .requestMatchers(HttpMethod.GET, "/flashcards").permitAll()
@@ -102,6 +103,12 @@ public class SecurityConfiguration {
                         .requestMatchers("/game-attempts/**").authenticated()
                         // game analytics
                         .requestMatchers("/game-analytics/**").authenticated()
+
+                        // user profile settings
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/profile/settings/nickname",
+                                "/profile/settings/email"
+                        ).authenticated()
 
 
                         .anyRequest().hasAuthority(Role.ADMIN.name())

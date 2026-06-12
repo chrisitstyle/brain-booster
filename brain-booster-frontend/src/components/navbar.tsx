@@ -262,7 +262,7 @@ export default function Navbar({
 
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/settings"
+                        href="/profile/settings"
                         className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
                       >
                         <Settings className="h-4 w-4 text-gray-500" />
@@ -433,6 +433,21 @@ export default function Navbar({
                           >
                             <TrendingUp className="h-4 w-4" />
                             My Stats
+                          </Link>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          asChild
+                        >
+                          <Link
+                            href="/profile/settings"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <Settings className="h-4 w-4" />
+                            Settings
                           </Link>
                         </Button>
 

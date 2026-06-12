@@ -19,6 +19,7 @@ interface AuthContextType {
   isAuthLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  replaceToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,6 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new Event(TOKEN_CHANGE_EVENT));
   }, []);
 
+  const replaceToken = useCallback(
+    (newToken: string) => {
+      setStoredToken(newToken);
+    },
+    [setStoredToken],
+  );
+
   const logout = useCallback(() => {
     setStoredToken(null);
     toast.success("Logged out successfully");
@@ -183,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthLoading,
         login,
         logout,
+        replaceToken,
       }}
     >
       {children}

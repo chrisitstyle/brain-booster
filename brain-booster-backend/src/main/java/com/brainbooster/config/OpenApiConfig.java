@@ -94,4 +94,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi profileSettingsApi() {
+        return GroupedOpenApi.builder()
+                .group("profile-settings")
+                .pathsToMatch("/profile/**")
+                .build();
+    }
+
 }

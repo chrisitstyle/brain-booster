@@ -7,7 +7,6 @@ import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
-import com.brainbooster.user.dto.UserNicknameUpdateDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
 import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
@@ -113,6 +112,37 @@ class UserServiceTest {
     }
 
     @Test
+    void getCurrentUser_ShouldReturnUserDTO_WhenAuthenticatedUserExists() {
+        // given
+        mockSecurityContext(user);
+        when(userRepository.findById(user.getUserId())).thenReturn(Optional.of(user));
+        when(userDTOMapper.apply(user)).thenReturn(userDTO);
+
+        // when
+        UserDTO result = userService.getCurrentUser();
+
+        // then
+        Assertions.assertThat(result).isNotNull().isEqualTo(userDTO);
+        verify(userRepository, times(1)).findById(user.getUserId());
+        verify(userDTOMapper, times(1)).apply(user);
+    }
+
+    @Test
+    void getCurrentUser_ShouldThrowNoSuchElement_WhenAuthenticatedUserDoesNotExist() {
+        // given
+        mockSecurityContext(user);
+        when(userRepository.findById(user.getUserId())).thenReturn(Optional.empty());
+
+        // when, then
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> userService.getCurrentUser());
+
+        Assertions.assertThat(exception.getMessage()).isEqualTo("Authenticated user does not exist");
+        verify(userRepository, times(1)).findById(user.getUserId());
+        verify(userDTOMapper, never()).apply(any(User.class));
+    }
+
+    @Test
     void getUserById_ShouldReturnUserDTO_WhenUserExists() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
@@ -181,41 +211,6 @@ class UserServiceTest {
 
         Assertions.assertThat(exception.getMessage())
                 .isEqualTo("User with nickname: " + nickname + " not found");
-    }
-
-    @Test
-    void updateUserNickname_ShouldReturnUpdatedUser_WhenUserIsOwner() {
-        // given
-        mockSecurityContext(user);
-        UserNicknameUpdateDTO updateNicknameDTO = new UserNicknameUpdateDTO("newNickname");
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userDTOMapper.apply(any(User.class))).thenReturn(new UserDTO(1L, "newNickname", "johndoe@example.com", Role.USER, LocalDateTime.now()));
-
-        // when
-        UserDTO result = userService.updateUserNickname(updateNicknameDTO, 1L);
-
-        // then
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result.nickname()).isEqualTo("newNickname");
-        verify(userRepository, times(1)).save(any(User.class));
-    }
-
-    @Test
-    void updateUserNickname_ShouldThrowAccessDenied_WhenUserIsNotAllowed() {
-        // given
-        User anotherUser = TestEntities.userBuilder().userId(3L).role(Role.USER).build();
-        mockSecurityContext(anotherUser);
-
-        UserNicknameUpdateDTO updateNicknameDTO = new UserNicknameUpdateDTO("newNickname");
-
-        // when, then
-        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
-                () -> userService.updateUserNickname(updateNicknameDTO, 1L));
-
-        Assertions.assertThat(exception.getMessage())
-                .isEqualTo("You are not allowed to update other users");
     }
 
     @Test
