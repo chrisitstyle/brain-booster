@@ -58,7 +58,6 @@ interface UserFlashcardSetsState {
 interface ProgressChartPoint {
   attempt: string;
   completedAt: string;
-  shortDate: string;
   percentage: number;
   score: string;
   mode: string;
@@ -109,13 +108,6 @@ function formatDateTime(value: string | null | undefined) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
   }).format(new Date(value));
 }
 
@@ -325,6 +317,7 @@ function SummaryCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-500">{label}</p>
+
             <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
               {value}
             </p>
@@ -345,16 +338,17 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
   const chartData: ProgressChartPoint[] = data.map((point, index) => ({
     attempt: `Attempt ${index + 1}`,
     completedAt: formatDateTime(point.completedAt),
-    shortDate: formatShortDate(point.completedAt),
     percentage: Math.round(point.percentage),
     score: `${point.score}/${point.totalQuestions}`,
     mode: point.mode,
   }));
 
   const latestPoint = chartData[chartData.length - 1];
+
   const bestPercentage = Math.max(
     ...chartData.map((point) => point.percentage),
   );
+
   const averagePercentage =
     chartData.reduce((sum, point) => sum + point.percentage, 0) /
     chartData.length;
@@ -371,6 +365,7 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
             <h4 className="text-base font-semibold text-slate-950">
               Score percentage trend
             </h4>
+
             <p className="mt-1 text-sm text-slate-500">
               Each point represents one completed attempt.
             </p>
@@ -383,6 +378,7 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
               <Clock3 size={14} />
               <span>Latest</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {latestPoint ? formatPercentage(latestPoint.percentage) : "0%"}
             </p>
@@ -393,6 +389,7 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
               <Trophy size={14} className="text-amber-500" />
               <span>Best</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {formatPercentage(bestPercentage)}
             </p>
@@ -403,6 +400,7 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
               <BarChart3 size={14} />
               <span>Average</span>
             </div>
+
             <p className="mt-1 font-semibold text-slate-950">
               {formatPercentage(averagePercentage)}
             </p>
@@ -424,10 +422,11 @@ function ProgressChart({ data }: { data: GameProgressPoint[] }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 
             <XAxis
-              dataKey="shortDate"
+              dataKey="attempt"
               tick={{ fill: "#64748b", fontSize: 12 }}
               tickLine={false}
               axisLine={{ stroke: "#e5e7eb" }}
+              interval={0}
             />
 
             <YAxis
@@ -530,9 +529,11 @@ function SelectedSetStats({
 
   const hasSummaryData = Boolean(summary && summary.totalAttempts > 0);
   const hasProgressData = Boolean(progress && progress.length > 0);
+
   const hasWeakFlashcardsData = Boolean(
     weakFlashcards && weakFlashcards.length > 0,
   );
+
   const hasQuestionTypesData = Boolean(
     questionTypes && questionTypes.length > 0,
   );
@@ -666,18 +667,23 @@ function SelectedSetStats({
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Completed at
                       </th>
+
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Mode
                       </th>
+
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Score
                       </th>
+
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Percentage
                       </th>
+
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Duration
                       </th>
+
                       <th className="px-5 py-4 text-left font-semibold text-slate-950">
                         Details
                       </th>
@@ -685,9 +691,9 @@ function SelectedSetStats({
                   </thead>
 
                   <tbody>
-                    {progress.map((point, index) => (
+                    {progress.map((point) => (
                       <tr
-                        key={`${point.completedAt}-${point.mode}-${index}`}
+                        key={point.attemptId}
                         className="border-t border-gray-200 transition hover:bg-pink-50/40"
                       >
                         <td className="px-5 py-4 text-slate-500">
@@ -707,6 +713,7 @@ function SelectedSetStats({
                         <td className="px-5 py-4">
                           <div className="flex min-w-40 items-center gap-3">
                             <ProgressBar value={point.percentage} />
+
                             <span className="w-16 text-right font-medium text-slate-950">
                               {formatPercentage(point.percentage)}
                             </span>
@@ -741,6 +748,26 @@ function SelectedSetStats({
           title="Weak flashcards"
           description="Cards that need more practice based on mistakes and incorrect answers."
         >
+          <div className="flex flex-col gap-4 rounded-3xl border border-pink-200 bg-pink-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-slate-950">
+                Review your weak cards
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Start a focused review session using only these flashcards.
+              </p>
+            </div>
+
+            <Link
+              href={`/profile/sets/${selectedSetId}/weak-cards`}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-pink-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-600"
+            >
+              <BookOpen size={16} />
+              Review weak cards
+            </Link>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             {weakFlashcards.map((flashcard) => (
               <article
@@ -757,6 +784,7 @@ function SelectedSetStats({
                           size={18}
                           className="shrink-0 text-pink-500"
                         />
+
                         <p className="text-lg font-semibold text-slate-950">
                           {flashcard.term}
                         </p>
@@ -782,6 +810,7 @@ function SelectedSetStats({
                         <XCircle size={15} />
                         <span>Incorrect</span>
                       </div>
+
                       <p className="mt-1 font-semibold text-slate-950">
                         {flashcard.incorrectAnswers}
                       </p>
@@ -792,6 +821,7 @@ function SelectedSetStats({
                         <HelpCircle size={15} />
                         <span>Mistakes</span>
                       </div>
+
                       <p className="mt-1 font-semibold text-slate-950">
                         {flashcard.totalMistakes}
                       </p>
@@ -802,6 +832,7 @@ function SelectedSetStats({
                         <CheckCircle2 size={15} />
                         <span>Correct</span>
                       </div>
+
                       <p className="mt-1 font-semibold text-slate-950">
                         {flashcard.correctAnswers}
                       </p>
@@ -812,6 +843,7 @@ function SelectedSetStats({
                         <MessageCircle size={15} />
                         <span>Answers</span>
                       </div>
+
                       <p className="mt-1 font-semibold text-slate-950">
                         {flashcard.totalAnswers}
                       </p>
@@ -917,7 +949,7 @@ export default function ProfileStatsClient() {
           <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="bg-pink-50/70 p-8">
               <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
-                <BarChart3 size={14} />
+                <TrendingUp size={14} />
                 Brain Booster Stats
               </p>
 
@@ -941,7 +973,7 @@ export default function ProfileStatsClient() {
         <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
           <div className="bg-pink-50/70 p-6 sm:p-8">
             <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
-              <BarChart3 size={14} />
+              <TrendingUp size={14} />
               Brain Booster Stats
             </p>
 
@@ -949,12 +981,9 @@ export default function ProfileStatsClient() {
               Learning statistics
             </h1>
 
-            <p className="mt-3 flex max-w-2xl items-start gap-2 text-slate-500">
-              <TrendingUp size={18} className="mt-0.5 shrink-0 text-pink-500" />
-              <span>
-                Track your progress, discover weak flashcards, and compare your
-                accuracy across game modes.
-              </span>
+            <p className="mt-3 max-w-2xl text-slate-500">
+              Track your progress, discover weak flashcards, and compare your
+              accuracy across game modes.
             </p>
           </div>
         </section>
