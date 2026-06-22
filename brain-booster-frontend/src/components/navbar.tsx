@@ -104,9 +104,7 @@ export default function Navbar({ className, items }: NavbarProps) {
   const { token, isAuthenticated, isAuthLoading, logout } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
-
   const [currentUser, setCurrentUser] = useState<UserDTO | null>(null);
-
   const [loadedUserToken, setLoadedUserToken] = useState<string | null>(null);
 
   const navItems = items ?? DEFAULT_ITEMS;
@@ -117,6 +115,8 @@ export default function Navbar({ className, items }: NavbarProps) {
 
   useEffect(() => {
     if (!token || !isAuthenticated) {
+      setCurrentUser(null);
+      setLoadedUserToken(null);
       return;
     }
 
@@ -198,7 +198,6 @@ export default function Navbar({ className, items }: NavbarProps) {
   }, [currentUser]);
 
   const displayedNickname = currentUser?.nickname ?? "User";
-
   const displayedEmail = currentUser?.email ?? "";
 
   function refreshCurrentUser() {
@@ -499,21 +498,32 @@ export default function Navbar({ className, items }: NavbarProps) {
                 </Button>
               </SheetTrigger>
 
-              <SheetContent side="right" className="w-[300px]">
-                <SheetHeader>
-                  <SheetTitle className="sr-only">
-                    Mobile Navigation Menu
-                  </SheetTitle>
+              <SheetContent
+                side="right"
+                className="w-[min(360px,calc(100vw-1rem))] overflow-y-auto p-0 sm:max-w-sm"
+              >
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Mobile Navigation Menu</SheetTitle>
 
-                  <SheetDescription className="sr-only">
+                  <SheetDescription>
                     Use the menu to navigate through the main sections of the
                     app.
                   </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex flex-col gap-6 py-4">
+                <div className="flex min-h-full flex-col px-5 pb-6 pt-10">
+                  <div className="mb-6 pr-8">
+                    <Link
+                      href="/"
+                      className="inline-block text-xl font-bold text-pink-500"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      BrainBooster
+                    </Link>
+                  </div>
+
                   {isAuthenticated && (
-                    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-pink-100 bg-pink-50/50 p-3">
+                    <div className="mb-5 flex min-w-0 items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/60 p-3">
                       <Avatar className="h-11 w-11 shrink-0 border-2 border-pink-200">
                         <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 font-semibold text-white">
                           {isUserLoading && !currentUser ? (
@@ -540,70 +550,80 @@ export default function Navbar({ className, items }: NavbarProps) {
                     </div>
                   )}
 
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <div className="relative mb-6">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
                     <Input
                       type="search"
                       placeholder="Search..."
-                      className="w-full rounded-full bg-gray-100 pl-9 focus-visible:ring-pink-500"
+                      className="h-11 w-full rounded-full border-gray-200 bg-gray-50 pl-10 pr-4 focus-visible:ring-2 focus-visible:ring-pink-500"
                       aria-label="Search"
                     />
                   </div>
 
-                  <nav className="flex flex-col gap-4">
+                  <nav className="space-y-2">
                     {navItems.map((item) => (
                       <div
                         key={`${item.title}-${item.href}`}
-                        className="flex flex-col gap-2"
+                        className="space-y-1"
                       >
-                        <Link
-                          href={
-                            item.disabled || item.children ? "#" : item.href
-                          }
-                          className={cn(
-                            "text-base font-medium transition-colors",
-                            item.href === pathname
-                              ? "font-semibold text-pink-500"
-                              : "text-gray-600",
-                            item.disabled && "cursor-not-allowed opacity-80",
-                          )}
-                          onClick={() => {
-                            if (!item.children) {
-                              setIsOpen(false);
-                            }
-                          }}
-                        >
-                          {item.title}
-                        </Link>
+                        {item.children ? (
+                          <>
+                            <div className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-800">
+                              {item.title}
+                            </div>
 
-                        {item.children && (
-                          <div className="ml-4 flex flex-col gap-2 border-l border-gray-200 pl-4">
-                            {item.children.map((child) => (
-                              <Link
-                                key={`${child.title}-${child.href}`}
-                                href={child.href}
-                                className="text-sm text-gray-500 hover:text-pink-500"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                {child.title}
-                              </Link>
-                            ))}
-                          </div>
+                            <div className="space-y-1 pl-3">
+                              {item.children.map((child) => (
+                                <Link
+                                  key={`${child.title}-${child.href}`}
+                                  href={child.href}
+                                  className={cn(
+                                    "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                    child.href === pathname
+                                      ? "bg-pink-50 text-pink-600"
+                                      : "text-gray-500 hover:bg-gray-50 hover:text-pink-500",
+                                  )}
+                                  onClick={() => setIsOpen(false)}
+                                >
+                                  {child.title}
+                                </Link>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <Link
+                            href={item.disabled ? "#" : item.href}
+                            aria-disabled={item.disabled}
+                            className={cn(
+                              "block rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                              item.href === pathname
+                                ? "bg-pink-50 text-pink-600"
+                                : "text-gray-700 hover:bg-gray-50 hover:text-pink-500",
+                              item.disabled && "cursor-not-allowed opacity-60",
+                            )}
+                            onClick={() => {
+                              if (!item.disabled) {
+                                setIsOpen(false);
+                              }
+                            }}
+                          >
+                            {item.title}
+                          </Link>
                         )}
                       </div>
                     ))}
                   </nav>
 
-                  <div className="mt-4 flex flex-col gap-2">
+                  <div className="mt-8 border-t border-gray-100 pt-5">
                     {isAuthLoading ? (
-                      <div className="h-9 w-full rounded-md bg-gray-100" />
+                      <div className="h-10 w-full rounded-xl bg-gray-100" />
                     ) : isAuthenticated ? (
-                      <>
+                      <div className="space-y-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link
@@ -618,7 +638,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link
@@ -633,7 +653,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link
@@ -648,7 +668,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link
@@ -663,7 +683,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start gap-2 text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link
@@ -678,19 +698,19 @@ export default function Navbar({ className, items }: NavbarProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="justify-start gap-2 border-gray-300 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                          className="mt-3 h-10 w-full justify-start gap-2 rounded-lg border-gray-200 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           onClick={handleLogout}
                         >
                           <LogOut className="h-4 w-4" />
                           Logout
                         </Button>
-                      </>
+                      </div>
                     ) : (
-                      <>
+                      <div className="space-y-3">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="justify-start text-gray-600 hover:text-pink-500"
+                          className="h-10 w-full justify-start rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
                           asChild
                         >
                           <Link href="/login" onClick={() => setIsOpen(false)}>
@@ -700,14 +720,14 @@ export default function Navbar({ className, items }: NavbarProps) {
 
                         <Button
                           size="sm"
-                          className="bg-pink-500 text-white hover:bg-pink-600"
+                          className="h-11 w-full rounded-xl bg-pink-500 text-white hover:bg-pink-600"
                           asChild
                         >
                           <Link href="/signup" onClick={() => setIsOpen(false)}>
                             Sign up free
                           </Link>
                         </Button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
