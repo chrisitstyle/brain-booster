@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,22 +20,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import type { ImportedFlashcard } from "@/features/sets/types";
 
-type ImportMode = "text" | "json";
+type ImportMode = "text" | "json" | "csv";
+
 type TermDefinitionSeparator = "tab" | "comma" | "custom";
+
 type CardSeparator = "newline" | "semicolon" | "custom";
 
 interface ImportFlashcardsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (flashcards: ImportedFlashcard[]) => void;
+  allowCsvImport?: boolean;
 }
 
 interface ParseResult {
   flashcards: ImportedFlashcard[];
   error?: string;
 }
+
+const MAX_CSV_FILE_SIZE_IN_BYTES = 1024 * 1024;
 
 function insertTextAtCursor({
   event,
@@ -300,21 +306,148 @@ function parseImportedFlashcardsFromJson(text: string): ParseResult {
   }
 }
 
+function parseCsvRows(text: string, delimiter: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  const normalizedText = text.replace(/^\uFEFF/, "");
+
+  for (let index = 0; index < normalizedText.length; index += 1) {
+    const character = normalizedText[index];
+    const nextCharacter = normalizedText[index + 1];
+
+    if (character === '"') {
+      if (inQuotes && nextCharacter === '"') {
+        field += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+
+      continue;
+    }
+
+    if (character === delimiter && !inQuotes) {
+      row.push(field);
+      field = "";
+      continue;
+    }
+
+    if ((character === "\n" || character === "\r") && !inQuotes) {
+      if (character === "\r" && nextCharacter === "\n") {
+        index += 1;
+      }
+
+      row.push(field);
+
+      if (row.some((cell) => cell.trim())) {
+        rows.push(row.map((cell) => cell.trim()));
+      }
+
+      row = [];
+      field = "";
+      continue;
+    }
+
+    field += character;
+  }
+
+  row.push(field);
+
+  if (row.some((cell) => cell.trim())) {
+    rows.push(row.map((cell) => cell.trim()));
+  }
+
+  return rows;
+}
+
+function detectCsvDelimiter(text: string) {
+  const firstNonEmptyLine = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .find((line) => line.trim());
+
+  if (!firstNonEmptyLine) {
+    return ",";
+  }
+
+  return [",", ";", "\t"].reduce((bestDelimiter, currentDelimiter) => {
+    const bestColumnCount =
+      parseCsvRows(firstNonEmptyLine, bestDelimiter)[0]?.length ?? 0;
+
+    const currentColumnCount =
+      parseCsvRows(firstNonEmptyLine, currentDelimiter)[0]?.length ?? 0;
+
+    return currentColumnCount > bestColumnCount
+      ? currentDelimiter
+      : bestDelimiter;
+  }, ",");
+}
+
+function parseImportedFlashcardsFromCsv(text: string): ParseResult {
+  if (!text.trim()) {
+    return { flashcards: [] };
+  }
+
+  const delimiter = detectCsvDelimiter(text);
+  const rows = parseCsvRows(text, delimiter);
+
+  if (rows.length === 0) {
+    return {
+      flashcards: [],
+      error: "CSV file is empty.",
+    };
+  }
+
+  const flashcards = rows
+    .map((row) => {
+      if (row.length < 2) {
+        return null;
+      }
+
+      const term = String(row[0] ?? "").trim();
+      const definition = String(row[1] ?? "").trim();
+
+      if (!term && !definition) {
+        return null;
+      }
+
+      return {
+        term,
+        definition,
+      };
+    })
+    .filter((flashcard): flashcard is ImportedFlashcard => Boolean(flashcard));
+
+  if (flashcards.length === 0) {
+    return {
+      flashcards: [],
+      error: "CSV must contain at least two columns: term and definition.",
+    };
+  }
+
+  return { flashcards };
+}
+
 export function ImportFlashcardsDialog({
   open,
   onOpenChange,
   onImport,
+  allowCsvImport = false,
 }: ImportFlashcardsDialogProps) {
   const [text, setText] = useState("");
   const [importMode, setImportMode] = useState<ImportMode>("text");
-
   const [termDefinitionSeparator, setTermDefinitionSeparator] =
     useState<TermDefinitionSeparator>("tab");
   const [cardSeparator, setCardSeparator] = useState<CardSeparator>("newline");
-
   const [customTermDefinitionSeparator, setCustomTermDefinitionSeparator] =
     useState("");
   const [customCardSeparator, setCustomCardSeparator] = useState("");
+  const [csvFileName, setCsvFileName] = useState("");
+  const [csvFileError, setCsvFileError] = useState<string | undefined>();
+  const [csvInputKey, setCsvInputKey] = useState(0);
 
   const textPlaceholder = useMemo(
     () =>
@@ -333,8 +466,19 @@ export function ImportFlashcardsDialog({
   );
 
   const parseResult = useMemo(() => {
+    if (csvFileError) {
+      return {
+        flashcards: [],
+        error: csvFileError,
+      };
+    }
+
     if (importMode === "json") {
       return parseImportedFlashcardsFromJson(text);
+    }
+
+    if (importMode === "csv") {
+      return parseImportedFlashcardsFromCsv(text);
     }
 
     return parseImportedFlashcardsFromText({
@@ -351,10 +495,23 @@ export function ImportFlashcardsDialog({
     customTermDefinitionSeparator,
     cardSeparator,
     customCardSeparator,
+    csvFileError,
   ]);
 
   const parsedFlashcards = parseResult.flashcards;
   const previewFlashcard = parsedFlashcards[0];
+
+  const resetCsvState = () => {
+    setCsvFileName("");
+    setCsvFileError(undefined);
+    setCsvInputKey((currentKey) => currentKey + 1);
+  };
+
+  const handleImportModeChange = (value: string) => {
+    setImportMode(value as ImportMode);
+    setText("");
+    resetCsvState();
+  };
 
   const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Tab" && !event.shiftKey) {
@@ -393,6 +550,37 @@ export function ImportFlashcardsDialog({
     }
   };
 
+  const handleCsvFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    setText("");
+    setCsvFileName("");
+    setCsvFileError(undefined);
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setCsvFileError("Choose a CSV file.");
+      return;
+    }
+
+    if (file.size > MAX_CSV_FILE_SIZE_IN_BYTES) {
+      setCsvFileError("CSV file is too large. Maximum size is 1 MB.");
+      return;
+    }
+
+    try {
+      const fileContent = await file.text();
+
+      setText(fileContent);
+      setCsvFileName(file.name);
+    } catch {
+      setCsvFileError("Failed to read CSV file.");
+    }
+  };
+
   const handleImport = () => {
     if (parsedFlashcards.length === 0 || parseResult.error) {
       return;
@@ -400,6 +588,7 @@ export function ImportFlashcardsDialog({
 
     onImport(parsedFlashcards);
     setText("");
+    resetCsvState();
     onOpenChange(false);
   };
 
@@ -413,8 +602,8 @@ export function ImportFlashcardsDialog({
         <DialogHeader>
           <DialogTitle>Import your flashcards</DialogTitle>
           <DialogDescription>
-            Paste your terms and definitions, then choose how they are
-            separated.
+            Paste your terms and definitions or choose a CSV file, then import
+            them into this set.
           </DialogDescription>
         </DialogHeader>
 
@@ -424,13 +613,7 @@ export function ImportFlashcardsDialog({
               Import format
             </p>
 
-            <Select
-              value={importMode}
-              onValueChange={(value) => {
-                setImportMode(value as ImportMode);
-                setText("");
-              }}
-            >
+            <Select value={importMode} onValueChange={handleImportModeChange}>
               <SelectTrigger className="w-[180px] border-gray-200 bg-white">
                 <SelectValue />
               </SelectTrigger>
@@ -438,20 +621,50 @@ export function ImportFlashcardsDialog({
               <SelectContent>
                 <SelectItem value="text">Text</SelectItem>
                 <SelectItem value="json">JSON</SelectItem>
+                {allowCsvImport && <SelectItem value="csv">CSV</SelectItem>}
               </SelectContent>
             </Select>
           </div>
 
-          <Textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={handleTextareaKeyDown}
-            placeholder={
-              importMode === "json" ? jsonPlaceholder : textPlaceholder
-            }
-            wrap="off"
-            className="h-56 max-h-56 min-h-56 w-full min-w-0 resize-none overflow-x-auto overflow-y-auto rounded-xl border-gray-300 bg-white font-mono text-sm leading-6 focus:border-pink-500 focus:ring-pink-500"
-          />
+          {importMode === "csv" ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4">
+              <Input
+                key={csvInputKey}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleCsvFileChange}
+                className="cursor-pointer border-gray-200 bg-white"
+              />
+
+              <p className="mt-3 text-sm text-gray-500">
+                The first column will be imported as the term and the second
+                column as the definition. Do not include a header row unless you
+                want it to become a flashcard.
+              </p>
+
+              {csvFileName ? (
+                <p className="mt-2 text-sm text-gray-700">
+                  Selected file:{" "}
+                  <span className="font-medium">{csvFileName}</span>
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-gray-400">
+                  No CSV file selected.
+                </p>
+              )}
+            </div>
+          ) : (
+            <Textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={handleTextareaKeyDown}
+              placeholder={
+                importMode === "json" ? jsonPlaceholder : textPlaceholder
+              }
+              wrap="off"
+              className="h-56 max-h-56 min-h-56 w-full min-w-0 resize-none overflow-x-auto overflow-y-auto rounded-xl border-gray-300 bg-white font-mono text-sm leading-6 focus:border-pink-500 focus:ring-pink-500"
+            />
+          )}
 
           {importMode === "text" ? (
             <div className="grid gap-4 md:grid-cols-2">
@@ -525,7 +738,7 @@ export function ImportFlashcardsDialog({
                 )}
               </div>
             </div>
-          ) : (
+          ) : importMode === "json" ? (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
               JSON can be an array of objects with{" "}
               <span className="font-medium text-gray-800">term</span> and{" "}
@@ -534,18 +747,28 @@ export function ImportFlashcardsDialog({
               <span className="font-medium text-gray-800">flashcards</span>{" "}
               array.
             </div>
+          ) : (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+              CSV supports comma, semicolon and tab-separated files. The parser
+              also supports quoted values, for example{" "}
+              <span className="font-medium text-gray-800">
+                &quot;USA&quot;,&quot;United States of America&quot;
+              </span>
+              .
+            </div>
           )}
 
           <div className="min-w-0 rounded-lg border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <h3 className="font-semibold text-gray-800">Preview</h3>
+
               <span className="text-sm text-gray-500">
                 {parsedFlashcards.length}{" "}
                 {parsedFlashcards.length === 1 ? "card" : "cards"}
               </span>
             </div>
 
-            {parseResult.error && text.trim() ? (
+            {parseResult.error && (text.trim() || importMode === "csv") ? (
               <div className="px-4 py-8 text-center text-sm text-red-500">
                 {parseResult.error}
               </div>
@@ -567,7 +790,9 @@ export function ImportFlashcardsDialog({
               </div>
             ) : (
               <div className="px-4 py-8 text-center text-sm text-gray-500">
-                Paste text above to see a preview.
+                {importMode === "csv"
+                  ? "Choose a CSV file above to see a preview."
+                  : "Paste text above to see a preview."}
               </div>
             )}
           </div>

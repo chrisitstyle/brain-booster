@@ -260,6 +260,7 @@ export default function CreateSetPage() {
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         onImport={flashcardEditor.appendImportedFlashcards}
+        allowCsvImport={true}
       />
 
       <ConfirmActionDialog

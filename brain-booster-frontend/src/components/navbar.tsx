@@ -104,19 +104,24 @@ export default function Navbar({ className, items }: NavbarProps) {
   const { token, isAuthenticated, isAuthLoading, logout } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserDTO | null>(null);
-  const [loadedUserToken, setLoadedUserToken] = useState<string | null>(null);
+  const [loadedUserState, setLoadedUserState] = useState<{
+    token: string;
+    user: UserDTO | null;
+  } | null>(null);
 
   const navItems = items ?? DEFAULT_ITEMS;
 
+  const currentUser =
+    token && isAuthenticated && loadedUserState?.token === token
+      ? loadedUserState.user
+      : null;
+
   const isUserLoading = Boolean(
-    token && isAuthenticated && loadedUserToken !== token,
+    token && isAuthenticated && loadedUserState?.token !== token,
   );
 
   useEffect(() => {
     if (!token || !isAuthenticated) {
-      setCurrentUser(null);
-      setLoadedUserToken(null);
       return;
     }
 
@@ -129,7 +134,10 @@ export default function Navbar({ className, items }: NavbarProps) {
           return;
         }
 
-        setCurrentUser(user);
+        setLoadedUserState({
+          token: requestToken,
+          user,
+        });
       })
       .catch((error: unknown) => {
         if (isCancelled) {
@@ -138,12 +146,10 @@ export default function Navbar({ className, items }: NavbarProps) {
 
         console.error("Failed to load navbar user:", error);
 
-        setCurrentUser(null);
-      })
-      .finally(() => {
-        if (!isCancelled) {
-          setLoadedUserToken(requestToken);
-        }
+        setLoadedUserState({
+          token: requestToken,
+          user: null,
+        });
       });
 
     return () => {
@@ -166,7 +172,10 @@ export default function Navbar({ className, items }: NavbarProps) {
             return;
           }
 
-          setCurrentUser(user);
+          setLoadedUserState({
+            token: requestToken,
+            user,
+          });
         })
         .catch((error: unknown) => {
           if (isCancelled) {
@@ -174,11 +183,6 @@ export default function Navbar({ className, items }: NavbarProps) {
           }
 
           console.error("Failed to refresh navbar user:", error);
-        })
-        .finally(() => {
-          if (!isCancelled) {
-            setLoadedUserToken(requestToken);
-          }
         });
     }
 
@@ -209,15 +213,18 @@ export default function Navbar({ className, items }: NavbarProps) {
 
     void getCurrentUser(requestToken)
       .then((user) => {
-        setCurrentUser(user);
+        setLoadedUserState({
+          token: requestToken,
+          user,
+        });
       })
       .catch((error: unknown) => {
         console.error("Failed to refresh navbar user:", error);
 
-        setCurrentUser(null);
-      })
-      .finally(() => {
-        setLoadedUserToken(requestToken);
+        setLoadedUserState({
+          token: requestToken,
+          user: null,
+        });
       });
   }
 
@@ -230,8 +237,7 @@ export default function Navbar({ className, items }: NavbarProps) {
   }
 
   function handleLogout() {
-    setCurrentUser(null);
-    setLoadedUserToken(null);
+    setLoadedUserState(null);
     setIsOpen(false);
 
     logout();
