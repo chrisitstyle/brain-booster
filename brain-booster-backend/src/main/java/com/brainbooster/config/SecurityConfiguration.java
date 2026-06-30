@@ -22,6 +22,7 @@ public class SecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+
     private static final String USER_BY_ID = "/users/*";
     private static final String FLASHCARD_BY_ID = "/flashcards/*";
     private static final String FLASHCARD_STARRED = "/flashcards/*/starred";
@@ -75,7 +76,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.DELETE, FLASHCARD_BY_ID).authenticated()
                         .requestMatchers(HttpMethod.DELETE, FLASHCARD_STARRED).authenticated()
 
-                        // flashcardSets - public endpoints
+                        // flashcardSets - public
                         .requestMatchers(HttpMethod.GET, "/flashcard-sets").permitAll()
                         .requestMatchers(HttpMethod.GET, FLASHCARD_SET_BY_ID).permitAll()
                         .requestMatchers(HttpMethod.GET, "/flashcard-sets/*/flashcards").permitAll()
@@ -87,7 +88,6 @@ public class SecurityConfiguration {
 
                         // folders - public
                         .requestMatchers(HttpMethod.GET, "/folders").permitAll()
-                        .requestMatchers(HttpMethod.GET, FOLDER_BY_ID).permitAll()
 
                         // folders - authenticated
                         .requestMatchers(HttpMethod.POST, "/folders").authenticated()
@@ -97,10 +97,15 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, FOLDER_SET_BY_ID).authenticated()
                         .requestMatchers(HttpMethod.DELETE, FOLDER_SET_BY_ID).authenticated()
 
+                        // folders - public by id
+                        .requestMatchers(HttpMethod.GET, FOLDER_BY_ID).permitAll()
+
                         // game results
                         .requestMatchers("/game-results/**").authenticated()
+
                         // game attempts
                         .requestMatchers("/game-attempts/**").authenticated()
+
                         // game analytics
                         .requestMatchers("/game-analytics/**").authenticated()
 
@@ -109,7 +114,6 @@ public class SecurityConfiguration {
                                 "/profile/settings/nickname",
                                 "/profile/settings/email"
                         ).authenticated()
-
 
                         .anyRequest().hasAuthority(Role.ADMIN.name())
                 )
