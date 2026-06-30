@@ -18,7 +18,6 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { addFlashcardSet } from "@/api/flashcardSetService";
 import { addFlashcard } from "@/api/flashcardService";
-import { parseJwt } from "@/utils/jwt";
 
 import { useFlashcardEditor } from "@/features/sets/hooks/use-flashcard-editor";
 import { BottomSearchBar } from "@/features/sets/components/bottom-search-bar";
@@ -71,13 +70,6 @@ export default function CreateSetPage() {
       return;
     }
 
-    const decodedToken = parseJwt(token);
-
-    if (!decodedToken || !decodedToken.id) {
-      toast.error("Invalid session. Please log in again.");
-      return;
-    }
-
     if (!title.trim()) {
       toast.error("Title is required.");
       return;
@@ -93,7 +85,6 @@ export default function CreateSetPage() {
     try {
       const createdSet = await addFlashcardSet(
         {
-          userId: decodedToken.id,
           setName: title.trim(),
           description: description.trim(),
         },

@@ -51,7 +51,7 @@ public class FolderController {
             description = "Fetches folders owned by the currently authenticated user."
     )
     @ApiResponse(responseCode = "200", description = "User folders fetched successfully")
-    // TODO   @ApiResponse(responseCode = "401", description = "User is not authenticated")
+    @ApiResponse(responseCode = "401", description = "User is not authenticated")
     @ApiResponse(responseCode = "403", description = "User does not have permission to access this resource")
     @GetMapping("/me")
     public List<FolderDTO> getMyFolders() {

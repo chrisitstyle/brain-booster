@@ -42,16 +42,15 @@ public class FlashcardSetService {
     private final FlashcardDTOMapper flashcardDTOMapper;
 
     @Transactional
-    public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO) {
+    public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
+                                           Long authenticatedUserId) {
 
-        // TODO implement feature that assigns flashcard set to authenticated user
-        User setOwner = userRepository.findById(flashcardSetCreationDTO.userId())
+        User setOwner = userRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NoSuchElementException(
-                        buildUserNotFoundMessage(flashcardSetCreationDTO.userId())
+                        buildUserNotFoundMessage(authenticatedUserId)
                 ));
 
         FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
-
         flashcardSet.setUser(setOwner);
 
         FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
