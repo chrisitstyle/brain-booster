@@ -25,6 +25,15 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class FlashcardSetService {
+
+    private static final String NOT_FOUND_MESSAGE_SUFFIX = " not found";
+    private static final String USER_WITH_ID_MESSAGE_PREFIX = "User with id: ";
+    private static final String FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX = "FlashcardSet with id: ";
+    private static final String EDIT_FLASHCARD_SET_ACCESS_DENIED_MESSAGE =
+            "You are not allowed to edit this flashcard set!";
+    private static final String DELETE_FLASHCARD_SET_ACCESS_DENIED_MESSAGE =
+            "You are not allowed to delete this flashcard set!";
+
     private final UserRepository userRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardRepository flashcardRepository;
@@ -37,7 +46,9 @@ public class FlashcardSetService {
 
         // TODO implement feature that assigns flashcard set to authenticated user
         User setOwner = userRepository.findById(flashcardSetCreationDTO.userId())
-                .orElseThrow(() -> new NoSuchElementException("User with id: " + flashcardSetCreationDTO.userId() + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(
+                        buildUserNotFoundMessage(flashcardSetCreationDTO.userId())
+                ));
 
         FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
 
@@ -58,13 +69,13 @@ public class FlashcardSetService {
     public FlashcardSetDTO getFlashcardSetById(Long setId) {
         return flashcardSetRepository.findByIdWithUser(setId)
                 .map(flashcardSetDTOMapper)
-                .orElseThrow(() -> new NoSuchElementException("FlashcardSet with id: " + setId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
     }
 
     public List<FlashcardDTO> getAllFlashcardsInSet(Long setId) {
 
         if (!flashcardSetRepository.existsById(setId)) {
-            throw new NoSuchElementException("FlashcardSet with id: " + setId + " not found");
+            throw new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId));
         }
 
         User authUser = SecurityUtils.getAuthenticatedUserOrNull();
@@ -88,10 +99,10 @@ public class FlashcardSetService {
     @Transactional
     public FlashcardSetDTO updateFlashcardSet(FlashcardSetUpdateDTO updateDTO, Long setId) {
         FlashcardSet existingSet = flashcardSetRepository.findById(setId)
-                .orElseThrow(() -> new NoSuchElementException("FlashcardSet with id: " + setId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
 
         // verify if the user is admin or owner of set
-        verifySetAccess(existingSet, "You are not allowed to edit this flashcard set!");
+        verifySetAccess(existingSet, EDIT_FLASHCARD_SET_ACCESS_DENIED_MESSAGE);
 
         existingSet.setSetName(updateDTO.setName());
         existingSet.setDescription(updateDTO.description());
@@ -103,9 +114,9 @@ public class FlashcardSetService {
     public void deleteFlashcardSetById(Long setId) {
 
         FlashcardSet existingSet = flashcardSetRepository.findById(setId)
-                .orElseThrow(() -> new NoSuchElementException("FlashcardSet with id: " + setId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
 
-        verifySetAccess(existingSet, "You are not allowed to delete this flashcard set!");
+        verifySetAccess(existingSet, DELETE_FLASHCARD_SET_ACCESS_DENIED_MESSAGE);
 
         flashcardSetRepository.delete(existingSet);
     }
@@ -121,5 +132,13 @@ public class FlashcardSetService {
         if (!isAdmin && !isOwner) {
             throw new AccessDeniedException(errorMessage);
         }
+    }
+
+    private String buildUserNotFoundMessage(Long userId) {
+        return USER_WITH_ID_MESSAGE_PREFIX + userId + NOT_FOUND_MESSAGE_SUFFIX;
+    }
+
+    private String buildFlashcardSetNotFoundMessage(Long setId) {
+        return FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX + setId + NOT_FOUND_MESSAGE_SUFFIX;
     }
 }

@@ -7,7 +7,7 @@ import com.brainbooster.gameresult.attempt.GameAttempt;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Builder
 @NoArgsConstructor
@@ -16,27 +16,27 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "game_question_results", indexes = {
-                @Index(
-                        name = "idx_game_question_results_attempt_id",
-                        columnList = "attempt_id"
-                ),
-                @Index(
-                        name = "idx_game_question_results_attempt_order",
-                        columnList = "attempt_id, question_order"
-                ),
-                @Index(
-                        name = "idx_game_question_results_flashcard_id",
-                        columnList = "flashcard_id"
-                ),
-                @Index(
-                        name = "idx_game_question_results_flashcard_correct",
-                        columnList = "flashcard_id, was_correct"
-                ),
-                @Index(
-                        name = "idx_game_question_results_question_type",
-                        columnList = "question_type"
-                )
-        }
+        @Index(
+                name = "idx_game_question_results_attempt_id",
+                columnList = "attempt_id"
+        ),
+        @Index(
+                name = "idx_game_question_results_attempt_order",
+                columnList = "attempt_id, question_order"
+        ),
+        @Index(
+                name = "idx_game_question_results_flashcard_id",
+                columnList = "flashcard_id"
+        ),
+        @Index(
+                name = "idx_game_question_results_flashcard_correct",
+                columnList = "flashcard_id, was_correct"
+        ),
+        @Index(
+                name = "idx_game_question_results_question_type",
+                columnList = "question_type"
+        )
+}
 )
 public class GameQuestionResult {
 
@@ -83,7 +83,7 @@ public class GameQuestionResult {
     private Integer mistakesCount = 0;
 
     @Column(name = "answered_at", nullable = false)
-    private LocalDateTime answeredAt;
+    private Instant answeredAt;
 
     @PrePersist
     void prePersist() {
@@ -92,7 +92,7 @@ public class GameQuestionResult {
         }
 
         if (answeredAt == null) {
-            answeredAt = LocalDateTime.now();
+            answeredAt = Instant.now();
         }
     }
 }

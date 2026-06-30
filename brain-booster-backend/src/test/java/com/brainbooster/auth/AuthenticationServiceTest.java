@@ -94,7 +94,6 @@ class AuthenticationServiceTest {
         User user = TestEntities.createUser();
         String expectedToken = "jwt_token_example";
 
-        //  when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(null);
         Authentication authResult = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
@@ -135,7 +134,6 @@ class AuthenticationServiceTest {
         AuthenticationRequest request = new AuthenticationRequest("dummy@example.com",
                 "password");
 
-        //when(authenticationManager.authenticate(any())).thenReturn(null);
         Authentication dummyAuth = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
         when(authenticationManager.authenticate(any())).thenReturn(dummyAuth);
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());

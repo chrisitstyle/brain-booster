@@ -3,7 +3,7 @@ package com.brainbooster.user.dto;
 import com.brainbooster.user.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "User response returned by the API")
 public record UserDTO(
@@ -39,6 +39,6 @@ public record UserDTO(
                 example = "2026-05-19T21:30:00",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

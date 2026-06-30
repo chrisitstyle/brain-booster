@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -94,7 +95,7 @@ public class GlobalExceptionHandler {
         ErrorDTO errorDTO = new ErrorDTO(
                 message,
                 status.name(),
-                LocalDateTime.now()
+                Instant.now()
         );
         return new ResponseEntity<>(errorDTO, status);
     }

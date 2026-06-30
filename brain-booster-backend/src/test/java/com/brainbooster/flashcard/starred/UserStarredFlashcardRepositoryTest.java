@@ -14,7 +14,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 class UserStarredFlashcardRepositoryTest {
+
+    private static final Instant CREATED_AT =
+            Instant.parse("2024-01-01T00:00:00Z");
 
     @Autowired
     private UserStarredFlashcardRepository starredFlashcardRepository;
@@ -42,7 +45,7 @@ class UserStarredFlashcardRepositoryTest {
                 .email("test@test.com")
                 .password("pass")
                 .role(Role.USER)
-                .createdAt(LocalDateTime.now())
+                .createdAt(CREATED_AT)
                 .build();
 
         savedUser = entityManager.persist(user);
@@ -51,7 +54,7 @@ class UserStarredFlashcardRepositoryTest {
                 .user(savedUser)
                 .setName("Java Basics")
                 .description("Basic concepts")
-                .createdAt(LocalDateTime.now())
+                .createdAt(CREATED_AT)
                 .build();
 
         savedFlashcardSet = entityManager.persist(flashcardSet);
@@ -167,7 +170,7 @@ class UserStarredFlashcardRepositoryTest {
                 ))
                 .user(user)
                 .flashcard(flashcard)
-                .createdAt(LocalDateTime.now())
+                .createdAt(CREATED_AT)
                 .build();
 
         entityManager.persist(starredFlashcard);

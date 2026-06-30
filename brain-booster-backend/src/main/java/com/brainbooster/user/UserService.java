@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,7 +42,7 @@ public class UserService {
                 .email(userCreationDTO.email())
                 .password(passwordEncoder.encode(userCreationDTO.password()))
                 .role(userCreationDTO.role())
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         User savedUser = userRepository.save(user);

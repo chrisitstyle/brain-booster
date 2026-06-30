@@ -33,6 +33,7 @@ import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserSummaryDTO;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.HashSet;
 import java.util.List;
 
@@ -123,7 +124,7 @@ public class TestEntities {
                 "johndoe",
                 "johndoe@example.com",
                 Role.USER,
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
         );
     }
 
@@ -136,7 +137,7 @@ public class TestEntities {
     public static UserSummaryDTO createUserSummaryDTO() {
         return new UserSummaryDTO(
                 "johndoe",
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
         );
     }
 
@@ -300,7 +301,7 @@ public class TestEntities {
                 ))
                 .user(user)
                 .flashcard(flashcard)
-                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
                 .build();
     }
 
@@ -320,7 +321,7 @@ public class TestEntities {
                 .user(userBuilder().build())
                 .setName("test_flashcardset_name")
                 .description("test_flashcardset_description")
-                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
                 .termCount(0L);
     }
 
@@ -377,7 +378,7 @@ public class TestEntities {
                 createUserSummaryDTO(),
                 "test_flashcardset_name",
                 "test_flashcardset_description",
-                LocalDateTime.of(2026, 1, 19, 23, 0),
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0),
                 0L
         );
     }
@@ -433,7 +434,7 @@ public class TestEntities {
                 .score(8)
                 .totalQuestions(10)
                 .durationSeconds(null)
-                .completedAt(LocalDateTime.of(2026, 1, 19, 23, 0));
+                .completedAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
     }
 
     /**
@@ -716,7 +717,7 @@ public class TestEntities {
                 8,
                 10,
                 null,
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
         );
     }
 
@@ -770,7 +771,7 @@ public class TestEntities {
                 score,
                 totalQuestions,
                 durationSeconds,
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
         );
     }
 
@@ -794,7 +795,7 @@ public class TestEntities {
                 .score(8)
                 .totalQuestions(10)
                 .durationSeconds(120)
-                .completedAt(LocalDateTime.of(2026, 1, 19, 23, 0));
+                .completedAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
     }
 
     /**
@@ -845,7 +846,7 @@ public class TestEntities {
                 8,
                 10,
                 120,
-                LocalDateTime.of(2026, 1, 19, 23, 0),
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0),
                 List.of()
         );
     }
@@ -899,7 +900,7 @@ public class TestEntities {
                 .correctAnswer("test_definition")
                 .wasCorrect(true)
                 .mistakesCount(0)
-                .answeredAt(LocalDateTime.of(2026, 1, 19, 23, 0));
+                .answeredAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
     }
 
     /**
@@ -953,7 +954,7 @@ public class TestEntities {
                 "test_definition",
                 true,
                 0,
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
         );
     }
 
@@ -998,7 +999,7 @@ public class TestEntities {
                 .user(createUser())
                 .name("test_folder_name")
                 .description("test_folder_description")
-                .createdAt(LocalDateTime.of(2026, 1, 19, 23, 0))
+                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
                 .flashcardSets(new HashSet<>())
                 .setCount(0L);
     }

@@ -25,6 +25,10 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 public class FlashcardService {
 
+    private static final String NOT_FOUND_MESSAGE_SUFFIX = " not found";
+    private static final String FLASHCARD_WITH_ID_MESSAGE_PREFIX = "Flashcard with id ";
+    private static final String FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX = "FlashcardSet with id ";
+
     private final FlashcardRepository flashcardRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final UserStarredFlashcardRepository starredFlashcardRepository;
@@ -34,8 +38,9 @@ public class FlashcardService {
     @Transactional
     public FlashcardDTO addFlashcard(FlashcardCreationDTO flashcardCreationDTO) {
         FlashcardSet flashcardSetFromDB = flashcardSetRepository.findById(flashcardCreationDTO.setId())
-                .orElseThrow(() -> new NoSuchElementException("FlashcardSet with id " + flashcardCreationDTO.setId() + " not found"));
-
+                .orElseThrow(() -> new NoSuchElementException(
+                        FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX + flashcardCreationDTO.setId() + NOT_FOUND_MESSAGE_SUFFIX
+                ));
 
         verifyFlashcardSetAccess(flashcardSetFromDB, "You can only add flashcards to your own sets!");
 
@@ -57,17 +62,15 @@ public class FlashcardService {
     }
 
     public FlashcardDTO getFlashcardById(Long flashcardId) {
-
         return flashcardRepository.findById(flashcardId)
                 .map(flashcardDTOMapper)
-                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
     }
 
     @Transactional
     public FlashcardDTO updateFlashcard(FlashcardUpdateDTO updatedFlashcard, Long flashcardId) {
-
         Flashcard existingFlashcardFromDB = flashcardRepository.findByIdWithSetAndUser(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         verifyFlashcardSetAccess(existingFlashcardFromDB.getFlashcardSet(), "You are not allowed to edit this flashcard!");
 
@@ -83,7 +86,7 @@ public class FlashcardService {
         User authUser = SecurityUtils.getAuthenticatedUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         boolean alreadyStarred = starredFlashcardRepository
                 .existsByUser_UserIdAndFlashcard_FlashcardId(authUser.getUserId(), flashcardId);
@@ -108,7 +111,7 @@ public class FlashcardService {
         User authUser = SecurityUtils.getAuthenticatedUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         starredFlashcardRepository.deleteByUser_UserIdAndFlashcard_FlashcardId(
                 authUser.getUserId(),
@@ -119,18 +122,14 @@ public class FlashcardService {
     }
 
     public void deleteFlashcardById(Long flashcardId) {
-
         Flashcard existingFlashcard = flashcardRepository.findByIdWithSetAndUser(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException("Flashcard with id " + flashcardId + " not found"));
-
+                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         verifyFlashcardSetAccess(existingFlashcard.getFlashcardSet(), "You are not allowed to delete this flashcard!");
         flashcardRepository.delete(existingFlashcard);
     }
 
-
     private void verifyFlashcardSetAccess(FlashcardSet flashcardSetFromDB, String errorMessage) {
-
         User authUser = SecurityUtils.getAuthenticatedUser();
 
         // actual permission verification (admin or owner)
@@ -140,5 +139,9 @@ public class FlashcardService {
         if (!isAdmin && !isOwner) {
             throw new AccessDeniedException(errorMessage);
         }
+    }
+
+    private String buildFlashcardNotFoundMessage(Long flashcardId) {
+        return FLASHCARD_WITH_ID_MESSAGE_PREFIX + flashcardId + NOT_FOUND_MESSAGE_SUFFIX;
     }
 }

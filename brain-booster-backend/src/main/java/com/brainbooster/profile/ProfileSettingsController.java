@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,48 +38,46 @@ public class ProfileSettingsController {
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Nickname updated successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = UserDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request body or validation error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "User is not authenticated",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Authenticated user does not exist",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "422",
-                    description = "Nickname is already taken",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Nickname updated successfully",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UserDTO.class)
             )
-    })
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request body or validation error",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "401",
+            description = "User is not authenticated",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Authenticated user does not exist",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Nickname is already taken",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
     @PatchMapping("/nickname")
     public UserDTO updateNickname(
             @Valid @RequestBody UserNicknameUpdateDTO request
@@ -98,50 +95,49 @@ public class ProfileSettingsController {
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Email updated successfully and a new JWT was generated",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(
-                                    implementation = UserEmailUpdateResponseDTO.class
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request body or validation error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "User is not authenticated",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Authenticated user does not exist",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "422",
-                    description = "Email address is already taken",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorDTO.class)
+
+    @ApiResponse(
+            responseCode = "200",
+            description = "Email updated successfully and a new JWT was generated",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                            implementation = UserEmailUpdateResponseDTO.class
                     )
             )
-    })
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request body or validation error",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "401",
+            description = "User is not authenticated",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Authenticated user does not exist",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Email address is already taken",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorDTO.class)
+            )
+    )
     @PatchMapping("/email")
     public UserEmailUpdateResponseDTO updateEmail(
             @Valid @RequestBody UserEmailUpdateDTO request

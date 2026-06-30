@@ -4,6 +4,7 @@ import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.user.User;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public class FlashcardSetCreationDTOMapper {
@@ -22,7 +23,7 @@ public class FlashcardSetCreationDTOMapper {
 
         flashcardSet.setSetName(dto.setName());
         flashcardSet.setDescription(dto.description());
-        flashcardSet.setCreatedAt(LocalDateTime.now());
+        flashcardSet.setCreatedAt(Instant.now());
 
         return flashcardSet;
 
