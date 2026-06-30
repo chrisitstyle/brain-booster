@@ -2,7 +2,7 @@ package com.brainbooster.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Short user summary returned in public resources")
 public record UserSummaryDTO(
@@ -18,6 +18,6 @@ public record UserSummaryDTO(
                 example = "2026-05-19T21:30:00",
                 accessMode = Schema.AccessMode.READ_ONLY
         )
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

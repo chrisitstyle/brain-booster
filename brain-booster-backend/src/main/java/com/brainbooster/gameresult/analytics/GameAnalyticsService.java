@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
@@ -76,9 +76,9 @@ public class GameAnalyticsService {
                 .average()
                 .orElse(0.0);
 
-        LocalDateTime lastAttemptAt = attempts.stream()
+        Instant lastAttemptAt = attempts.stream()
                 .map(GameAttempt::getCompletedAt)
-                .max(LocalDateTime::compareTo)
+                .max(Instant::compareTo)
                 .orElse(null);
 
         double accuracyPercentage = totalQuestions > 0
@@ -233,7 +233,7 @@ public class GameAnalyticsService {
         private long correctAnswers;
         private long incorrectAnswers;
         private int totalMistakes;
-        private LocalDateTime lastAnsweredAt;
+        private Instant lastAnsweredAt;
 
         private WeakFlashcardStats(Flashcard flashcard) {
             this.flashcard = flashcard;

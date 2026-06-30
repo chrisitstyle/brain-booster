@@ -7,7 +7,7 @@ import com.brainbooster.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +62,7 @@ public class GameAttempt {
     private Integer durationSeconds;
 
     @Column(name = "completed_at", nullable = false)
-    private LocalDateTime completedAt;
+    private Instant completedAt;
 
     @Builder.Default
     @OneToMany(
@@ -75,7 +75,7 @@ public class GameAttempt {
     @PrePersist
     void prePersist() {
         if (completedAt == null) {
-            completedAt = LocalDateTime.now();
+            completedAt = Instant.now();
         }
     }
 

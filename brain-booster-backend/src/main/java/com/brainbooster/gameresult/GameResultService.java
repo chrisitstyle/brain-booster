@@ -18,7 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -29,6 +29,17 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class GameResultService {
+
+    private static final String NOT_FOUND_MSG_SUFFIX = " not found";
+    private static final String FLASHCARD_SET_WITH_ID_MSG_PREFIX = "FlashcardSet with id: ";
+    private static final String GAME_RESULT_WITH_ID_MSG_PREFIX = "GameResult with id: ";
+    private static final String FLASHCARD_WITH_ID_MSG_PREFIX = "Flashcard with id: ";
+    private static final String ACCESS_GAME_RESULT_DENIED_MSG =
+            "You are not allowed to access this game result.";
+    private static final String DELETE_GAME_RESULT_DENIED_MSG =
+            "You are not allowed to delete this game result.";
+    private static final String SCORE_GREATER_THAN_TOTAL_QUESTIONS_MSG =
+            "Score cannot be greater than total questions.";
 
     private final GameResultRepository gameResultRepository;
     private final GameAttemptRepository gameAttemptRepository;
@@ -44,10 +55,10 @@ public class GameResultService {
 
         FlashcardSet flashcardSet = flashcardSetRepository.findById(request.setId())
                 .orElseThrow(() -> new NoSuchElementException(
-                        "FlashcardSet with id: " + request.setId() + " not found"
+                        buildFlashcardSetNotFoundMessage(request.setId())
                 ));
 
-        LocalDateTime completedAt = LocalDateTime.now();
+        Instant completedAt = Instant.now();
 
         GameResult gameResult = gameResultRepository
                 .findByUser_UserIdAndSet_SetIdAndMode(
@@ -112,38 +123,20 @@ public class GameResultService {
 
     @Transactional(readOnly = true)
     public GameResultDTO getGameResultById(Long resultId) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
-
-        GameResult gameResult = gameResultRepository.findById(resultId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "GameResult with id: " + resultId + " not found"
-                ));
-
-        boolean isAdmin = SecurityUtils.isAdmin(authUser);
-        boolean isOwner = gameResult.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException("You are not allowed to access this game result.");
-        }
+        GameResult gameResult = getAccessibleGameResult(
+                resultId,
+                ACCESS_GAME_RESULT_DENIED_MSG
+        );
 
         return gameResultMapper.toDto(gameResult);
     }
 
     @Transactional
     public void deleteGameResult(Long resultId) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
-
-        GameResult gameResult = gameResultRepository.findById(resultId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "GameResult with id: " + resultId + " not found"
-                ));
-
-        boolean isAdmin = SecurityUtils.isAdmin(authUser);
-        boolean isOwner = gameResult.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException("You are not allowed to delete this game result.");
-        }
+        GameResult gameResult = getAccessibleGameResult(
+                resultId,
+                DELETE_GAME_RESULT_DENIED_MSG
+        );
 
         gameResultRepository.delete(gameResult);
     }
@@ -152,7 +145,7 @@ public class GameResultService {
             User authUser,
             FlashcardSet flashcardSet,
             SaveGameResultRequest request,
-            LocalDateTime completedAt
+            Instant completedAt
     ) {
         GameAttempt attempt = GameAttempt.builder()
                 .user(authUser)
@@ -205,7 +198,7 @@ public class GameResultService {
                 .findFirst()
                 .ifPresent(flashcardId -> {
                     throw new NoSuchElementException(
-                            "Flashcard with id: " + flashcardId + " not found"
+                            buildFlashcardNotFoundMessage(flashcardId)
                     );
                 });
 
@@ -214,7 +207,7 @@ public class GameResultService {
 
             if (!setId.equals(flashcardSetId)) {
                 throw new IllegalArgumentException(
-                        "Flashcard with id: " + flashcard.getFlashcardId()
+                        FLASHCARD_WITH_ID_MSG_PREFIX + flashcard.getFlashcardId()
                                 + " does not belong to set: " + setId
                 );
             }
@@ -226,7 +219,7 @@ public class GameResultService {
     private GameQuestionResult createQuestionResult(
             SaveGameQuestionResultRequest request,
             Flashcard flashcard,
-            LocalDateTime answeredAt
+            Instant answeredAt
     ) {
         return GameQuestionResult.builder()
                 .flashcard(flashcard)
@@ -245,7 +238,48 @@ public class GameResultService {
 
     private void validateScore(Integer score, Integer totalQuestions) {
         if (score > totalQuestions) {
-            throw new IllegalArgumentException("Score cannot be greater than total questions.");
+            throw new IllegalArgumentException(SCORE_GREATER_THAN_TOTAL_QUESTIONS_MSG);
         }
+    }
+
+    private GameResult getAccessibleGameResult(Long resultId, String accessDeniedMessage) {
+        User authUser = SecurityUtils.getAuthenticatedUser();
+        GameResult gameResult = findGameResultById(resultId);
+
+        verifyGameResultAccess(gameResult, authUser, accessDeniedMessage);
+
+        return gameResult;
+    }
+
+    private GameResult findGameResultById(Long resultId) {
+        return gameResultRepository.findById(resultId)
+                .orElseThrow(() -> new NoSuchElementException(
+                        buildGameResultNotFoundMessage(resultId)
+                ));
+    }
+
+    private void verifyGameResultAccess(
+            GameResult gameResult,
+            User authUser,
+            String accessDeniedMessage
+    ) {
+        boolean isAdmin = SecurityUtils.isAdmin(authUser);
+        boolean isOwner = gameResult.getUser().getUserId().equals(authUser.getUserId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException(accessDeniedMessage);
+        }
+    }
+
+    private String buildFlashcardSetNotFoundMessage(Long setId) {
+        return FLASHCARD_SET_WITH_ID_MSG_PREFIX + setId + NOT_FOUND_MSG_SUFFIX;
+    }
+
+    private String buildGameResultNotFoundMessage(Long resultId) {
+        return GAME_RESULT_WITH_ID_MSG_PREFIX + resultId + NOT_FOUND_MSG_SUFFIX;
+    }
+
+    private String buildFlashcardNotFoundMessage(Long flashcardId) {
+        return FLASHCARD_WITH_ID_MSG_PREFIX + flashcardId + NOT_FOUND_MSG_SUFFIX;
     }
 }

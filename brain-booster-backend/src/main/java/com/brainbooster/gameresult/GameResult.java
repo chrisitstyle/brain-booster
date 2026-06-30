@@ -5,7 +5,7 @@ import com.brainbooster.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Builder
 @NoArgsConstructor
@@ -14,11 +14,11 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "game_results", uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uq_game_results_user_set_mode",
-                        columnNames = {"user_id", "set_id", "mode"}
-                )
-        }
+        @UniqueConstraint(
+                name = "uq_game_results_user_set_mode",
+                columnNames = {"user_id", "set_id", "mode"}
+        )
+}
 )
 public class GameResult {
 
@@ -48,12 +48,12 @@ public class GameResult {
     private Integer durationSeconds;
 
     @Column(name = "completed_at", nullable = false)
-    private LocalDateTime completedAt;
+    private Instant completedAt;
 
     @PrePersist
     void prePersist() {
         if (completedAt == null) {
-            completedAt = LocalDateTime.now();
+            completedAt = Instant.now();
         }
     }
 }

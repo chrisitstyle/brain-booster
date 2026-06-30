@@ -11,7 +11,6 @@ import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.utils.TestEntities;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -73,7 +72,7 @@ class ProfileSettingsServiceTest {
                 "newNickname",
                 user.getEmail(),
                 user.getRole(),
-                LocalDateTime.of(2026, 1, 19, 23, 0)
+                Instant.parse("2026-01-19T23:00:00Z")
         );
 
         when(userRepository.findById(user.getUserId()))

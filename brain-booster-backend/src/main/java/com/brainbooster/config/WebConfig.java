@@ -11,7 +11,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 class WebConfig {
 
     @Value("${CLIENT_URL}")
-    private String CLIENT_URL;
+    private String clientUrl;
+
     private static final String FRONTEND_LOCAL = "http://localhost:3000";
 
     @Bean
@@ -20,7 +21,7 @@ class WebConfig {
             @Override
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(CLIENT_URL,  FRONTEND_LOCAL)
+                        .allowedOrigins(clientUrl, FRONTEND_LOCAL)
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true)

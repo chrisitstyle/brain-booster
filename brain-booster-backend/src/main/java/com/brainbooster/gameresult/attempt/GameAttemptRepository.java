@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,8 +31,8 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
             @Param("userId") Long userId,
             @Param("setId") Long setId,
             @Param("mode") GameMode mode,
-            @Param("fromDateTime") LocalDateTime fromDateTime,
-            @Param("toDateTimeExclusive") LocalDateTime toDateTimeExclusive,
+            @Param("fromDateTime") Instant fromDateTime,
+            @Param("toDateTimeExclusive") Instant toDateTimeExclusive,
             Pageable pageable
     );
 
@@ -49,12 +49,12 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
 
     @EntityGraph(attributePaths = {"user", "set"})
     @Query("""
-        SELECT attempt
-        FROM GameAttempt attempt
-        WHERE attempt.user.userId = :userId
-          AND attempt.set.setId = :setId
-        ORDER BY attempt.completedAt ASC
-        """)
+            SELECT attempt
+            FROM GameAttempt attempt
+            WHERE attempt.user.userId = :userId
+              AND attempt.set.setId = :setId
+            ORDER BY attempt.completedAt ASC
+            """)
     List<GameAttempt> findByUserIdAndSetIdOrderByCompletedAtAsc(
             @Param("userId") Long userId,
             @Param("setId") Long setId

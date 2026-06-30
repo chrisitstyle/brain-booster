@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Formula;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Builder
 @NoArgsConstructor
@@ -26,7 +26,7 @@ public class FlashcardSet {
     private String setName;
     private String description;
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     @Formula("(SELECT COUNT(*) FROM flashcard f WHERE f.set_id = set_id)")
     private Long termCount;
 

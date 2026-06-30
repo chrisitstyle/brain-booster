@@ -5,7 +5,7 @@ import com.brainbooster.gameresult.GameResult;
 import com.brainbooster.gameresult.dto.GameResultDTO;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static com.brainbooster.utils.TestEntities.createGameResultDTO;
 import static com.brainbooster.utils.TestEntities.gameResultBuilder;
@@ -17,7 +17,7 @@ class GameResultMapperTest {
 
     @Test
     void shouldMapGameResultToDto() {
-        LocalDateTime completedAt = LocalDateTime.of(2026, 1, 20, 12, 30);
+        Instant completedAt = Instant.parse("2026-01-20T12:30:00Z");
 
         GameResult gameResult = gameResultBuilder()
                 .resultId(10L)

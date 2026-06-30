@@ -2,7 +2,7 @@ package com.brainbooster.gameresult;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Flashcard that the authenticated user struggles with.")
 public record WeakFlashcardDTO(
@@ -32,6 +32,6 @@ public record WeakFlashcardDTO(
         Double accuracyPercentage,
 
         @Schema(description = "Date and time when this flashcard was last answered.")
-        LocalDateTime lastAnsweredAt
+        Instant lastAnsweredAt
 ) {
 }

@@ -2,7 +2,7 @@ package com.brainbooster.gameresult.analytics.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Summary statistics for game attempts in a flashcard set.")
 public record GameAnalyticsSummaryDTO(
@@ -20,7 +20,7 @@ public record GameAnalyticsSummaryDTO(
         Double averageDuration,
 
         @Schema(description = "Date and time of the latest completed attempt.")
-        LocalDateTime lastAttemptAt,
+        Instant lastAttemptAt,
 
         @Schema(description = "Overall accuracy percentage across all attempts.", example = "82.35")
         Double accuracyPercentage

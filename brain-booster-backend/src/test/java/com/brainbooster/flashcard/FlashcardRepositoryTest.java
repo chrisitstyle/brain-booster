@@ -13,7 +13,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,8 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class FlashcardRepositoryTest {
 
+    private static final Instant CREATED_AT =
+            Instant.parse("2024-01-01T00:00:00Z");
+
     @Autowired
     private FlashcardRepository flashcardRepository;
+
     @Autowired
     private TestEntityManager entityManager;
 
@@ -38,7 +42,7 @@ class FlashcardRepositoryTest {
                 .email("test@test.com")
                 .password("pass")
                 .role(Role.USER)
-                .createdAt(LocalDateTime.now())
+                .createdAt(CREATED_AT)
                 .build();
         entityManager.persist(user);
 
@@ -46,9 +50,8 @@ class FlashcardRepositoryTest {
                 .user(user)
                 .setName("Java Basics")
                 .description("Basic concepts")
-                .createdAt(LocalDateTime.now())
+                .createdAt(CREATED_AT)
                 .build();
-        entityManager.persist(flashcardSet);
 
         savedFlashcardSet = entityManager.persist(flashcardSet);
     }

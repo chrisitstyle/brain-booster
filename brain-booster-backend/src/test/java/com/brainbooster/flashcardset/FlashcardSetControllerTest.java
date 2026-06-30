@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -158,7 +158,7 @@ class FlashcardSetControllerTest {
                 userSummaryDTO,
                 "Updated Set",
                 "Updated description",
-                LocalDateTime.parse("2025-06-02T00:28:05.738221"),
+                Instant.parse("2025-06-02T00:28:05.738221Z"),
                 0L
         );
 

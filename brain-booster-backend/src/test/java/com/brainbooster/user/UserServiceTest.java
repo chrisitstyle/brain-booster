@@ -24,7 +24,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -34,6 +34,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
+
+    private static final Instant FIXED_CREATED_AT =
+            Instant.parse("2024-01-01T00:00:00Z");
 
     @Mock
     private UserRepository userRepository;
@@ -225,7 +228,7 @@ class UserServiceTest {
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(userDTOMapper.apply(any(User.class)))
-                .thenReturn(new UserDTO(1L, "newNickname", "new@example.com", Role.USER, LocalDateTime.now()));
+                .thenReturn(new UserDTO(1L, "newNickname", "new@example.com", Role.USER, FIXED_CREATED_AT));
 
         // when
         UserDTO result = userService.updateUser(updateDTO, 1L);

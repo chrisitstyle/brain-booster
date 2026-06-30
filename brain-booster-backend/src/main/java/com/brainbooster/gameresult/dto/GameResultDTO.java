@@ -3,7 +3,7 @@ package com.brainbooster.gameresult.dto;
 import com.brainbooster.gameresult.GameMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Response containing the latest saved game result.")
 public record GameResultDTO(
@@ -30,6 +30,6 @@ public record GameResultDTO(
         Integer durationSeconds,
 
         @Schema(description = "Date and time when the result was last completed or updated.")
-        LocalDateTime completedAt
+        Instant completedAt
 ) {
 }
