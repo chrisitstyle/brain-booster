@@ -5,7 +5,6 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.user.User;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 public class FlashcardSetCreationDTOMapper {
 

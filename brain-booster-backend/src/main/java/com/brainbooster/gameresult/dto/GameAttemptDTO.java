@@ -3,7 +3,7 @@ package com.brainbooster.gameresult.dto;
 import com.brainbooster.gameresult.GameMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Schema(description = "Response containing a completed game attempt with question-level results.")
@@ -31,7 +31,7 @@ public record GameAttemptDTO(
         Integer durationSeconds,
 
         @Schema(description = "Date and time when the attempt was completed.")
-        LocalDateTime completedAt,
+        Instant completedAt,
 
         @Schema(description = "Question-level results recorded during the attempt.")
         List<GameQuestionResultDTO> questionResults

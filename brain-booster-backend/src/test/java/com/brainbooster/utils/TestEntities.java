@@ -20,11 +20,7 @@ import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.GameResult;
 import com.brainbooster.gameresult.QuestionAnswerSide;
 import com.brainbooster.gameresult.attempt.GameAttempt;
-import com.brainbooster.gameresult.dto.GameAttemptDTO;
-import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
-import com.brainbooster.gameresult.dto.GameResultDTO;
-import com.brainbooster.gameresult.dto.SaveGameQuestionResultRequest;
-import com.brainbooster.gameresult.dto.SaveGameResultRequest;
+import com.brainbooster.gameresult.dto.*;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
@@ -32,13 +28,11 @@ import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserSummaryDTO;
 
-import java.time.LocalDateTime;
-import java.time.Month;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 
 /**
-
  * Utility class for creating entity and DTO instances for testing purposes.
  * <p>
  * This class acts as an "Object Mother" or "Test Data Factory", providing
@@ -47,8 +41,10 @@ import java.util.List;
  */
 public class TestEntities {
 
-    /**
+    private static final Instant TEST_INSTANT_DATE =
+            Instant.parse("2026-01-19T23:00:00Z");
 
+    /**
      * Private constructor to block instantiation of utility class.
      */
     private TestEntities() {
@@ -57,7 +53,6 @@ public class TestEntities {
     // USER METHODS
 
     /**
-
      * Creates a {@link User.UserBuilder} pre-configured with default test data.
      * <p>
      * Defaults: ID=1L, nickname="johndoe", email=""johndoe@example.com", role=USER.
@@ -71,11 +66,11 @@ public class TestEntities {
                 .nickname("johndoe")
                 .email("johndoe@example.com")
                 .password("test_password")
-                .role(Role.USER);
+                .role(Role.USER)
+                .createdAt(TEST_INSTANT_DATE);
     }
 
     /**
-
      * Creates a fully instantiated {@link User} entity with default test data.
      *
      * @return a User entity.
@@ -86,7 +81,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link User} entity with custom ID and role.
      *
      * @param userId ID of the user.
@@ -103,7 +97,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates an admin user entity.
      *
      * @return an admin User entity.
@@ -113,7 +106,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link UserDTO} with data corresponding to the default User entity.
      *
      * @return a UserDTO object.
@@ -124,12 +116,11 @@ public class TestEntities {
                 "johndoe",
                 "johndoe@example.com",
                 Role.USER,
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
+                TEST_INSTANT_DATE
         );
     }
 
     /**
-
      * Creates a {@link UserSummaryDTO} for nested flashcard set responses.
      *
      * @return a UserSummaryDTO object.
@@ -137,12 +128,11 @@ public class TestEntities {
     public static UserSummaryDTO createUserSummaryDTO() {
         return new UserSummaryDTO(
                 "johndoe",
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
+                TEST_INSTANT_DATE
         );
     }
 
     /**
-
      * Creates a {@link UserCreationDTO} used for testing user creation requests.
      * <p>
      * Includes a valid password to satisfy @Valid constraints in controllers.
@@ -161,7 +151,6 @@ public class TestEntities {
     // FLASHCARD METHODS
 
     /**
-
      * Creates a {@link Flashcard.FlashcardBuilder} pre-configured with default test data.
      * <p>
      * Defaults: ID=1L, term="test_term", definition="test_definition".
@@ -177,7 +166,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link Flashcard} entity with default test data.
      *
      * @return a Flashcard entity.
@@ -188,7 +176,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link Flashcard} entity with custom ID,
      * flashcard set, term, and definition.
      *
@@ -213,7 +200,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardCreationDTO} used for testing flashcard creation requests.
      *
      * @return a FlashcardCreationDTO object.
@@ -227,7 +213,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardUpdateDTO} used for testing flashcard update requests.
      *
      * @return a FlashcardUpdateDTO object.
@@ -240,7 +225,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardDTO} with default data and starred=false.
      *
      * @return a FlashcardDTO object.
@@ -250,7 +234,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardDTO} with default data and custom starred status.
      *
      * @param starred whether the flashcard is starred by the user.
@@ -267,7 +250,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardDTO} representing an updated flashcard.
      *
      * @return a FlashcardDTO object representing an updated flashcard.
@@ -283,7 +265,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link UserStarredFlashcard} relation between a user and flashcard.
      *
      * @param user      user who starred the flashcard.
@@ -301,14 +282,13 @@ public class TestEntities {
                 ))
                 .user(user)
                 .flashcard(flashcard)
-                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
+                .createdAt(TEST_INSTANT_DATE)
                 .build();
     }
 
     // FLASHCARD SET METHODS
 
     /**
-
      * Creates a {@link FlashcardSet.FlashcardSetBuilder} pre-configured with default test data.
      * <p>
      * Defaults: ID=1L, Name="test_flashcardset_name", associated with the default User.
@@ -321,12 +301,11 @@ public class TestEntities {
                 .user(userBuilder().build())
                 .setName("test_flashcardset_name")
                 .description("test_flashcardset_description")
-                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
+                .createdAt(TEST_INSTANT_DATE)
                 .termCount(0L);
     }
 
     /**
-
      * Creates a fully instantiated {@link FlashcardSet} entity with default test data.
      *
      * @return a FlashcardSet entity.
@@ -337,7 +316,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link FlashcardSet} entity with custom ID.
      *
      * @param setId ID of the flashcard set.
@@ -350,7 +328,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link FlashcardSet} entity with custom ID and owner.
      *
      * @param setId ID of the flashcard set.
@@ -365,7 +342,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardSetDTO} with data corresponding to the default FlashcardSet entity.
      * <p>
      * Includes the full UserDTO inside.
@@ -378,13 +354,12 @@ public class TestEntities {
                 createUserSummaryDTO(),
                 "test_flashcardset_name",
                 "test_flashcardset_description",
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0),
+                TEST_INSTANT_DATE,
                 0L
         );
     }
 
     /**
-
      * Creates a {@link FlashcardSetCreationDTO} used for testing creation requests.
      * <p>
      * Contains only the fields required to create a new set (userId, name, description).
@@ -400,7 +375,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FlashcardSetUpdateDTO} used for testing update (PATCH/PUT) requests.
      * <p>
      * Contains the fields that are allowed to be updated.
@@ -417,7 +391,6 @@ public class TestEntities {
     // GAME RESULT METHODS
 
     /**
-
      * Creates a {@link GameResult.GameResultBuilder} pre-configured with default test data.
      * <p>
      * Defaults: ID=1L, user=default User, set=default FlashcardSet,
@@ -434,11 +407,10 @@ public class TestEntities {
                 .score(8)
                 .totalQuestions(10)
                 .durationSeconds(null)
-                .completedAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
+                .completedAt(TEST_INSTANT_DATE);
     }
 
     /**
-
      * Creates a fully instantiated {@link GameResult} entity with default test data.
      *
      * @return a GameResult entity.
@@ -449,7 +421,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link GameResult} entity for the given user,
      * flashcard set, and game mode.
      *
@@ -471,7 +442,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link SaveGameResultRequest} with default test data.
      * <p>
      * Defaults: setId=1L, mode=MULTIPLE_CHOICE, score=8, totalQuestions=10,
@@ -490,7 +460,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link SaveGameResultRequest} with custom test data.
      *
      * @param setId           ID of the flashcard set.
@@ -517,7 +486,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link SaveGameResultRequest} with custom test data and
      * question-level results.
      *
@@ -548,7 +516,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link SaveGameQuestionResultRequest} with default test data.
      *
      * @return a SaveGameQuestionResultRequest object.
@@ -569,7 +536,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link SaveGameQuestionResultRequest} with custom test data.
      *
      * @param flashcardId   ID of the flashcard used in the question.
@@ -611,7 +577,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a correct multiple-choice question result request.
      *
      * @param flashcardId ID of the flashcard used in the question.
@@ -635,7 +600,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a wrong written question result request.
      *
      * @param flashcardId ID of the flashcard used in the question.
@@ -659,7 +623,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a correct multiple-choice game result request with one question-level result.
      *
      * @param setId       ID of the flashcard set.
@@ -681,7 +644,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a written game result request with one wrong question-level result.
      *
      * @param setId       ID of the flashcard set.
@@ -703,7 +665,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link GameResultDTO} with default test data.
      *
      * @return a GameResultDTO object.
@@ -717,12 +678,11 @@ public class TestEntities {
                 8,
                 10,
                 null,
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
+                TEST_INSTANT_DATE
         );
     }
 
     /**
-
      * Creates a {@link GameResultDTO} from a {@link GameResult} entity.
      *
      * @param gameResult source entity.
@@ -742,7 +702,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link GameResultDTO} with custom test data.
      *
      * @param resultId        ID of the game result.
@@ -771,14 +730,13 @@ public class TestEntities {
                 score,
                 totalQuestions,
                 durationSeconds,
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
+                TEST_INSTANT_DATE
         );
     }
 
     // GAME ATTEMPT METHODS
 
     /**
-
      * Creates a {@link GameAttempt.GameAttemptBuilder} pre-configured with default test data.
      * <p>
      * Defaults: ID=1L, user=default User, set=default FlashcardSet,
@@ -795,11 +753,10 @@ public class TestEntities {
                 .score(8)
                 .totalQuestions(10)
                 .durationSeconds(120)
-                .completedAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
+                .completedAt(TEST_INSTANT_DATE);
     }
 
     /**
-
      * Creates a fully instantiated {@link GameAttempt} entity with default test data.
      *
      * @return a GameAttempt entity.
@@ -810,7 +767,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link GameAttempt} entity for the given user,
      * flashcard set, and game mode.
      *
@@ -832,7 +788,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link GameAttemptDTO} with default test data.
      *
      * @return a GameAttemptDTO object.
@@ -846,13 +801,12 @@ public class TestEntities {
                 8,
                 10,
                 120,
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0),
+                TEST_INSTANT_DATE,
                 List.of()
         );
     }
 
     /**
-
      * Creates a {@link GameAttemptDTO} from a {@link GameAttempt} entity.
      *
      * @param gameAttempt source entity.
@@ -877,7 +831,6 @@ public class TestEntities {
     // GAME QUESTION RESULT METHODS
 
     /**
-
      * Creates a {@link GameQuestionResult.GameQuestionResultBuilder}
      * pre-configured with default test data.
      * <p>
@@ -900,11 +853,10 @@ public class TestEntities {
                 .correctAnswer("test_definition")
                 .wasCorrect(true)
                 .mistakesCount(0)
-                .answeredAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0));
+                .answeredAt(TEST_INSTANT_DATE);
     }
 
     /**
-
      * Creates a fully instantiated {@link GameQuestionResult} entity
      * with default test data.
      *
@@ -916,7 +868,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a fully instantiated {@link GameQuestionResult} entity for
      * the given game attempt and flashcard.
      *
@@ -935,7 +886,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link GameQuestionResultDTO} with default test data.
      *
      * @return a GameQuestionResultDTO object.
@@ -954,12 +904,11 @@ public class TestEntities {
                 "test_definition",
                 true,
                 0,
-                LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0)
+                TEST_INSTANT_DATE
         );
     }
 
     /**
-
      * Creates a {@link GameQuestionResultDTO} from a {@link GameQuestionResult} entity.
      *
      * @param questionResult source entity.
@@ -988,7 +937,6 @@ public class TestEntities {
     // FOLDER METHODS
 
     /**
-
      * Creates a {@link Folder.FolderBuilder} pre-configured with default test data.
      *
      * @return a builder instance with default folder data.
@@ -999,13 +947,12 @@ public class TestEntities {
                 .user(createUser())
                 .name("test_folder_name")
                 .description("test_folder_description")
-                .createdAt(LocalDateTime.of(2026, Month.JANUARY, 19, 23, 0))
+                .createdAt(TEST_INSTANT_DATE)
                 .flashcardSets(new HashSet<>())
                 .setCount(0L);
     }
 
     /**
-
      * Creates a fully instantiated {@link Folder} entity with default test data.
      *
      * @return a Folder entity.
@@ -1015,7 +962,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a folder entity containing one flashcard set.
      *
      * @return a Folder entity with one flashcard set.
@@ -1031,7 +977,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a nested DTO representing a flashcard set inside a folder.
      *
      * @return a FlashcardSetInFolderDTO object.
@@ -1045,7 +990,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FolderDTO} with one nested flashcard set.
      *
      * @return a FolderDTO object with one nested flashcard set.
@@ -1062,7 +1006,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FolderDTO} without nested flashcard sets.
      *
      * @return a FolderDTO object without nested flashcard sets.
@@ -1079,7 +1022,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FolderCreationDTO} used for testing folder creation requests.
      *
      * @return a FolderCreationDTO object.
@@ -1092,7 +1034,6 @@ public class TestEntities {
     }
 
     /**
-
      * Creates a {@link FolderUpdateDTO} used for testing folder update requests.
      *
      * @return a FolderUpdateDTO object.

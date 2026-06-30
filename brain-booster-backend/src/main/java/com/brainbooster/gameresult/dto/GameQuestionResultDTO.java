@@ -4,7 +4,7 @@ import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.QuestionAnswerSide;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Response containing a single question result from a game attempt.")
 public record GameQuestionResultDTO(
@@ -46,6 +46,6 @@ public record GameQuestionResultDTO(
         Integer mistakesCount,
 
         @Schema(description = "Date and time when the answer was recorded.")
-        LocalDateTime answeredAt
+        Instant answeredAt
 ) {
 }

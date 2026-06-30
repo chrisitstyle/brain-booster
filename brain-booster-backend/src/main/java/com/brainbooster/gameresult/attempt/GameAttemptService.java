@@ -17,13 +17,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class GameAttemptService {
+
+    private static final ZoneOffset DATE_FILTER_ZONE_OFFSET = ZoneOffset.UTC;
+    private static final String GAME_ATTEMPT_NOT_FOUND_MESSAGE = "Game attempt not found";
+    private static final String INVALID_GAME_MODE_MESSAGE_PREFIX = "Invalid game mode: ";
+    private static final String GAME_ATTEMPT_ACCESS_DENIED_MESSAGE =
+            "You do not have permission to access this game attempt.";
 
     private final GameAttemptRepository gameAttemptRepository;
     private final GameAttemptMapper gameAttemptMapper;
@@ -71,7 +78,7 @@ public class GameAttemptService {
         GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Game attempt not found"
+                        GAME_ATTEMPT_NOT_FOUND_MESSAGE
                 ));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
@@ -89,8 +96,8 @@ public class GameAttemptService {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
         GameMode parsedMode = parseGameMode(mode);
-        LocalDateTime fromDateTime = toStartOfDay(from);
-        LocalDateTime toDateTimeExclusive = toExclusiveEndDate(to);
+        Instant fromDateTime = toStartOfDay(from);
+        Instant toDateTimeExclusive = toExclusiveEndDate(to);
 
         return gameAttemptRepository
                 .findByUserIdWithFilters(
@@ -111,7 +118,7 @@ public class GameAttemptService {
         GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Game attempt not found"
+                        GAME_ATTEMPT_NOT_FOUND_MESSAGE
                 ));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
@@ -133,25 +140,28 @@ public class GameAttemptService {
         } catch (IllegalArgumentException _) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Invalid game mode: " + mode
+                    INVALID_GAME_MODE_MESSAGE_PREFIX + mode
             );
         }
     }
 
-    private LocalDateTime toStartOfDay(LocalDate date) {
+    private Instant toStartOfDay(LocalDate date) {
         if (date == null) {
             return null;
         }
 
-        return date.atStartOfDay();
+        return date.atStartOfDay()
+                .toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
-    private LocalDateTime toExclusiveEndDate(LocalDate date) {
+    private Instant toExclusiveEndDate(LocalDate date) {
         if (date == null) {
             return null;
         }
 
-        return date.plusDays(1).atStartOfDay();
+        return date.plusDays(1)
+                .atStartOfDay()
+                .toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
     private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
@@ -160,9 +170,7 @@ public class GameAttemptService {
                 .equals(authenticatedUser.getUserId());
 
         if (!isOwner && !SecurityUtils.isAdmin(authenticatedUser)) {
-            throw new AccessDeniedException(
-                    "You do not have permission to access this game attempt."
-            );
+            throw new AccessDeniedException(GAME_ATTEMPT_ACCESS_DENIED_MESSAGE);
         }
     }
 }

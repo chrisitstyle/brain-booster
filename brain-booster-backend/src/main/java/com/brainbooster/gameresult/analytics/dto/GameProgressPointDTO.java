@@ -3,7 +3,7 @@ package com.brainbooster.gameresult.analytics.dto;
 import com.brainbooster.gameresult.GameMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Single progress point based on a completed game attempt.")
 public record GameProgressPointDTO(
@@ -12,7 +12,7 @@ public record GameProgressPointDTO(
         Long attemptId,
 
         @Schema(description = "Date and time when the attempt was completed.")
-        LocalDateTime completedAt,
+        Instant completedAt,
 
         @Schema(description = "Number of correctly answered questions.", example = "8")
         Integer score,
