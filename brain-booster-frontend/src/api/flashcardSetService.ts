@@ -1,7 +1,6 @@
 import { getApiBaseUrl } from "@/api/apiConfig";
 
 export interface CreateFlashcardSetData {
-  userId: number;
   setName: string;
   description: string;
 }
@@ -23,7 +22,10 @@ export interface FlashcardSet {
   termCount: number;
 }
 
-async function getErrorMessage(response: Response, fallbackMessage: string) {
+async function getErrorMessage(
+  response: Response,
+  fallbackMessage: string,
+): Promise<string> {
   const text = await response.text();
 
   try {
@@ -52,6 +54,7 @@ export async function addFlashcardSet(
       response,
       "Failed to create study set",
     );
+
     throw new Error(message);
   }
 
@@ -73,6 +76,7 @@ export async function getFlashcardSetById(
       response,
       "Failed to fetch flashcard set details",
     );
+
     throw new Error(message);
   }
 
@@ -98,6 +102,7 @@ export async function updateFlashcardSetById(
       response,
       "Failed to update flashcard set",
     );
+
     throw new Error(message);
   }
 
@@ -120,6 +125,7 @@ export async function deleteFlashcardSet(
       response,
       `Failed to delete flashcard set with status: ${response.status}`,
     );
+
     throw new Error(message);
   }
 }

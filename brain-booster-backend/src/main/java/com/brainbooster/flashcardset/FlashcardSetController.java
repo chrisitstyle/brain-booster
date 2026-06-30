@@ -4,6 +4,7 @@ import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
+import com.brainbooster.user.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +28,7 @@ public class FlashcardSetController {
 
     @Operation(
             summary = "Create a new flashcard set",
-            // TODO  description = "Creates a new flashcard set for the currently authenticated user.",
+            description = "Creates a new flashcard set for the currently authenticated user.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(responseCode = "201", description = "Flashcard set created successfully")
@@ -35,9 +37,11 @@ public class FlashcardSetController {
     @ApiResponse(responseCode = "403", description = "User does not have permission to access this resource")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FlashcardSetDTO addFlashcardSet(@Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO) {
+    public FlashcardSetDTO addFlashcardSet(@Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO,
+                                           @AuthenticationPrincipal User authenticatedUser) {
 
-        return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO);
+        return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO,
+                authenticatedUser.getUserId());
     }
 
     @Operation(
