@@ -65,6 +65,9 @@ In addition to classic flashcard review, the application provides multiple learn
 - **Role-Based Access Control**  
   The application supports regular user and administrator roles.
 
+- **Light and Dark Theme**  
+  The interface supports light and dark modes, including automatic system theme detection and manual theme switching.
+
 - **Responsive UI**  
   Modern, clean, and responsive interface for desktop and mobile devices.
 
@@ -91,6 +94,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - React
 - Tailwind CSS
 - Shadcn UI
+- next-themes
 - Recharts
 - Lucide React
 - pnpm
