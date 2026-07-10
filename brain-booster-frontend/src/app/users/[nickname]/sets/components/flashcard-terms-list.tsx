@@ -1,5 +1,3 @@
-"use client";
-
 import type { StudyFlashcard } from "../[id]/types";
 import EditableFlashcardRow from "./editable-flashcard-row";
 
@@ -41,8 +39,14 @@ export default function FlashcardTermsList({
   onSpeak,
 }: FlashcardTermsListProps) {
   return (
-    <div className="mx-auto max-w-2xl print:mx-0 print:max-w-none">
-      <h2 className="mb-4 text-xl font-semibold text-gray-800">
+    <section
+      className="mx-auto max-w-2xl print:mx-0 print:max-w-none"
+      aria-labelledby="flashcard-terms-heading"
+    >
+      <h2
+        id="flashcard-terms-heading"
+        className="mb-4 text-xl font-semibold text-foreground print:text-black"
+      >
         Terms in this set ({flashcards.length})
       </h2>
 
@@ -71,6 +75,6 @@ export default function FlashcardTermsList({
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

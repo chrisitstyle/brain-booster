@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
+  AlertCircle,
   ArrowLeft,
   BarChart3,
   BookOpen,
@@ -11,6 +12,7 @@ import {
   Clock3,
   HelpCircle,
   Layers3,
+  Loader2,
   MessageCircle,
   Target,
   Timer,
@@ -27,30 +29,47 @@ interface AttemptDetailsClientProps {
   attemptId: number;
 }
 
+type IconVariant = "default" | "gold" | "green" | "red";
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return "No date";
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function formatDuration(seconds: number | null | undefined) {
-  if (!seconds) {
-    return "0:00";
-  }
+  const normalizedSeconds =
+    typeof seconds === "number" && Number.isFinite(seconds)
+      ? Math.max(0, Math.round(seconds))
+      : 0;
 
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const minutes = Math.floor(normalizedSeconds / 60);
+
+  const remainingSeconds = normalizedSeconds % 60;
 
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+function clampPercentage(value: number | null | undefined) {
+  const normalizedValue =
+    typeof value === "number" && Number.isFinite(value) ? value : 0;
+
+  return Math.min(Math.max(normalizedValue, 0), 100);
+}
+
 function formatPercentage(value: number | null | undefined) {
-  return `${Math.round(value ?? 0)}%`;
+  return `${Math.round(clampPercentage(value))}%`;
 }
 
 function formatLabel(value: string | null | undefined) {
@@ -59,36 +78,58 @@ function formatLabel(value: string | null | undefined) {
   }
 
   return value
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
 }
 
 function getAccuracy(score: number, totalQuestions: number) {
-  if (totalQuestions === 0) {
+  if (
+    !Number.isFinite(score) ||
+    !Number.isFinite(totalQuestions) ||
+    totalQuestions <= 0
+  ) {
     return 0;
   }
 
-  return (score / totalQuestions) * 100;
+  return clampPercentage((score / totalQuestions) * 100);
 }
 
 function StatusMessage({
   type = "default",
   children,
 }: {
-  type?: "default" | "error";
+  type?: "default" | "error" | "loading";
   children: ReactNode;
 }) {
+  if (type === "error") {
+    return (
+      <div
+        className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        role="alert"
+      >
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+
+        <span>{children}</span>
+      </div>
+    );
+  }
+
   return (
-    <p
-      className={
-        type === "error"
-          ? "rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-600"
-          : "rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-500"
-      }
+    <div
+      className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+      role={type === "loading" ? "status" : undefined}
     >
-      {children}
-    </p>
+      {type === "loading" && (
+        <Loader2
+          className="h-4 w-4 shrink-0 animate-spin text-pink-500 dark:text-pink-400"
+          aria-hidden="true"
+        />
+      )}
+
+      <span>{children}</span>
+    </div>
   );
 }
 
@@ -97,18 +138,19 @@ function IconBox({
   variant = "default",
 }: {
   children: ReactNode;
-  variant?: "default" | "gold" | "green" | "red";
+  variant?: IconVariant;
 }) {
-  const variantClassName = {
-    default: "bg-pink-100 text-pink-500",
-    gold: "bg-amber-100 text-amber-500",
-    green: "bg-green-50 text-green-600",
-    red: "bg-red-50 text-red-600",
-  }[variant];
+  const variantClassName: Record<IconVariant, string> = {
+    default: "bg-pink-100 text-pink-500 dark:bg-pink-950/50 dark:text-pink-400",
+    gold: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+    green:
+      "bg-green-100 text-green-600 dark:bg-green-950/50 dark:text-green-400",
+    red: "bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400",
+  };
 
   return (
     <div
-      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${variantClassName}`}
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${variantClassName[variant]}`}
     >
       {children}
     </div>
@@ -122,19 +164,19 @@ function MetricCard({
   value,
 }: {
   icon: ReactNode;
-  iconVariant?: "default" | "gold" | "green" | "red";
+  iconVariant?: IconVariant;
   label: string;
   value: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-pink-200 hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <div className="h-1 bg-pink-500" />
 
       <div className="flex items-start justify-between gap-3 p-5">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
 
-          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
+          <p className="mt-3 break-words text-2xl font-bold tracking-tight text-card-foreground">
             {value}
           </p>
         </div>
@@ -148,16 +190,16 @@ function MetricCard({
 function ResultBadge({ wasCorrect }: { wasCorrect: boolean }) {
   if (wasCorrect) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-600">
-        <CheckCircle2 size={14} />
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-950/50 dark:text-green-400">
+        <CheckCircle2 size={14} aria-hidden="true" />
         Correct
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-      <XCircle size={14} />
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-400">
+      <XCircle size={14} aria-hidden="true" />
       Incorrect
     </span>
   );
@@ -174,16 +216,39 @@ function AnswerBlock({
 }) {
   const labelClassName =
     variant === "correct"
-      ? "text-green-600"
+      ? "text-green-700 dark:text-green-400"
       : variant === "incorrect"
-        ? "text-red-600"
-        : "text-slate-500";
+        ? "text-red-700 dark:text-red-400"
+        : "text-muted-foreground";
 
   return (
-    <div className="rounded-2xl bg-gray-50 p-4">
+    <div className="rounded-2xl bg-muted/60 p-4">
       <p className={`text-xs font-semibold ${labelClassName}`}>{label}</p>
 
-      <p className="mt-2 text-sm text-slate-950">{value || "No answer"}</p>
+      <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+        {value?.trim() || "No answer"}
+      </p>
+    </div>
+  );
+}
+
+function QuestionMetadataItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl bg-muted/60 p-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+
+      <p className="mt-1 break-words font-semibold text-foreground">{value}</p>
     </div>
   );
 }
@@ -194,7 +259,7 @@ function QuestionResultCard({
   questionResult: GameQuestionResult;
 }) {
   return (
-    <article className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-sm">
       <div
         className={
           questionResult.wasCorrect ? "h-1 bg-green-500" : "h-1 bg-red-500"
@@ -203,24 +268,24 @@ function QuestionResultCard({
 
       <div className="space-y-5 p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                 Question #{questionResult.questionOrder}
               </span>
 
-              <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
+              <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
                 {formatLabel(questionResult.questionType)}
               </span>
 
-              {questionResult.answerWith ? (
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {questionResult.answerWith && (
+                <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                   Answer with: {formatLabel(questionResult.answerWith)}
                 </span>
-              ) : null}
+              )}
             </div>
 
-            <h3 className="mt-3 text-lg font-semibold text-slate-950">
+            <h3 className="mt-3 break-words text-lg font-semibold text-card-foreground">
               Flashcard #{questionResult.flashcardId}
             </h3>
           </div>
@@ -228,18 +293,22 @@ function QuestionResultCard({
           <ResultBadge wasCorrect={questionResult.wasCorrect} />
         </div>
 
-        {questionResult.prompt ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <HelpCircle size={16} className="text-pink-500" />
+        {questionResult.prompt && (
+          <div className="rounded-2xl border border-border bg-background p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <HelpCircle
+                size={16}
+                className="text-pink-500 dark:text-pink-400"
+                aria-hidden="true"
+              />
               Prompt
             </div>
 
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
               {questionResult.prompt}
             </p>
           </div>
-        ) : null}
+        )}
 
         <div className="grid gap-3 md:grid-cols-2">
           <AnswerBlock
@@ -256,41 +325,49 @@ function QuestionResultCard({
         </div>
 
         <div className="grid gap-3 text-sm sm:grid-cols-3">
-          <div className="rounded-2xl bg-gray-50 p-3">
-            <div className="flex items-center gap-2 text-slate-500">
-              <MessageCircle size={15} />
-              <span>Question key</span>
-            </div>
+          <QuestionMetadataItem
+            icon={<MessageCircle size={15} aria-hidden="true" />}
+            label="Question key"
+            value={questionResult.questionKey || "No key"}
+          />
 
-            <p className="mt-1 font-semibold text-slate-950">
-              {questionResult.questionKey || "No key"}
-            </p>
-          </div>
+          <QuestionMetadataItem
+            icon={<XCircle size={15} aria-hidden="true" />}
+            label="Mistakes"
+            value={questionResult.mistakesCount}
+          />
 
-          <div className="rounded-2xl bg-gray-50 p-3">
-            <div className="flex items-center gap-2 text-slate-500">
-              <XCircle size={15} />
-              <span>Mistakes</span>
-            </div>
-
-            <p className="mt-1 font-semibold text-slate-950">
-              {questionResult.mistakesCount}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-gray-50 p-3">
-            <div className="flex items-center gap-2 text-slate-500">
-              <Clock3 size={15} />
-              <span>Answered at</span>
-            </div>
-
-            <p className="mt-1 font-semibold text-slate-950">
-              {formatDateTime(questionResult.answeredAt)}
-            </p>
-          </div>
+          <QuestionMetadataItem
+            icon={<Clock3 size={15} aria-hidden="true" />}
+            label="Answered at"
+            value={formatDateTime(questionResult.answeredAt)}
+          />
         </div>
       </div>
     </article>
+  );
+}
+
+function AttemptMetadataItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div>
+      <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </p>
+
+      <p className="mt-1 break-words font-semibold text-card-foreground">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -317,6 +394,7 @@ export default function AttemptDetailsClient({
     : 0;
 
   const attemptsHref = `/profile/sets/${setId}/attempts`;
+
   const statsHref = `/profile/sets/${setId}/stats`;
 
   const hasAttemptSetMismatch = Boolean(attempt && attempt.setId !== setId);
@@ -328,9 +406,11 @@ export default function AttemptDetailsClient({
 
   if (isAuthLoading) {
     return (
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+      <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <StatusMessage>Loading attempt details...</StatusMessage>
+          <StatusMessage type="loading">
+            Loading attempt details...
+          </StatusMessage>
         </div>
       </main>
     );
@@ -338,7 +418,7 @@ export default function AttemptDetailsClient({
 
   if (!token || !isAuthenticated) {
     return (
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+      <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
         <div className="mx-auto max-w-6xl px-4 py-10">
           <StatusMessage type="error">
             You need to be logged in to view attempt details.
@@ -349,38 +429,45 @@ export default function AttemptDetailsClient({
   }
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
-        <div className="flex flex-wrap items-center gap-4">
+        <nav
+          className="flex flex-wrap items-center gap-4"
+          aria-label="Attempt navigation"
+        >
           <Link
             href={attemptsHref}
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-pink-500"
+            className="inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-pink-400"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} aria-hidden="true" />
             Back to attempts
           </Link>
 
           <Link
             href={statsHref}
-            className="text-sm font-medium text-pink-500 transition hover:text-pink-600"
+            className="rounded-sm text-sm font-medium text-pink-500 transition-colors hover:text-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-pink-400 dark:hover:text-pink-300"
           >
             View set statistics
           </Link>
-        </div>
+        </nav>
 
-        <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-          <div className="bg-pink-50/70 p-6 sm:p-8">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
-              <BarChart3 size={14} />
+        <section className="overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-sm">
+          <div className="bg-pink-50/70 p-6 dark:bg-pink-950/20 sm:p-8">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              <BarChart3 size={14} aria-hidden="true" />
               Attempt details
             </p>
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+            <h1 className="text-3xl font-bold tracking-tight text-card-foreground sm:text-4xl">
               Attempt #{attemptId}
             </h1>
 
-            <p className="mt-3 flex max-w-2xl items-start gap-2 text-slate-500">
-              <BookOpen size={18} className="mt-0.5 shrink-0 text-pink-500" />
+            <p className="mt-3 flex max-w-2xl items-start gap-2 text-muted-foreground">
+              <BookOpen
+                size={18}
+                className="mt-0.5 shrink-0 text-pink-500 dark:text-pink-400"
+                aria-hidden="true"
+              />
 
               <span>
                 Review score, duration, mode, and every question from this
@@ -390,139 +477,137 @@ export default function AttemptDetailsClient({
           </div>
         </section>
 
-        {isAttemptLoading ? (
-          <StatusMessage>Loading attempt summary...</StatusMessage>
-        ) : null}
+        {isAttemptLoading && (
+          <StatusMessage type="loading">
+            Loading attempt summary...
+          </StatusMessage>
+        )}
 
-        {attemptError ? (
+        {attemptError && (
           <StatusMessage type="error">{attemptError}</StatusMessage>
-        ) : null}
+        )}
 
-        {!isAttemptLoading && !attemptError && hasAttemptSetMismatch ? (
+        {!isAttemptLoading && !attemptError && hasAttemptSetMismatch && (
           <StatusMessage type="error">
             This attempt does not belong to the flashcard set from the current
             URL.
           </StatusMessage>
-        ) : null}
+        )}
 
-        {canDisplayAttempt && attempt ? (
+        {canDisplayAttempt && attempt && (
           <>
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <section
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              aria-label="Attempt summary"
+            >
               <MetricCard
-                icon={<Target size={20} />}
+                icon={<Target size={20} aria-hidden="true" />}
                 label="Score"
                 value={`${attempt.score}/${attempt.totalQuestions}`}
               />
 
               <MetricCard
-                icon={<BarChart3 size={20} />}
+                icon={<BarChart3 size={20} aria-hidden="true" />}
                 label="Accuracy"
                 value={formatPercentage(accuracy)}
               />
 
               <MetricCard
-                icon={<Trophy size={20} />}
+                icon={<Trophy size={20} aria-hidden="true" />}
                 iconVariant="gold"
                 label="Mode"
                 value={formatLabel(attempt.mode)}
               />
 
               <MetricCard
-                icon={<Timer size={20} />}
+                icon={<Timer size={20} aria-hidden="true" />}
                 label="Duration"
                 value={formatDuration(attempt.durationSeconds)}
               />
             </section>
 
-            <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl border border-border bg-card p-5 text-card-foreground shadow-sm">
               <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                    <Layers3 size={16} />
-                    Set ID
-                  </p>
+                <AttemptMetadataItem
+                  icon={<Layers3 size={16} aria-hidden="true" />}
+                  label="Set ID"
+                  value={`#${attempt.setId}`}
+                />
 
-                  <p className="mt-1 font-semibold text-slate-950">
-                    #{attempt.setId}
-                  </p>
-                </div>
+                <AttemptMetadataItem
+                  icon={<Clock3 size={16} aria-hidden="true" />}
+                  label="Completed at"
+                  value={formatDateTime(attempt.completedAt)}
+                />
 
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                    <Clock3 size={16} />
-                    Completed at
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-950">
-                    {formatDateTime(attempt.completedAt)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                    <BookOpen size={16} />
-                    User ID
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-950">
-                    #{attempt.userId}
-                  </p>
-                </div>
+                <AttemptMetadataItem
+                  icon={<BookOpen size={16} aria-hidden="true" />}
+                  label="User ID"
+                  value={`#${attempt.userId}`}
+                />
               </div>
             </section>
           </>
-        ) : null}
+        )}
 
-        {canDisplayQuestionResults ? (
-          <section className="space-y-4">
+        {canDisplayQuestionResults && (
+          <section
+            className="space-y-4"
+            aria-labelledby="question-results-heading"
+          >
             <div className="flex items-start gap-3">
               <IconBox>
-                <ClipboardList size={20} />
+                <ClipboardList size={20} aria-hidden="true" />
               </IconBox>
 
               <div>
-                <h2 className="text-lg font-semibold tracking-tight text-slate-950">
+                <h2
+                  id="question-results-heading"
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
                   Question results
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Detailed result for each question in this attempt.
                 </p>
               </div>
             </div>
 
-            {areQuestionResultsLoading ? (
-              <StatusMessage>Loading question results...</StatusMessage>
-            ) : null}
-
-            {questionResultsError ? (
-              <StatusMessage type="error">{questionResultsError}</StatusMessage>
-            ) : null}
-
-            {!areQuestionResultsLoading &&
-            !questionResultsError &&
-            questionResults &&
-            questionResults.length > 0 ? (
-              <div className="space-y-4">
-                {questionResults.map((questionResult) => (
-                  <QuestionResultCard
-                    key={questionResult.questionResultId}
-                    questionResult={questionResult}
-                  />
-                ))}
-              </div>
-            ) : null}
-
-            {!areQuestionResultsLoading &&
-            !questionResultsError &&
-            questionResults &&
-            questionResults.length === 0 ? (
-              <StatusMessage>
-                No question results found for this attempt.
+            {areQuestionResultsLoading && (
+              <StatusMessage type="loading">
+                Loading question results...
               </StatusMessage>
-            ) : null}
+            )}
+
+            {questionResultsError && (
+              <StatusMessage type="error">{questionResultsError}</StatusMessage>
+            )}
+
+            {!areQuestionResultsLoading &&
+              !questionResultsError &&
+              questionResults &&
+              questionResults.length > 0 && (
+                <div className="space-y-4">
+                  {questionResults.map((questionResult) => (
+                    <QuestionResultCard
+                      key={questionResult.questionResultId}
+                      questionResult={questionResult}
+                    />
+                  ))}
+                </div>
+              )}
+
+            {!areQuestionResultsLoading &&
+              !questionResultsError &&
+              questionResults &&
+              questionResults.length === 0 && (
+                <StatusMessage>
+                  No question results found for this attempt.
+                </StatusMessage>
+              )}
           </section>
-        ) : null}
+        )}
       </div>
     </main>
   );

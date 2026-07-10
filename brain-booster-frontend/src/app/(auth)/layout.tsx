@@ -1,13 +1,11 @@
-"use client";
-
 export default function AuthLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex-1 flex items-center justify-center p-4 py-12 bg-gray-50">
+    <div className="flex min-h-[calc(100svh-4rem)] flex-col bg-background text-foreground">
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
         {children}
       </main>
     </div>

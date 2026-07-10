@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
+import { addFlashcard } from "@/api/flashcardService";
+import { addFlashcardSet } from "@/api/flashcardSetService";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,18 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { useAuth } from "@/context/AuthContext";
-import { addFlashcardSet } from "@/api/flashcardSetService";
-import { addFlashcard } from "@/api/flashcardService";
-
-import { useFlashcardEditor } from "@/features/sets/hooks/use-flashcard-editor";
 import { BottomSearchBar } from "@/features/sets/components/bottom-search-bar";
 import { ConfirmActionDialog } from "@/features/sets/components/confirm-action-dialog";
 import { EditorActionButtons } from "@/features/sets/components/editor-action-buttons";
+import { ImportFlashcardsDialog } from "@/features/sets/components/import-flashcards-dialog";
 import { SetTitleDescriptionFields } from "@/features/sets/components/set-title-description-fields";
 import { SortableFlashcardList } from "@/features/sets/components/sortable-flashcard-list";
-import { ImportFlashcardsDialog } from "@/features/sets/components/import-flashcards-dialog";
+import { useFlashcardEditor } from "@/features/sets/hooks/use-flashcard-editor";
+import { cn } from "@/lib/utils";
 
 export default function CreateSetPage() {
   const router = useRouter();
@@ -37,6 +35,7 @@ export default function CreateSetPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
   const flashcardEditor = useFlashcardEditor({
     initialFlashcards: [
       {
@@ -50,21 +49,22 @@ export default function CreateSetPage() {
   const isCreateDisabled =
     isLoading || !title.trim() || flashcardEditor.validFlashcards.length < 1;
 
-  const handleFlipTermsAndDefinitions = () => {
+  function handleFlipTermsAndDefinitions() {
     flashcardEditor.flipTermsAndDefinitions();
     toast.success("Terms and definitions flipped.");
-  };
+  }
 
-  const handleClearDraft = () => {
+  function handleClearDraft() {
     setTitle("");
     setDescription("");
     flashcardEditor.resetFlashcards();
     flashcardEditor.closeSearch();
     setIsClearDialogOpen(false);
-    toast.success("Draft cleared.");
-  };
 
-  const handleCreate = async () => {
+    toast.success("Draft cleared.");
+  }
+
+  async function handleCreate() {
     if (!token) {
       toast.error("You must be logged in to create a set.");
       return;
@@ -80,9 +80,9 @@ export default function CreateSetPage() {
       return;
     }
 
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
+
       const createdSet = await addFlashcardSet(
         {
           setName: title.trim(),
@@ -111,8 +111,11 @@ export default function CreateSetPage() {
       );
 
       toast.success("Study set and flashcards created successfully!");
+
       router.push("/profile");
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("Failed to create study set:", error);
+
       const message =
         error instanceof Error ? error.message : "Something went wrong.";
 
@@ -120,22 +123,25 @@ export default function CreateSetPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
     <>
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 shadow-sm md:px-6">
-          <div className="flex items-center gap-4">
-            <button
+      <div className="flex min-h-[calc(100svh-4rem)] flex-col bg-background text-foreground">
+        <header className="sticky top-16 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => router.back()}
-              className="rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              className="shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="Close set creator"
             >
-              <X className="h-5 w-5" />
-            </button>
+              <X className="h-5 w-5" aria-hidden="true" />
+            </Button>
 
-            <h1 className="text-lg font-semibold text-gray-800">
+            <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
               Create a new study set
             </h1>
           </div>
@@ -153,7 +159,9 @@ export default function CreateSetPage() {
             onToggleSearch={flashcardEditor.toggleSearch}
             onFlipTermsAndDefinitions={handleFlipTermsAndDefinitions}
             onDestructiveClick={() => setIsClearDialogOpen(true)}
-            onSubmit={handleCreate}
+            onSubmit={() => {
+              void handleCreate();
+            }}
           />
         </header>
 
@@ -176,7 +184,7 @@ export default function CreateSetPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-gray-200 text-gray-600 hover:border-pink-300 hover:text-pink-500"
+                className="border-border text-muted-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
                 onClick={() => setIsImportDialogOpen(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -184,19 +192,22 @@ export default function CreateSetPage() {
               </Button>
 
               <Select defaultValue="both">
-                <SelectTrigger className="w-[180px] border-gray-200 text-gray-600">
+                <SelectTrigger className="w-[180px] border-input bg-background text-foreground">
                   <SelectValue placeholder="Study both sides" />
                 </SelectTrigger>
-                <SelectContent>
+
+                <SelectContent className="border-border bg-popover text-popover-foreground">
                   <SelectItem value="both">Study both sides</SelectItem>
+
                   <SelectItem value="term">Term only</SelectItem>
+
                   <SelectItem value="definition">Definition only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {flashcardEditor.isFiltering && (
-              <p className="mb-4 text-sm text-gray-500">
+              <p className="mb-4 text-sm text-muted-foreground">
                 Drag and drop is disabled while searching.
               </p>
             )}
@@ -212,7 +223,7 @@ export default function CreateSetPage() {
             />
 
             {flashcardEditor.filteredFlashcards.length === 0 && (
-              <div className="rounded-lg border border-gray-200 bg-white py-10 text-center text-gray-500">
+              <div className="rounded-lg border border-border bg-card py-10 text-center text-muted-foreground">
                 No cards found.
               </div>
             )}
@@ -220,18 +231,21 @@ export default function CreateSetPage() {
             <button
               type="button"
               onClick={flashcardEditor.addEmptyFlashcard}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-white py-4 text-gray-500 transition-all hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card py-4 text-muted-foreground transition-all hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-5 w-5" aria-hidden="true" />
               <span className="font-medium">Add card</span>
             </button>
 
             <div className="mt-8 flex justify-center pb-8">
               <Button
-                onClick={handleCreate}
+                type="button"
+                onClick={() => {
+                  void handleCreate();
+                }}
                 disabled={isCreateDisabled}
                 size="lg"
-                className="bg-pink-500 px-12 text-white hover:bg-pink-600 disabled:bg-gray-300"
+                className="bg-pink-500 px-12 text-white hover:bg-pink-600 disabled:bg-muted disabled:text-muted-foreground"
               >
                 {isLoading ? "Creating..." : "Create"}
               </Button>
@@ -251,7 +265,7 @@ export default function CreateSetPage() {
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         onImport={flashcardEditor.appendImportedFlashcards}
-        allowCsvImport={true}
+        allowCsvImport
       />
 
       <ConfirmActionDialog

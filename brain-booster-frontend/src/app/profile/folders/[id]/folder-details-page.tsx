@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
@@ -12,25 +12,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAuth } from "@/context/AuthContext";
 import {
   getFolderDetailsById,
   removeSetFromFolder,
   type FlashcardSetInFolder,
   type Folder,
 } from "@/api/folderService";
-
-import SetListComponent from "./set-list-component";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +28,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+
+import SetListComponent from "./set-list-component";
 
 interface FolderDetailsPageProps {
   folderId: string;
+}
+
+interface FlashcardSetCardProps {
+  set: FlashcardSetInFolder;
+  nickname: string;
+  onRemoveClick: (set: FlashcardSetInFolder) => void;
+  isRemoveDialogOpen: boolean;
+}
+
+interface EmptyStateProps {
+  title: string;
+  description: string;
 }
 
 export default function FolderDetailsPage({
@@ -59,60 +71,72 @@ export default function FolderDetailsPage({
   const [setToRemove, setSetToRemove] = useState<FlashcardSetInFolder | null>(
     null,
   );
+
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+
   const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
-    const fetchFolderDetails = async () => {
-      if (!folderId) return;
+    if (!folderId) {
+      return;
+    }
 
+    let isCancelled = false;
+
+    async function fetchFolderDetails() {
       try {
         setIsLoading(true);
+
         const data = await getFolderDetailsById(folderId);
-        setFolder(data);
-      } catch (error) {
+
+        if (!isCancelled) {
+          setFolder(data);
+        }
+      } catch (error: unknown) {
+        if (isCancelled) {
+          return;
+        }
+
         console.error("Error fetching folder details:", error);
 
-        toast.error("Failed to load folder details.", {
-          style: {
-            background: "red",
-            color: "white",
-          },
-        });
-
+        toast.error("Failed to load folder details.");
         setFolder(null);
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
-    };
+    }
 
-    fetchFolderDetails();
+    void fetchFolderDetails();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [folderId]);
 
-  const handleFolderUpdated = (updatedFolder: Folder) => {
+  function handleFolderUpdated(updatedFolder: Folder) {
     setFolder(updatedFolder);
-  };
+  }
 
-  const handleRemoveClick = (set: FlashcardSetInFolder) => {
+  function handleRemoveClick(set: FlashcardSetInFolder) {
     setSetToRemove(set);
     setIsRemoveDialogOpen(true);
-  };
+  }
 
-  const handleRemoveCancel = () => {
-    if (isRemoving) return;
+  function handleRemoveCancel() {
+    if (isRemoving) {
+      return;
+    }
 
     setSetToRemove(null);
     setIsRemoveDialogOpen(false);
-  };
+  }
 
-  const handleRemoveConfirm = async () => {
+  async function handleRemoveConfirm() {
     if (!setToRemove || !folder || !token) {
-      toast.error("You must be logged in to remove sets from folder.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error("You must be logged in to remove sets from folder.");
+
       return;
     }
 
@@ -126,128 +150,132 @@ export default function FolderDetailsPage({
       );
 
       setFolder((currentFolder) => {
-        if (!currentFolder) return currentFolder;
+        if (!currentFolder) {
+          return currentFolder;
+        }
 
         return {
           ...currentFolder,
           setCount: Math.max(Number(currentFolder.setCount) - 1, 0),
           flashcardSets: currentFolder.flashcardSets.filter(
-            (set) => set.flashcardSetId !== setToRemove.flashcardSetId,
+            (set) =>
+              Number(set.flashcardSetId) !== Number(setToRemove.flashcardSetId),
           ),
         };
       });
 
-      toast.success("Set removed from folder", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
-    } catch (error) {
+      toast.success("Set removed from folder");
+    } catch (error: unknown) {
       console.error("Failed to remove set from folder:", error);
 
-      toast.error("Failed to remove set from folder. Please try again.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error("Failed to remove set from folder. Please try again.");
     } finally {
       setIsRemoving(false);
       setIsRemoveDialogOpen(false);
       setSetToRemove(null);
     }
-  };
+  }
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto max-w-5xl px-4 py-8">
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-pink-500"
-              asChild
-            >
-              <Link href="/profile/folders">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to folders
-              </Link>
-            </Button>
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:bg-accent hover:text-pink-500 dark:hover:text-pink-400"
+            asChild
+          >
+            <Link href="/profile/folders">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to folders
+            </Link>
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="py-16 text-center text-muted-foreground">
+            Downloading folder details...
           </div>
+        ) : !folder ? (
+          <EmptyState
+            title="Folder not found"
+            description="This folder does not exist or could not be loaded."
+          />
+        ) : (
+          <>
+            <FolderHeader folder={folder} />
 
-          {isLoading ? (
-            <div className="py-16 text-center text-gray-500">
-              Downloading folder details...
-            </div>
-          ) : !folder ? (
-            <EmptyState
-              title="Folder not found"
-              description="This folder does not exist or could not be loaded."
-            />
-          ) : (
-            <>
-              <FolderHeader folder={folder} />
+            <div className="mt-8">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Sets in this folder ({folder.setCount})
+                </h2>
 
-              <div className="mt-8">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    Sets in this folder ({folder.setCount})
-                  </h2>
-
-                  <Button
-                    className="bg-pink-500 text-white hover:bg-pink-600"
-                    onClick={() => setIsSetListOpen(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Set
-                  </Button>
-                </div>
-
-                {folder.flashcardSets.length > 0 ? (
-                  <div className="space-y-4">
-                    {folder.flashcardSets.map((set) => (
-                      <FlashcardSetCard
-                        key={set.flashcardSetId}
-                        set={set}
-                        nickname={folder.nickname}
-                        onRemoveClick={handleRemoveClick}
-                        isRemoveDialogOpen={
-                          isRemoveDialogOpen &&
-                          setToRemove?.flashcardSetId === set.flashcardSetId
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No sets in this folder"
-                    description="This folder does not contain any flashcard sets yet."
-                  />
-                )}
+                <Button
+                  type="button"
+                  className="bg-pink-500 text-white hover:bg-pink-600"
+                  onClick={() => setIsSetListOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Set
+                </Button>
               </div>
 
-              <SetListComponent
-                folderId={folder.folderId}
-                folderName={folder.name}
-                currentSets={folder.flashcardSets}
-                isOpen={isSetListOpen}
-                onClose={() => setIsSetListOpen(false)}
-                onFolderUpdated={handleFolderUpdated}
-              />
-            </>
-          )}
-        </div>
+              {folder.flashcardSets.length > 0 ? (
+                <div className="space-y-4">
+                  {folder.flashcardSets.map((set) => (
+                    <FlashcardSetCard
+                      key={set.flashcardSetId}
+                      set={set}
+                      nickname={folder.nickname}
+                      onRemoveClick={handleRemoveClick}
+                      isRemoveDialogOpen={
+                        isRemoveDialogOpen &&
+                        Number(setToRemove?.flashcardSetId) ===
+                          Number(set.flashcardSetId)
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No sets in this folder"
+                  description="This folder does not contain any flashcard sets yet."
+                />
+              )}
+            </div>
+
+            <SetListComponent
+              folderId={folder.folderId}
+              folderName={folder.name}
+              currentSets={folder.flashcardSets}
+              isOpen={isSetListOpen}
+              onClose={() => setIsSetListOpen(false)}
+              onFolderUpdated={handleFolderUpdated}
+            />
+          </>
+        )}
       </div>
 
       <AlertDialog
         open={isRemoveDialogOpen}
-        onOpenChange={setIsRemoveDialogOpen}
+        onOpenChange={(open) => {
+          if (isRemoving) {
+            return;
+          }
+
+          setIsRemoveDialogOpen(open);
+
+          if (!open) {
+            setSetToRemove(null);
+          }
+        }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border bg-background text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>Remove set from folder?</AlertDialogTitle>
+
             <AlertDialogDescription>
               This will remove &quot;{setToRemove?.title}&quot; from this
               folder. The flashcard set itself will not be deleted.
@@ -264,8 +292,10 @@ export default function FolderDetailsPage({
 
             <AlertDialogAction
               disabled={isRemoving}
-              onClick={handleRemoveConfirm}
-              className="bg-red-500 text-white hover:bg-red-600"
+              onClick={() => {
+                void handleRemoveConfirm();
+              }}
+              className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
               {isRemoving ? "Removing..." : "Remove"}
             </AlertDialogAction>
@@ -278,42 +308,43 @@ export default function FolderDetailsPage({
 
 function FolderHeader({ folder }: { folder: Folder }) {
   return (
-    <Card className="border-gray-200 bg-white shadow-sm">
+    <Card className="border-border bg-card text-card-foreground shadow-sm">
       <CardContent className="p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-pink-100">
-              <FolderOpen className="h-7 w-7 text-pink-500" />
+          <div className="flex min-w-0 gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-pink-100 dark:bg-pink-950/50">
+              <FolderOpen className="h-7 w-7 text-pink-500 dark:text-pink-400" />
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="break-words text-2xl font-bold text-card-foreground">
                 {folder.name}
               </h1>
 
               {folder.description && (
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                   {folder.description}
                 </p>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span className="font-medium">
                   {folder.setCount} {folder.setCount === 1 ? "set" : "sets"}
                 </span>
 
-                <span className="h-1 w-1 rounded-full bg-gray-300" />
+                <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
 
                 <Link
-                  href={`/users/${folder.nickname}/profile`}
-                  className="flex items-center gap-2 hover:text-pink-500"
+                  href={`/users/${encodeURIComponent(folder.nickname)}/profile`}
+                  className="flex items-center gap-2 transition-colors hover:text-pink-500 dark:hover:text-pink-400"
                 >
                   <Avatar className="h-6 w-6">
-                    <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
-                      <User className="h-3 w-3" />
+                    <AvatarFallback className="bg-pink-100 text-xs text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+                      <User className="h-3 w-3" aria-hidden="true" />
                     </AvatarFallback>
                   </Avatar>
-                  {folder.nickname}
+
+                  <span className="truncate">{folder.nickname}</span>
                 </Link>
               </div>
             </div>
@@ -329,33 +360,28 @@ function FlashcardSetCard({
   nickname,
   onRemoveClick,
   isRemoveDialogOpen,
-}: {
-  set: FlashcardSetInFolder;
-  nickname: string;
-  onRemoveClick: (set: FlashcardSetInFolder) => void;
-  isRemoveDialogOpen: boolean;
-}) {
+}: FlashcardSetCardProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
-    <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
+    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50">
-            <BookOpen className="h-5 w-5 text-pink-500" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-100 dark:bg-pink-950/50">
+            <BookOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link
-                  href={`/users/${nickname}/sets/${set.flashcardSetId}`}
-                  className="line-clamp-1 text-base font-semibold text-gray-800 hover:text-pink-500"
+                  href={`/users/${encodeURIComponent(nickname)}/sets/${set.flashcardSetId}`}
+                  className="line-clamp-1 text-base font-semibold text-card-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
                 >
                   {set.title}
                 </Link>
 
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {set.termCount} {set.termCount === 1 ? "term" : "terms"}
                 </p>
               </div>
@@ -366,21 +392,27 @@ function FlashcardSetCard({
               >
                 <DropdownMenuTrigger asChild>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    className={
+                    className={cn(
+                      "h-8 w-8 shrink-0 transition-opacity",
                       isDropdownOpen || isRemoveDialogOpen
-                        ? "h-8 w-8 opacity-100"
-                        : "h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                    }
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+                    )}
+                    aria-label={`Open options for ${set.title}`}
                   >
-                    <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent
+                  align="end"
+                  className="border-border bg-popover text-popover-foreground"
+                >
                   <DropdownMenuItem
-                    className="cursor-pointer text-red-500"
+                    className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
                     onSelect={(event) => {
                       event.preventDefault();
                       onRemoveClick(set);
@@ -399,21 +431,18 @@ function FlashcardSetCard({
   );
 }
 
-function EmptyState({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function EmptyState({ title, description }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
-      <div className="mb-4 rounded-full bg-gray-100 p-4">
-        <FolderOpen className="h-8 w-8 text-gray-400" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-4 py-16 text-center text-card-foreground">
+      <div className="mb-4 rounded-full bg-muted p-4">
+        <FolderOpen className="h-8 w-8 text-muted-foreground" />
       </div>
 
-      <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-      <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>
+      <h2 className="text-lg font-semibold text-card-foreground">{title}</h2>
+
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+        {description}
+      </p>
     </div>
   );
 }

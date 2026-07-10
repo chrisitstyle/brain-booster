@@ -1,9 +1,9 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface BottomSearchBarProps {
   isOpen: boolean;
@@ -26,16 +26,26 @@ export function BottomSearchBar({
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-8 opacity-0",
       )}
+      aria-hidden={!isOpen}
     >
-      <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-4 shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
-        <Search className="h-5 w-5 shrink-0 text-gray-500" />
+      <div
+        className="mx-auto flex h-14 max-w-2xl items-center gap-3 rounded-full border-2 border-pink-300 bg-card px-4 text-card-foreground shadow-xl dark:border-pink-800"
+        role="search"
+      >
+        <Search
+          className="h-5 w-5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
 
         <Input
+          type="search"
           autoFocus={isOpen}
           placeholder="Search"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
-          className="h-full flex-1 border-0 bg-transparent px-0 text-base text-gray-800 placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-full flex-1 border-0 bg-transparent px-0 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+          aria-label="Search flashcards"
+          tabIndex={isOpen ? 0 : -1}
         />
 
         <Button
@@ -43,10 +53,11 @@ export function BottomSearchBar({
           variant="ghost"
           size="icon"
           aria-label="Search filters"
-          className="h-9 w-9 shrink-0 rounded-full text-gray-500 hover:bg-pink-50 hover:text-pink-500"
+          className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-pink-50 hover:text-pink-500 dark:hover:bg-pink-950/40 dark:hover:text-pink-400"
           onClick={() => toast.info("Search filters coming soon.")}
+          tabIndex={isOpen ? 0 : -1}
         >
-          <SlidersHorizontal className="h-5 w-5" />
+          <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
         </Button>
 
         <Button
@@ -54,10 +65,11 @@ export function BottomSearchBar({
           variant="ghost"
           size="icon"
           aria-label="Close search"
-          className="h-9 w-9 shrink-0 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={onClose}
+          tabIndex={isOpen ? 0 : -1}
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
     </div>

@@ -53,7 +53,7 @@ export function SortableFlashcardList({
     }),
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -61,7 +61,7 @@ export function SortableFlashcardList({
     }
 
     onReorder(active.id.toString(), over.id.toString());
-  };
+  }
 
   if (isFiltering) {
     return (

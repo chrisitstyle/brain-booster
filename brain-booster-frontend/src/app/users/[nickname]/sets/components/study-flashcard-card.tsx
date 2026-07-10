@@ -1,10 +1,11 @@
 "use client";
 
+import type { KeyboardEvent } from "react";
 import { Volume2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import type { StudyFlashcard } from "../[id]/types";
 
@@ -21,8 +22,31 @@ export default function StudyFlashcardCard({
   onFlip,
   onSpeak,
 }: StudyFlashcardCardProps) {
+  const term = currentFlashcard?.term ?? "";
+  const definition = currentFlashcard?.definition ?? "";
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    onFlip();
+  }
+
   return (
-    <div className="perspective-1000 mb-4 cursor-pointer" onClick={onFlip}>
+    <div
+      className="perspective-1000 mb-4 cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      onClick={onFlip}
+      onKeyDown={handleCardKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={
+        isFlipped
+          ? "Showing definition. Flip to term."
+          : "Showing term. Flip to definition."
+      }
+    >
       <div
         className={cn(
           "relative h-64 w-full transition-transform duration-500 transform-style-3d md:h-80",
@@ -34,50 +58,62 @@ export default function StudyFlashcardCard({
         }}
       >
         <Card
-          className="absolute inset-0 flex items-center justify-center border-gray-200 bg-white p-8 shadow-lg backface-hidden"
-          style={{ backfaceVisibility: "hidden" }}
+          className="absolute inset-0 flex items-center justify-center overflow-hidden border-border bg-card p-8 text-card-foreground shadow-lg backface-hidden transition-colors hover:border-pink-200 dark:hover:border-pink-900"
+          style={{
+            backfaceVisibility: "hidden",
+          }}
+          aria-hidden={isFlipped}
         >
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-4 h-10 w-10 rounded-full text-gray-400 hover:bg-pink-50 hover:text-pink-500"
+            disabled={!term}
+            className="absolute right-4 top-4 z-10 h-10 w-10 rounded-full text-muted-foreground hover:bg-pink-50 hover:text-pink-500 disabled:opacity-40 dark:hover:bg-pink-950/40 dark:hover:text-pink-400"
             onClick={(event) => {
               event.stopPropagation();
-              onSpeak(currentFlashcard?.term ?? "");
+              onSpeak(term);
             }}
+            aria-label="Read term aloud"
           >
-            <Volume2 className="h-5 w-5" />
+            <Volume2 className="h-5 w-5" aria-hidden="true" />
           </Button>
 
-          <CardContent className="flex flex-col items-center justify-center p-0 text-center">
-            <p className="text-xl font-medium text-gray-800 md:text-2xl">
-              {currentFlashcard?.term}
+          <CardContent className="flex max-h-full w-full flex-col items-center justify-center overflow-y-auto p-0 text-center">
+            <p className="whitespace-pre-wrap break-words text-xl font-medium text-card-foreground md:text-2xl">
+              {term || <span className="text-muted-foreground">No term</span>}
             </p>
           </CardContent>
         </Card>
 
         <Card
-          className="absolute inset-0 flex items-center justify-center border-gray-200 bg-white p-8 shadow-lg"
+          className="absolute inset-0 flex items-center justify-center overflow-hidden border-border bg-card p-8 text-card-foreground shadow-lg transition-colors hover:border-pink-200 dark:hover:border-pink-900"
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
           }}
+          aria-hidden={!isFlipped}
         >
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-4 h-10 w-10 rounded-full text-gray-400 hover:bg-pink-50 hover:text-pink-500"
+            disabled={!definition}
+            className="absolute right-4 top-4 z-10 h-10 w-10 rounded-full text-muted-foreground hover:bg-pink-50 hover:text-pink-500 disabled:opacity-40 dark:hover:bg-pink-950/40 dark:hover:text-pink-400"
             onClick={(event) => {
               event.stopPropagation();
-              onSpeak(currentFlashcard?.definition ?? "");
+              onSpeak(definition);
             }}
+            aria-label="Read definition aloud"
           >
-            <Volume2 className="h-5 w-5" />
+            <Volume2 className="h-5 w-5" aria-hidden="true" />
           </Button>
 
-          <CardContent className="flex flex-col items-center justify-center p-0 text-center">
-            <p className="text-lg text-gray-700 md:text-xl">
-              {currentFlashcard?.definition}
+          <CardContent className="flex max-h-full w-full flex-col items-center justify-center overflow-y-auto p-0 text-center">
+            <p className="whitespace-pre-wrap break-words text-lg text-card-foreground md:text-xl">
+              {definition || (
+                <span className="text-muted-foreground">No definition</span>
+              )}
             </p>
           </CardContent>
         </Card>

@@ -2,8 +2,9 @@
 
 import { ArrowLeft, ArrowRight, Check, Shuffle, X } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface StudyControlsProps {
   currentIndex: number;
@@ -28,84 +29,104 @@ export default function StudyControls({
   onKnown,
   onShuffle,
 }: StudyControlsProps) {
+  const hasCards = totalCards > 0;
+
+  const displayedCurrentIndex = hasCards
+    ? Math.min(currentIndex + 1, totalCards)
+    : 0;
+
+  const isFirstCard = !hasCards || currentIndex <= 0;
+
+  const isLastCard = !hasCards || currentIndex >= totalCards - 1;
+
   return (
     <div className="mb-6 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isProgressTrackingEnabled}
-        onClick={onToggleProgressTracking}
-        className="flex shrink-0 appearance-none items-center gap-2 border-0 bg-transparent p-0 text-sm font-semibold text-gray-700 shadow-none outline-none transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-0"
-      >
-        <span className="whitespace-nowrap">Track progress</span>
-
-        <span
-          className={cn(
-            "relative inline-flex h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors",
-            isProgressTrackingEnabled ? "bg-pink-500" : "bg-gray-300",
-          )}
+      <div className="flex shrink-0 items-center gap-2">
+        <Label
+          htmlFor="track-study-progress"
+          className="cursor-pointer whitespace-nowrap text-sm font-semibold text-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
         >
-          <span
-            className={cn(
-              "h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-              isProgressTrackingEnabled ? "translate-x-4" : "translate-x-0",
-            )}
-          />
-        </span>
-      </button>
+          Track progress
+        </Label>
+
+        <Switch
+          id="track-study-progress"
+          checked={isProgressTrackingEnabled}
+          onCheckedChange={() => onToggleProgressTracking()}
+          className="data-[state=checked]:bg-pink-500 data-[state=unchecked]:bg-muted-foreground/30"
+          aria-label="Track study progress"
+        />
+      </div>
 
       <Button
+        type="button"
         variant="outline"
         size="lg"
-        className="h-14 w-14 rounded-full border-2 border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50"
+        className="h-14 w-14 rounded-full border-2 border-red-200 bg-background text-red-500 hover:border-red-400 hover:bg-red-50 hover:text-red-600 disabled:border-border disabled:bg-muted disabled:text-muted-foreground dark:border-red-900 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300"
         onClick={onUnknown}
+        disabled={!hasCards}
+        aria-label="Mark card as unknown"
       >
-        <X className="h-6 w-6" />
+        <X className="h-6 w-6" aria-hidden="true" />
       </Button>
 
       <div className="flex items-center gap-2">
         <Button
+          type="button"
           variant="outline"
           size="icon"
-          className="border-gray-200 text-gray-500 hover:border-pink-300 hover:text-pink-500"
+          className="border-border bg-background text-muted-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 disabled:bg-muted disabled:text-muted-foreground dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
           onClick={onPrevious}
-          disabled={currentIndex === 0}
+          disabled={isFirstCard}
+          aria-label="Previous flashcard"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </Button>
 
-        <span className="min-w-20 text-center text-gray-600">
-          {currentIndex + 1} / {totalCards}
+        <span
+          className="min-w-20 text-center font-medium text-foreground"
+          aria-live="polite"
+          aria-label={`Card ${displayedCurrentIndex} of ${totalCards}`}
+        >
+          {displayedCurrentIndex} / {totalCards}
         </span>
 
         <Button
+          type="button"
           variant="outline"
           size="icon"
-          className="border-gray-200 text-gray-500 hover:border-pink-300 hover:text-pink-500"
+          className="border-border bg-background text-muted-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 disabled:bg-muted disabled:text-muted-foreground dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
           onClick={onNext}
-          disabled={currentIndex === totalCards - 1}
+          disabled={isLastCard}
+          aria-label="Next flashcard"
         >
-          <ArrowRight className="h-5 w-5" />
+          <ArrowRight className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
 
       <div className="flex items-center gap-3">
         <Button
+          type="button"
           variant="outline"
           size="lg"
-          className="h-14 w-14 rounded-full border-2 border-green-200 text-green-500 hover:border-green-400 hover:bg-green-50"
+          className="h-14 w-14 rounded-full border-2 border-green-200 bg-background text-green-500 hover:border-green-400 hover:bg-green-50 hover:text-green-600 disabled:border-border disabled:bg-muted disabled:text-muted-foreground dark:border-green-900 dark:text-green-400 dark:hover:border-green-700 dark:hover:bg-green-950/40 dark:hover:text-green-300"
           onClick={onKnown}
+          disabled={!hasCards}
+          aria-label="Mark card as known"
         >
-          <Check className="h-6 w-6" />
+          <Check className="h-6 w-6" aria-hidden="true" />
         </Button>
 
         <Button
+          type="button"
           variant="outline"
           size="icon"
-          className="h-14 w-14 rounded-full border-gray-200 text-gray-500 hover:border-pink-300 hover:text-pink-500"
+          className="h-14 w-14 rounded-full border-border bg-background text-muted-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 disabled:bg-muted disabled:text-muted-foreground dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
           onClick={onShuffle}
+          disabled={totalCards < 2}
+          aria-label="Shuffle flashcards"
         >
-          <Shuffle className="h-5 w-5" />
+          <Shuffle className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
     </div>

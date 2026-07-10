@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 interface SetTitleDescriptionFieldsProps {
@@ -15,31 +16,44 @@ export function SetTitleDescriptionFields({
   onDescriptionChange,
 }: SetTitleDescriptionFieldsProps) {
   return (
-    <div className="mb-8 space-y-4">
-      <div className="group relative">
+    <div className="mb-8 space-y-8">
+      <div className="space-y-2">
         <Input
+          id="set-title"
+          type="text"
           placeholder="Enter a title, like 'Biology - Chapter 22: Evolution'"
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          className="border-0 border-b-2 border-gray-200 bg-transparent px-0 py-3 text-xl font-medium text-gray-800 placeholder:text-gray-400 focus:border-pink-500 focus:ring-0 focus-visible:ring-0"
+          className="h-auto rounded-none border-0 border-b-2 border-border bg-transparent px-0 py-3 text-xl font-medium text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-pink-500 focus-visible:ring-0 dark:focus-visible:border-pink-400"
+          aria-describedby="set-title-label"
         />
 
-        <span className="absolute -bottom-5 left-0 text-xs font-medium uppercase tracking-wide text-gray-400">
+        <Label
+          id="set-title-label"
+          htmlFor="set-title"
+          className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        >
           Title
-        </span>
+        </Label>
       </div>
 
-      <div className="group relative mt-8">
+      <div className="space-y-2">
         <Textarea
+          id="set-description"
           placeholder="Add a description..."
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
-          className="min-h-[60px] resize-none border-0 border-b-2 border-gray-200 bg-transparent px-0 py-3 text-gray-700 placeholder:text-gray-400 focus:border-pink-500 focus:ring-0 focus-visible:ring-0"
+          className="min-h-[80px] resize-none rounded-none border-0 border-b-2 border-border bg-transparent px-0 py-3 text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-pink-500 focus-visible:ring-0 dark:focus-visible:border-pink-400"
+          aria-describedby="set-description-label"
         />
 
-        <span className="absolute -bottom-5 left-0 text-xs font-medium uppercase tracking-wide text-gray-400">
+        <Label
+          id="set-description-label"
+          htmlFor="set-description"
+          className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        >
           Description
-        </span>
+        </Label>
       </div>
     </div>
   );

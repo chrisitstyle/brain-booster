@@ -1,20 +1,20 @@
 "use client";
 
+import type { SubmitEvent } from "react";
 import { useState } from "react";
 import { FolderPen, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAuth } from "@/context/AuthContext";
 import {
   editFolder,
   type EditFolderData,
   type Folder,
 } from "@/api/folderService";
-
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
 
 interface EditableFolder {
   id: string;
@@ -25,6 +25,12 @@ interface EditableFolder {
 interface EditFolderFormProps {
   folder: EditableFolder | null;
   isOpen: boolean;
+  onClose: () => void;
+  onFolderUpdated: (folder: Folder) => void;
+}
+
+interface EditFolderFormContentProps {
+  folder: EditableFolder;
   onClose: () => void;
   onFolderUpdated: (folder: Folder) => void;
 }
@@ -53,11 +59,7 @@ function EditFolderFormContent({
   folder,
   onClose,
   onFolderUpdated,
-}: {
-  folder: EditableFolder;
-  onClose: () => void;
-  onFolderUpdated: (folder: Folder) => void;
-}) {
+}: EditFolderFormContentProps) {
   const { token, isAuthLoading } = useAuth();
 
   const [formData, setFormData] = useState<EditFolderData>({
@@ -68,26 +70,22 @@ function EditFolderFormContent({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (field: "name" | "description", value: string) => {
-    setFormData((prev) => ({
-      ...prev,
+  function handleChange(field: "name" | "description", value: string) {
+    setFormData((previousFormData) => ({
+      ...previousFormData,
       [field]: value,
     }));
-  };
+  }
 
-  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isAuthLoading) return;
+    if (isAuthLoading) {
+      return;
+    }
 
     if (!token) {
-      toast.error("You must be logged in to edit a folder.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
-
+      toast.error("You must be logged in to edit a folder.");
       return;
     }
 
@@ -95,13 +93,7 @@ function EditFolderFormContent({
     const trimmedDescription = formData.description.trim();
 
     if (!trimmedName) {
-      toast.error("Folder name is required.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
-
+      toast.error("Folder name is required.");
       return;
     }
 
@@ -119,74 +111,89 @@ function EditFolderFormContent({
 
       onFolderUpdated(updatedFolder);
 
-      toast.success("Folder updated successfully", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
+      toast.success("Folder updated successfully");
 
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to edit folder:", error);
 
       const message =
         error instanceof Error ? error.message : "Failed to edit folder.";
 
-      toast.error(message, {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <Card className="w-full max-w-2xl border-gray-200 bg-white shadow-xl">
-        <div className="flex items-start justify-between border-b border-gray-100 p-5">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-pink-100 p-3">
-              <FolderPen className="h-6 w-6 text-pink-500" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-folder-title"
+      aria-describedby="edit-folder-description"
+    >
+      <Card className="w-full max-w-2xl border-border bg-card text-card-foreground shadow-xl">
+        <div className="flex items-start justify-between gap-4 border-b border-border p-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 rounded-xl bg-pink-100 p-3 dark:bg-pink-950/50">
+              <FolderPen className="h-6 w-6 text-pink-500 dark:text-pink-400" />
             </div>
 
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Edit folder</h2>
-              <p className="mt-1 text-sm text-gray-500">
+            <div className="min-w-0">
+              <h2
+                id="edit-folder-title"
+                className="text-xl font-bold text-card-foreground"
+              >
+                Edit folder
+              </h2>
+
+              <p
+                id="edit-folder-description"
+                className="mt-1 text-sm text-muted-foreground"
+              >
                 Update folder name and description.
               </p>
             </div>
           </div>
 
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             disabled={isSubmitting}
             onClick={onClose}
+            className="shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Close edit folder form"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </Button>
         </div>
 
         <CardContent className="p-5">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="folder-name">Folder name</Label>
+              <Label htmlFor="folder-name" className="text-foreground">
+                Folder name
+              </Label>
+
               <Input
                 id="folder-name"
                 type="text"
                 value={formData.name}
                 onChange={(event) => handleChange("name", event.target.value)}
                 disabled={isSubmitting}
-                className="border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                autoFocus
+                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-800"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="folder-description">Description</Label>
+              <Label htmlFor="folder-description" className="text-foreground">
+                Description
+              </Label>
+
               <textarea
                 id="folder-description"
                 value={formData.description}
@@ -195,7 +202,7 @@ function EditFolderFormContent({
                 }
                 disabled={isSubmitting}
                 rows={5}
-                className="flex w-full rounded-md border border-gray-200 bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-gray-400 focus:border-pink-300 focus:ring-1 focus:ring-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-2 focus-visible:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:border-pink-800"
               />
             </div>
 
@@ -205,6 +212,7 @@ function EditFolderFormContent({
                 variant="outline"
                 disabled={isSubmitting}
                 onClick={onClose}
+                className="border-border"
               >
                 Cancel
               </Button>
