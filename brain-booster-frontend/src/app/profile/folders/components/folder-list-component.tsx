@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderOpen, Search, X } from "lucide-react";
+import { FolderOpen, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { addSetToFolder, getMyFolders, type Folder } from "@/api/folderService";
@@ -33,12 +33,7 @@ export default function FolderListComponent({
   const [addingFolderId, setAddingFolderId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen || isAuthLoading) {
-      return;
-    }
-
-    if (!token) {
-      setFolders([]);
+    if (!isOpen || isAuthLoading || !token) {
       return;
     }
 
@@ -51,9 +46,11 @@ export default function FolderListComponent({
 
         const data = await getMyFolders(requestToken);
 
-        if (!isCancelled) {
-          setFolders(data);
+        if (isCancelled) {
+          return;
         }
+
+        setFolders(data);
       } catch (error: unknown) {
         if (isCancelled) {
           return;
@@ -83,13 +80,16 @@ export default function FolderListComponent({
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-  const filteredFolders = folders.filter((folder) =>
+  const visibleFolders = token ? folders : [];
+
+  const filteredFolders = visibleFolders.filter((folder) =>
     folder.name.toLowerCase().includes(normalizedSearchQuery),
   );
 
   async function handleAddToFolder(folder: Folder) {
     if (!token) {
       toast.error("You must be logged in to add sets to folders.");
+
       return;
     }
 
@@ -185,14 +185,14 @@ export default function FolderListComponent({
             </div>
           </div>
 
-          {isLoading || isAuthLoading ? (
-            <div className="py-10 text-center text-muted-foreground">
-              Downloading folders...
-            </div>
+          {isAuthLoading ? (
+            <LoadingState text="Checking authentication..." />
           ) : !token ? (
             <div className="py-10 text-center text-muted-foreground">
               You must be logged in to add sets to folders.
             </div>
+          ) : isLoading ? (
+            <LoadingState text="Downloading folders..." />
           ) : filteredFolders.length > 0 ? (
             <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
               {filteredFolders.map((folder) => {
@@ -210,7 +210,10 @@ export default function FolderListComponent({
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <div className="shrink-0 rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
-                        <FolderOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
+                        <FolderOpen
+                          className="h-5 w-5 text-pink-500 dark:text-pink-400"
+                          aria-hidden="true"
+                        />
                       </div>
 
                       <div className="min-w-0">
@@ -259,6 +262,22 @@ export default function FolderListComponent({
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function LoadingState({ text }: { text: string }) {
+  return (
+    <div
+      className="flex items-center justify-center gap-3 py-10 text-muted-foreground"
+      role="status"
+    >
+      <Loader2
+        className="h-5 w-5 animate-spin text-pink-500 dark:text-pink-400"
+        aria-hidden="true"
+      />
+
+      <span>{text}</span>
     </div>
   );
 }
