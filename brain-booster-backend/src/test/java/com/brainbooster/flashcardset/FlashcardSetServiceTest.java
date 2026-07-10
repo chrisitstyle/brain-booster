@@ -87,44 +87,60 @@ class FlashcardSetServiceTest {
     @Test
     void addFlashcardSetCreationDTO_ReturnsFlashcardSetDTO() {
         // given
-        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
+        Long userId = 1L;
+        FlashcardSetCreationDTO inputDTO =
+                TestEntities.createFlashcardSetCreationDTO();
         User mockUser = TestEntities.createUser();
 
-        when(userRepository.findById(inputDTO.userId())).thenReturn(Optional.of(mockUser));
-        when(flashcardSetRepository.save(any(FlashcardSet.class))).thenReturn(flashcardSet);
-        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(mockUser));
+
+        when(flashcardSetRepository.save(any(FlashcardSet.class)))
+                .thenReturn(flashcardSet);
+
+        when(flashcardSetDTOMapper.apply(flashcardSet))
+                .thenReturn(flashcardSetDTO);
 
         // when
-        FlashcardSetDTO resultDTO = flashcardSetService.addFlashcardSet(inputDTO);
+        FlashcardSetDTO resultDTO =
+                flashcardSetService.addFlashcardSet(inputDTO, userId);
 
         // then
         Assertions.assertThat(resultDTO).isNotNull();
-        Assertions.assertThat(resultDTO.setId()).isEqualTo(flashcardSetDTO.setId());
-        Assertions.assertThat(resultDTO.setName()).isEqualTo(flashcardSetDTO.setName());
-        Assertions.assertThat(resultDTO.description()).isEqualTo(flashcardSetDTO.description());
+        Assertions.assertThat(resultDTO.setId())
+                .isEqualTo(flashcardSetDTO.setId());
+        Assertions.assertThat(resultDTO.setName())
+                .isEqualTo(flashcardSetDTO.setName());
+        Assertions.assertThat(resultDTO.description())
+                .isEqualTo(flashcardSetDTO.description());
 
-        verify(userRepository, times(1)).findById(inputDTO.userId());
-        verify(flashcardSetRepository, times(1)).save(any(FlashcardSet.class));
-        verify(flashcardSetDTOMapper, times(1)).apply(any(FlashcardSet.class));
+        verify(userRepository).findById(userId);
+        verify(flashcardSetRepository).save(any(FlashcardSet.class));
+        verify(flashcardSetDTOMapper).apply(any(FlashcardSet.class));
     }
 
     @Test
     void addFlashcardSet_ThrowsNoSuchElementException_WhenUserNotFound() {
         // given
-        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
+        Long userId = 999L;
+        FlashcardSetCreationDTO inputDTO =
+                TestEntities.createFlashcardSetCreationDTO();
 
-        when(userRepository.findById(inputDTO.userId())).thenReturn(Optional.empty());
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.empty());
 
         // when + then
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
-                () -> flashcardSetService.addFlashcardSet(inputDTO)
+                () -> flashcardSetService.addFlashcardSet(inputDTO, userId)
         );
 
         Assertions.assertThat(exception.getMessage())
-                .isEqualTo("User with id: " + inputDTO.userId() + " not found");
+                .isEqualTo("User with id: " + userId + " not found");
 
-        verify(flashcardSetRepository, never()).save(any(FlashcardSet.class));
+        verify(userRepository).findById(userId);
+        verify(flashcardSetRepository, never())
+                .save(any(FlashcardSet.class));
     }
 
     @Test

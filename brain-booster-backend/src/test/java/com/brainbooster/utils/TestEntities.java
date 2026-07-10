@@ -362,13 +362,12 @@ public class TestEntities {
     /**
      * Creates a {@link FlashcardSetCreationDTO} used for testing creation requests.
      * <p>
-     * Contains only the fields required to create a new set (userId, name, description).
+     * Contains only the fields required to create a new set (name, description).
      *
      * @return a FlashcardSetCreationDTO object.
      */
     public static FlashcardSetCreationDTO createFlashcardSetCreationDTO() {
         return new FlashcardSetCreationDTO(
-                1L,
                 "test_flashcardset_name",
                 "test_flashcardset_description"
         );
