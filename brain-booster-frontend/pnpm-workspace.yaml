@@ -3,3 +3,7 @@ packages:
 
 allowBuilds:
   sharp: true
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - "ignore@7.0.6"
