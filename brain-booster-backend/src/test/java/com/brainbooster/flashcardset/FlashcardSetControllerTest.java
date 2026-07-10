@@ -1,23 +1,26 @@
 package com.brainbooster.flashcardset;
 
 import com.brainbooster.config.JwtAuthenticationFilter;
-import com.brainbooster.config.JwtService;
+import com.brainbooster.config.SecurityConfiguration;
 import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
+import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
+import com.brainbooster.utils.TestSecurityConfiguration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -30,13 +33,25 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = FlashcardSetController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(
+        controllers = FlashcardSetController.class,
+        excludeFilters = {
+                @ComponentScan.Filter(
+                        type = FilterType.ASSIGNABLE_TYPE,
+                        classes = SecurityConfiguration.class
+                ),
+                @ComponentScan.Filter(
+                        type = FilterType.ASSIGNABLE_TYPE,
+                        classes = JwtAuthenticationFilter.class
+                )
+        }
+)
+@Import(TestSecurityConfiguration.class)
 class FlashcardSetControllerTest {
 
     @Autowired
@@ -44,54 +59,88 @@ class FlashcardSetControllerTest {
 
     @MockitoBean
     private FlashcardSetService flashcardSetService;
-    @MockitoBean
-    private JwtService jwtService;
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final UserSummaryDTO userSummaryDTO = TestEntities.createUserSummaryDTO();
+    private final UserSummaryDTO userSummaryDTO =
+            TestEntities.createUserSummaryDTO();
 
-    private final FlashcardSetDTO flashcardSetDTO = TestEntities.createFlashcardSetDTO();
+    private final FlashcardSetDTO flashcardSetDTO =
+            TestEntities.createFlashcardSetDTO();
 
     @Test
-    void addFlashcardSetCreationDTO_ShouldReturnFlashcardSetDTO() throws Exception {
+    void addFlashcardSetCreationDTO_ShouldReturnFlashcardSetDTO()
+            throws Exception {
+
         // given
-        FlashcardSetCreationDTO flashcardSetCreationDTO = TestEntities.createFlashcardSetCreationDTO();
-        String token = "valid_token_test";
-        when(jwtService.extractUsername(token)).thenReturn("johndoe@example.com");
-        when(flashcardSetService.addFlashcardSet(Mockito.any(FlashcardSetCreationDTO.class)))
-                .thenReturn(flashcardSetDTO);
+        FlashcardSetCreationDTO creationDTO =
+                TestEntities.createFlashcardSetCreationDTO();
+
+        User authenticatedUser = TestEntities.createUser();
+
+        assertThat(authenticatedUser.getUserId()).isEqualTo(1L);
+
+        Authentication userAuthentication =
+                UsernamePasswordAuthenticationToken.authenticated(
+                        authenticatedUser,
+                        null,
+                        authenticatedUser.getAuthorities()
+                );
+
+        when(flashcardSetService.addFlashcardSet(
+                any(FlashcardSetCreationDTO.class),
+                eq(1L)
+        )).thenReturn(flashcardSetDTO);
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/flashcard-sets")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(flashcardSetCreationDTO)))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.post("/flashcard-sets")
+                                .with(authentication(userAuthentication))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(creationDTO))
+                )
                 .andExpect(status().isCreated())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
+        verify(flashcardSetService).addFlashcardSet(
+                any(FlashcardSetCreationDTO.class),
+                eq(1L)
+        );
+
         FlashcardSetDTO responseDTO = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 FlashcardSetDTO.class
         );
 
+        assertThat(responseDTO.setId()).isEqualTo(1L);
         assertThat(responseDTO.user().nickname()).isEqualTo("johndoe");
-        assertThat(responseDTO.setName()).isEqualTo("test_flashcardset_name");
-        assertThat(responseDTO.description()).isEqualTo("test_flashcardset_description");
+        assertThat(responseDTO.setName())
+                .isEqualTo("test_flashcardset_name");
+        assertThat(responseDTO.description())
+                .isEqualTo("test_flashcardset_description");
     }
 
     @Test
-    void getAllFlashcardSets_ShouldReturnListOfFlashcardSetDTO() throws Exception {
+    void getAllFlashcardSets_ShouldReturnListOfFlashcardSetDTO()
+            throws Exception {
+
         // given
-        when(flashcardSetService.getAllFlashcardSets()).thenReturn(List.of(flashcardSetDTO));
+        when(flashcardSetService.getAllFlashcardSets())
+                .thenReturn(List.of(flashcardSetDTO));
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets"))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.get("/flashcard-sets")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
                 .andExpect(status().isOk())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
@@ -101,40 +150,66 @@ class FlashcardSetControllerTest {
                 }
         );
 
-        assertThat(responseList).hasSize(1);
-        assertThat(responseList.getFirst().setName()).isEqualTo("test_flashcardset_name");
+        assertThat(responseList)
+                .hasSize(1);
+
+        assertThat(responseList.getFirst().setName())
+                .isEqualTo("test_flashcardset_name");
+
+        verify(flashcardSetService).getAllFlashcardSets();
     }
 
     @Test
-    void getAllFlashcardSetById_ShouldReturnFlashcardSetDTO() throws Exception {
+    void getFlashcardSetById_ShouldReturnFlashcardSetDTO()
+            throws Exception {
 
         // given
-        when(flashcardSetService.getFlashcardSetById(1L)).thenReturn(flashcardSetDTO);
+        when(flashcardSetService.getFlashcardSetById(1L))
+                .thenReturn(flashcardSetDTO);
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/1"))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.get("/flashcard-sets/1")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
                 .andExpect(status().isOk())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
         FlashcardSetDTO responseDTO = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
-                FlashcardSetDTO.class);
+                FlashcardSetDTO.class
+        );
 
         assertThat(responseDTO.setId()).isEqualTo(1L);
-        assertThat(responseDTO.setName()).isEqualTo(flashcardSetDTO.setName());
+        assertThat(responseDTO.setName())
+                .isEqualTo(flashcardSetDTO.setName());
+
+        verify(flashcardSetService).getFlashcardSetById(1L);
     }
 
     @Test
-    void getAllFlashcardsInSet_ShouldReturnListOfFlashcardsDTO() throws Exception {
-        // given
-        FlashcardDTO flashcardDTO = TestEntities.createFlashcardDTO();
+    void getAllFlashcardsInSet_ShouldReturnListOfFlashcardsDTO()
+            throws Exception {
 
-        when(flashcardSetService.getAllFlashcardsInSet(1L)).thenReturn(List.of(flashcardDTO));
+        // given
+        FlashcardDTO flashcardDTO =
+                TestEntities.createFlashcardDTO();
+
+        when(flashcardSetService.getAllFlashcardsInSet(1L))
+                .thenReturn(List.of(flashcardDTO));
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/1/flashcards"))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders
+                                .get("/flashcard-sets/1/flashcards")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
                 .andExpect(status().isOk())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
@@ -144,32 +219,51 @@ class FlashcardSetControllerTest {
                 }
         );
 
-        assertThat(responseList).hasSize(1);
-        assertThat(responseList.getFirst().term()).isEqualTo("test_term");
+        assertThat(responseList)
+                .hasSize(1);
+
+        assertThat(responseList.getFirst().term())
+                .isEqualTo("test_term");
+
+        verify(flashcardSetService).getAllFlashcardsInSet(1L);
     }
 
     @Test
-    void updateFlashcardSetById_ShouldReturnUpdatedFlashcardSetDTO() throws Exception {
+    void updateFlashcardSetById_ShouldReturnUpdatedFlashcardSetDTO()
+            throws Exception {
+
         // given
-        FlashcardSetUpdateDTO updateDTO = new FlashcardSetUpdateDTO("Updated Set", "Updated description");
+        FlashcardSetUpdateDTO updateDTO =
+                new FlashcardSetUpdateDTO(
+                        "Updated Set",
+                        "Updated description"
+                );
 
-        FlashcardSetDTO updatedResponseDTO = new FlashcardSetDTO(
-                1L,
-                userSummaryDTO,
-                "Updated Set",
-                "Updated description",
-                Instant.parse("2025-06-02T00:28:05.738221Z"),
-                0L
-        );
+        FlashcardSetDTO updatedResponseDTO =
+                new FlashcardSetDTO(
+                        1L,
+                        userSummaryDTO,
+                        "Updated Set",
+                        "Updated description",
+                        Instant.parse("2025-06-02T00:28:05.738221Z"),
+                        0L
+                );
 
-        when(flashcardSetService.updateFlashcardSet(Mockito.any(), Mockito.eq(1L)))
-                .thenReturn(updatedResponseDTO);
+        when(flashcardSetService.updateFlashcardSet(
+                any(FlashcardSetUpdateDTO.class),
+                eq(1L)
+        )).thenReturn(updatedResponseDTO);
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.patch("/flashcard-sets/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateDTO)))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.patch("/flashcard-sets/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updateDTO))
+                )
                 .andExpect(status().isOk())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
@@ -178,100 +272,184 @@ class FlashcardSetControllerTest {
                 FlashcardSetDTO.class
         );
 
-        assertThat(responseDTO.setName()).isEqualTo("Updated Set");
-        assertThat(responseDTO.description()).isEqualTo("Updated description");
+        assertThat(responseDTO.setName())
+                .isEqualTo("Updated Set");
+
+        assertThat(responseDTO.description())
+                .isEqualTo("Updated description");
+
+        verify(flashcardSetService).updateFlashcardSet(
+                any(FlashcardSetUpdateDTO.class),
+                eq(1L)
+        );
     }
 
     @Test
     void deleteFlashcardSetById_ShouldReturnNoContent() throws Exception {
         // given
         long setId = 1L;
-        mockMvc.perform(MockMvcRequestBuilders.delete("/flashcard-sets/" + setId))
-                .andExpect(status().isNoContent());
 
+        mockMvc.perform(
+                        MockMvcRequestBuilders.delete("/flashcard-sets/" + setId)
+                )
+                .andExpect(status().isNoContent());
     }
 
     @Test
-    void getFlashcardSetById_ShouldReturnNotFound_WhenSetDoesNotExist() throws Exception {
+    void getFlashcardSetById_ShouldReturnNotFound_WhenSetDoesNotExist()
+            throws Exception {
+
         // given
         long nonExistentId = 999L;
+
         when(flashcardSetService.getFlashcardSetById(nonExistentId))
-                .thenThrow(new java.util.NoSuchElementException("FlashcardSet with id: " + nonExistentId + " not found"));
+                .thenThrow(new NoSuchElementException(
+                        "FlashcardSet with id: "
+                                + nonExistentId
+                                + " not found"
+                ));
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/" + nonExistentId))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.get(
+                                        "/flashcard-sets/" + nonExistentId
+                                )
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
-        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-
         ErrorDTO errorResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 ErrorDTO.class
         );
 
-        assertThat(errorResponse.message()).isEqualTo("FlashcardSet with id: 999 not found");
-        assertThat(errorResponse.status()).isEqualTo("NOT_FOUND");
+        assertThat(result.getResponse().getStatus())
+                .isEqualTo(HttpStatus.NOT_FOUND.value());
+
+        assertThat(errorResponse.message())
+                .isEqualTo("FlashcardSet with id: 999 not found");
+
+        assertThat(errorResponse.status())
+                .isEqualTo("NOT_FOUND");
     }
 
     @Test
-    void getAllFlashcardsInSet_ShouldReturnNotFound_WhenSetDoesNotExist() throws Exception {
+    void getAllFlashcardsInSet_ShouldReturnNotFound_WhenSetDoesNotExist()
+            throws Exception {
+
         // given
         long nonExistentId = 123L;
+
         when(flashcardSetService.getAllFlashcardsInSet(nonExistentId))
-                .thenThrow(new NoSuchElementException("FlashcardSet not found"));
+                .thenThrow(
+                        new NoSuchElementException("FlashcardSet not found")
+                );
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/flashcard-sets/" + nonExistentId + "/flashcards"))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.get(
+                                        "/flashcard-sets/"
+                                                + nonExistentId
+                                                + "/flashcards"
+                                )
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
-        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-        ErrorDTO errorResponse = objectMapper.readValue(result.getResponse().getContentAsString(), ErrorDTO.class);
-        assertThat(errorResponse.message()).isEqualTo("FlashcardSet not found");
-    }
-
-    @Test
-    void updateFlashcardSet_ShouldReturnNotFound_WhenUpdatingNonExistentSet() throws Exception {
-        // given
-        long nonExistentId = 123L;
-        FlashcardSetUpdateDTO updateData = new FlashcardSetUpdateDTO("New Name", "New Description");
-
-        when(flashcardSetService.updateFlashcardSet(Mockito.any(FlashcardSetUpdateDTO.class), Mockito.eq(nonExistentId)))
-                .thenThrow(new java.util.NoSuchElementException("FlashcardSet not found"));
-
-        // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.patch("/flashcard-sets/" + nonExistentId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateData)))
-                .andReturn();
-
-        // then
-        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-
         ErrorDTO errorResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
                 ErrorDTO.class
         );
 
-        assertThat(errorResponse.message()).isEqualTo("FlashcardSet not found");
-        assertThat(errorResponse.status()).isEqualTo("NOT_FOUND");
+        assertThat(errorResponse.message())
+                .isEqualTo("FlashcardSet not found");
     }
 
     @Test
-    void deleteFlashcardSetById_ShouldReturnNotFound_WhenSetDoesNotExist() throws Exception {
+    void updateFlashcardSet_ShouldReturnNotFound_WhenUpdatingNonExistentSet()
+            throws Exception {
+
         // given
         long nonExistentId = 123L;
-        doThrow(new NoSuchElementException("FlashcardSet not found"))
-                .when(flashcardSetService).deleteFlashcardSetById(nonExistentId);
+
+        FlashcardSetUpdateDTO updateData =
+                new FlashcardSetUpdateDTO(
+                        "New Name",
+                        "New Description"
+                );
+
+        when(flashcardSetService.updateFlashcardSet(
+                any(FlashcardSetUpdateDTO.class),
+                eq(nonExistentId)
+        )).thenThrow(
+                new NoSuchElementException("FlashcardSet not found")
+        );
 
         // when
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/flashcard-sets/" + nonExistentId))
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.patch(
+                                        "/flashcard-sets/" + nonExistentId
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updateData))
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         // then
-        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-        ErrorDTO errorResponse = objectMapper.readValue(result.getResponse().getContentAsString(), ErrorDTO.class);
-        assertThat(errorResponse.message()).isEqualTo("FlashcardSet not found");
+        ErrorDTO errorResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ErrorDTO.class
+        );
+
+        assertThat(errorResponse.message())
+                .isEqualTo("FlashcardSet not found");
+
+        assertThat(errorResponse.status())
+                .isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void deleteFlashcardSetById_ShouldReturnNotFound_WhenSetDoesNotExist()
+            throws Exception {
+
+        // given
+        long nonExistentId = 123L;
+
+        doThrow(new NoSuchElementException("FlashcardSet not found"))
+                .when(flashcardSetService)
+                .deleteFlashcardSetById(nonExistentId);
+
+        // when
+        MvcResult result = mockMvc.perform(
+                        MockMvcRequestBuilders.delete(
+                                        "/flashcard-sets/" + nonExistentId
+                                )
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        // then
+        ErrorDTO errorResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ErrorDTO.class
+        );
+
+        assertThat(errorResponse.message())
+                .isEqualTo("FlashcardSet not found");
     }
 }

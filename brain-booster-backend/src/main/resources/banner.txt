@@ -1,0 +1,6 @@
+========================================
+          BRAIN BOOSTER API
+========================================
+ Spring Boot: ${spring-boot.version}
+ Profile:     ${spring.profiles.active:default}
+========================================
