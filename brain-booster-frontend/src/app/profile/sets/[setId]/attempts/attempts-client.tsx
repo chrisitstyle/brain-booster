@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, BarChart3, ClipboardList, Clock3, Eye } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BarChart3,
+  ClipboardList,
+  Clock3,
+  Eye,
+  Loader2,
+} from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import { useGameProgress } from "@/hooks/game-results";
@@ -11,25 +19,34 @@ interface AttemptsClientProps {
 }
 
 function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function formatDuration(seconds: number | null | undefined) {
-  if (!seconds) {
-    return "0:00";
-  }
+  const normalizedSeconds = Math.max(0, Math.round(seconds ?? 0));
 
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const minutes = Math.floor(normalizedSeconds / 60);
+
+  const remainingSeconds = normalizedSeconds % 60;
 
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
 function formatPercentage(value: number) {
-  return `${Math.round(value)}%`;
+  const normalizedValue = Number.isFinite(value) ? value : 0;
+
+  const clampedValue = Math.min(Math.max(normalizedValue, 0), 100);
+
+  return `${Math.round(clampedValue)}%`;
 }
 
 export default function AttemptsClient({ setId }: AttemptsClientProps) {
@@ -45,9 +62,19 @@ export default function AttemptsClient({ setId }: AttemptsClientProps) {
 
   if (isAuthLoading) {
     return (
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
-        <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-500">
-          Loading attempts...
+      <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div
+            className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            role="status"
+          >
+            <Loader2
+              className="h-4 w-4 animate-spin text-pink-500 dark:text-pink-400"
+              aria-hidden="true"
+            />
+
+            <span>Loading attempts...</span>
+          </div>
         </div>
       </main>
     );
@@ -55,94 +82,113 @@ export default function AttemptsClient({ setId }: AttemptsClientProps) {
 
   if (!token || !isAuthenticated) {
     return (
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+      <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-600">
-            You need to be logged in to view attempts.
-          </p>
+          <div
+            className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            <AlertCircle
+              className="mt-0.5 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
+
+            <span>You need to be logged in to view attempts.</span>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         <Link
           href={`/profile/sets/${setId}/stats`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-pink-500"
+          className="inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-pink-400"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-hidden="true" />
           Back to stats
         </Link>
 
-        <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-          <div className="bg-pink-50/70 p-6 sm:p-8">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
-              <ClipboardList size={14} />
+        <section className="overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-sm">
+          <div className="bg-pink-50/70 p-6 dark:bg-pink-950/20 sm:p-8">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              <ClipboardList size={14} aria-hidden="true" />
               Attempt history
             </p>
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+            <h1 className="text-3xl font-bold tracking-tight text-card-foreground">
               Game attempts
             </h1>
 
-            <p className="mt-3 text-slate-500">
+            <p className="mt-3 text-muted-foreground">
               Review every completed attempt for this flashcard set.
             </p>
           </div>
         </section>
 
-        {isLoading ? (
-          <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-slate-500">
-            Loading attempts...
-          </p>
-        ) : null}
+        {isLoading && (
+          <div
+            className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            role="status"
+          >
+            <Loader2
+              className="h-4 w-4 animate-spin text-pink-500 dark:text-pink-400"
+              aria-hidden="true"
+            />
 
-        {error ? (
-          <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-600">
-            {error}
-          </p>
-        ) : null}
+            <span>Loading attempts...</span>
+          </div>
+        )}
 
-        {!isLoading && !error && orderedAttempts.length === 0 ? (
-          <section className="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
-            <ClipboardList size={32} className="mx-auto text-pink-500" />
+        {error && (
+          <div
+            className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            <AlertCircle
+              className="mt-0.5 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
 
-            <h2 className="mt-4 text-xl font-semibold text-slate-950">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {!isLoading && !error && orderedAttempts.length === 0 && (
+          <section className="rounded-3xl border border-dashed border-border bg-card p-10 text-center text-card-foreground shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-100 text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              <ClipboardList size={28} aria-hidden="true" />
+            </div>
+
+            <h2 className="mt-4 text-xl font-semibold text-card-foreground">
               No attempts yet
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Complete a game to see it in your attempt history.
             </p>
           </section>
-        ) : null}
+        )}
 
-        {orderedAttempts.length > 0 ? (
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+        {!isLoading && !error && orderedAttempts.length > 0 && (
+          <div className="overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Completed at
-                    </th>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Mode
-                    </th>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Score
-                    </th>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Percentage
-                    </th>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Duration
-                    </th>
-                    <th className="px-5 py-4 text-left font-semibold text-slate-950">
-                      Details
-                    </th>
+                    <TableHeader>Completed at</TableHeader>
+
+                    <TableHeader>Mode</TableHeader>
+
+                    <TableHeader>Score</TableHeader>
+
+                    <TableHeader>Percentage</TableHeader>
+
+                    <TableHeader>Duration</TableHeader>
+
+                    <TableHeader>Details</TableHeader>
                   </tr>
                 </thead>
 
@@ -150,42 +196,48 @@ export default function AttemptsClient({ setId }: AttemptsClientProps) {
                   {orderedAttempts.map((attempt) => (
                     <tr
                       key={attempt.attemptId}
-                      className="border-t border-gray-200 transition hover:bg-pink-50/40"
+                      className="border-t border-border transition-colors hover:bg-pink-50/40 dark:hover:bg-pink-950/20"
                     >
-                      <td className="px-5 py-4 text-slate-500">
+                      <td className="px-5 py-4 text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
-                          <Clock3 size={15} />
+                          <Clock3 size={15} aria-hidden="true" />
+
                           {formatDateTime(attempt.completedAt)}
                         </span>
                       </td>
 
                       <td className="px-5 py-4">
-                        <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500">
+                        <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
                           {attempt.mode}
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 font-medium text-slate-950">
+                      <td className="px-5 py-4 font-medium text-card-foreground">
                         {attempt.score}/{attempt.totalQuestions}
                       </td>
 
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-2 font-medium text-slate-950">
-                          <BarChart3 size={15} className="text-pink-500" />
+                        <span className="inline-flex items-center gap-2 font-medium text-card-foreground">
+                          <BarChart3
+                            size={15}
+                            className="text-pink-500 dark:text-pink-400"
+                            aria-hidden="true"
+                          />
+
                           {formatPercentage(attempt.percentage)}
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-slate-500">
+                      <td className="px-5 py-4 text-muted-foreground">
                         {formatDuration(attempt.durationSeconds)}
                       </td>
 
                       <td className="px-5 py-4">
                         <Link
                           href={`/profile/sets/${setId}/attempts/${attempt.attemptId}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 transition hover:bg-pink-200"
+                          className="inline-flex items-center gap-2 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-500 transition-colors hover:bg-pink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-pink-950/50 dark:text-pink-400 dark:hover:bg-pink-900/60"
                         >
-                          <Eye size={14} />
+                          <Eye size={14} aria-hidden="true" />
                           View details
                         </Link>
                       </td>
@@ -195,8 +247,19 @@ export default function AttemptsClient({ setId }: AttemptsClientProps) {
               </table>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </main>
+  );
+}
+
+function TableHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <th
+      scope="col"
+      className="px-5 py-4 text-left font-semibold text-foreground"
+    >
+      {children}
+    </th>
   );
 }
