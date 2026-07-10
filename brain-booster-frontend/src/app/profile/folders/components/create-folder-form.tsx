@@ -1,18 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import type { SubmitEvent } from "react";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAuth } from "@/context/AuthContext";
 import { createFolder, type CreateFolderData } from "@/api/folderService";
-
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
 
 export default function CreateFolderForm() {
   const router = useRouter();
@@ -25,26 +25,22 @@ export default function CreateFolderForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (field: keyof CreateFolderData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
+  function handleChange(field: keyof CreateFolderData, value: string) {
+    setFormData((previousFormData) => ({
+      ...previousFormData,
       [field]: value,
     }));
-  };
+  }
 
-  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isAuthLoading) return;
+    if (isAuthLoading) {
+      return;
+    }
 
     if (!token) {
-      toast.error("You must be logged in to create a folder.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
-
+      toast.error("You must be logged in to create a folder.");
       return;
     }
 
@@ -52,13 +48,7 @@ export default function CreateFolderForm() {
     const trimmedDescription = formData.description.trim();
 
     if (!trimmedName) {
-      toast.error("Folder name is required.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
-
+      toast.error("Folder name is required.");
       return;
     }
 
@@ -73,30 +63,20 @@ export default function CreateFolderForm() {
         token,
       );
 
-      toast.success("Folder created successfully", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
+      toast.success("Folder created successfully");
 
       router.push(`/profile/folders/${createdFolder.folderId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create folder:", error);
 
       const message =
         error instanceof Error ? error.message : "Failed to create folder.";
 
-      toast.error(message, {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -104,7 +84,7 @@ export default function CreateFolderForm() {
         <Button
           variant="ghost"
           size="sm"
-          className="text-gray-500 hover:text-pink-500"
+          className="text-muted-foreground hover:bg-accent hover:text-pink-500 dark:hover:text-pink-400"
           asChild
         >
           <Link href="/profile/folders">
@@ -114,18 +94,19 @@ export default function CreateFolderForm() {
         </Button>
       </div>
 
-      <Card className="border-gray-200 bg-white shadow-sm">
+      <Card className="border-border bg-card text-card-foreground shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-pink-100 p-3">
-              <FolderPlus className="h-6 w-6 text-pink-500" />
+            <div className="shrink-0 rounded-xl bg-pink-100 p-3 dark:bg-pink-950/50">
+              <FolderPlus className="h-6 w-6 text-pink-500 dark:text-pink-400" />
             </div>
 
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-800">
+              <CardTitle className="text-2xl font-bold text-card-foreground">
                 Create folder
               </CardTitle>
-              <p className="mt-1 text-sm text-gray-500">
+
+              <p className="mt-1 text-sm text-muted-foreground">
                 Organize your flashcard sets into a new folder.
               </p>
             </div>
@@ -135,7 +116,10 @@ export default function CreateFolderForm() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Folder name</Label>
+              <Label htmlFor="name" className="text-foreground">
+                Folder name
+              </Label>
+
               <Input
                 id="name"
                 type="text"
@@ -143,12 +127,16 @@ export default function CreateFolderForm() {
                 value={formData.name}
                 onChange={(event) => handleChange("name", event.target.value)}
                 disabled={isSubmitting}
-                className="border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                autoFocus
+                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-800"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-foreground">
+                Description
+              </Label>
+
               <textarea
                 id="description"
                 placeholder="Describe what this folder is for..."
@@ -158,7 +146,7 @@ export default function CreateFolderForm() {
                 }
                 disabled={isSubmitting}
                 rows={5}
-                className="flex w-full rounded-md border border-gray-200 bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-gray-400 focus:border-pink-300 focus:ring-1 focus:ring-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-2 focus-visible:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:border-pink-800"
               />
             </div>
 
@@ -167,6 +155,7 @@ export default function CreateFolderForm() {
                 type="button"
                 variant="outline"
                 disabled={isSubmitting}
+                className="border-border"
                 asChild
               >
                 <Link href="/profile/folders">Cancel</Link>

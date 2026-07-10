@@ -111,7 +111,6 @@ export default function StudyGamesSection({
 
     const authToken = token;
     const currentSetId = numericSetId;
-
     let isCancelled = false;
 
     async function loadGameResults() {
@@ -127,12 +126,12 @@ export default function StudyGamesSection({
           dataKey: queryKey,
           errorKey: null,
         });
-      } catch (error) {
-        console.error("Failed to load game results:", error);
-
+      } catch (error: unknown) {
         if (isCancelled) {
           return;
         }
+
+        console.error("Failed to load game results:", error);
 
         setGameResultsState((previousState) => ({
           ...previousState,
@@ -148,41 +147,52 @@ export default function StudyGamesSection({
     };
   }, [token, numericSetId, queryKey]);
 
-  const resultByMode = useMemo(() => {
-    return new Map(gameResults.map((result) => [result.mode, result]));
-  }, [gameResults]);
+  const resultByMode = useMemo(
+    () => new Map(gameResults.map((result) => [result.mode, result])),
+    [gameResults],
+  );
+
+  const encodedNickname = encodeURIComponent(nickname);
 
   return (
     <section className="mb-8 print:hidden">
-      <div className="mx-auto max-w-[550px]">
-        <h2 className="mb-3 text-base font-bold text-gray-800">
+      <div className="mx-auto max-w-2xl">
+        <h2 className="mb-3 text-base font-bold text-foreground">
           Practice modes
         </h2>
 
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {games.map((game) => {
             const Icon = game.icon;
             const result = resultByMode.get(game.mode);
 
+            const gameHref =
+              `/users/${encodedNickname}` + `/sets/${setId}/games/${game.href}`;
+
             return (
               <Link
-                key={game.name}
-                href={`/users/${nickname}/sets/${setId}/games/${game.href}`}
-                className="group flex h-24 flex-col items-center justify-center rounded-xl border border-pink-100 bg-white text-center shadow-sm transition hover:-translate-y-0.5 hover:border-pink-200 hover:bg-pink-50/50 hover:shadow-md"
+                key={game.mode}
+                href={gameHref}
+                className="group flex min-h-24 flex-col items-center justify-center rounded-xl border border-border bg-card px-3 py-4 text-center text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-pink-200 hover:bg-pink-50/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:border-pink-900 dark:hover:bg-pink-950/20"
               >
-                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-pink-50 text-pink-500 transition group-hover:bg-pink-500 group-hover:text-white">
-                  <Icon className="h-4 w-4" />
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-pink-100 text-pink-500 transition-colors group-hover:bg-pink-500 group-hover:text-white dark:bg-pink-950/50 dark:text-pink-400 dark:group-hover:bg-pink-500 dark:group-hover:text-white">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
                 </div>
 
-                <span className="px-2 text-xs font-semibold text-gray-800 transition group-hover:text-pink-600">
+                <span className="px-2 text-xs font-semibold text-card-foreground transition-colors group-hover:text-pink-600 dark:group-hover:text-pink-400">
                   {game.name}
                 </span>
 
-                {token ? (
-                  <span className="mt-1 rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-400 transition group-hover:bg-pink-100 group-hover:text-pink-500">
+                {token && (
+                  <span
+                    className="mt-1 max-w-full truncate rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors group-hover:bg-pink-100 group-hover:text-pink-500 dark:group-hover:bg-pink-950/60 dark:group-hover:text-pink-400"
+                    title={
+                      isLoadingResults ? "Loading..." : getResultLabel(result)
+                    }
+                  >
                     {isLoadingResults ? "Loading..." : getResultLabel(result)}
                   </span>
-                ) : null}
+                )}
               </Link>
             );
           })}

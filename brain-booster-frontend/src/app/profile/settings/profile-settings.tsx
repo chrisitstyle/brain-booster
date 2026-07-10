@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent, SyntheticEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type SubmitEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +25,9 @@ import {
   updateNickname,
   type UserDTO,
 } from "@/api/profileService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { notifyProfileUpdated } from "@/utils/profile-events";
 
@@ -126,39 +134,35 @@ export function ProfileSettings() {
     setEmail(currentUser.email);
   }
 
-  function handleRetry() {
+  async function handleRetry() {
     if (!token) {
       return;
     }
 
-    const requestToken = token;
+    try {
+      setProfileLoadingState("loading");
+      setProfileError("");
 
-    setProfileLoadingState("loading");
-    setProfileError("");
+      const user = await getCurrentUser(token);
 
-    void getCurrentUser(requestToken)
-      .then((user) => {
-        setCurrentUser(user);
-        setNickname(user.nickname);
-        setEmail(user.email);
-        setProfileError("");
-        setProfileLoadingState("success");
-      })
-      .catch((error: unknown) => {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to load user profile";
+      setCurrentUser(user);
+      setNickname(user.nickname);
+      setEmail(user.email);
+      setProfileError("");
+      setProfileLoadingState("success");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load user profile";
 
-        setCurrentUser(null);
-        setProfileError(message);
-        setProfileLoadingState("error");
+      setCurrentUser(null);
+      setProfileError(message);
+      setProfileLoadingState("error");
 
-        toast.error(message);
-      });
+      toast.error(message);
+    }
   }
 
-  async function handleSave(event: SyntheticEvent<HTMLFormElement>) {
+  async function handleSave(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!token || !currentUser || !hasChanges) {
@@ -205,7 +209,7 @@ export function ProfileSettings() {
             : "Email has been updated.";
 
       toast.success(message);
-    } catch (error) {
+    } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
@@ -225,9 +229,15 @@ export function ProfileSettings() {
 
   if (isAuthLoading || !isAuthenticated || profileLoadingState === "loading") {
     return (
-      <main className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10">
-        <div className="flex items-center gap-3 text-gray-500">
-          <Loader2 className="h-5 w-5 animate-spin text-pink-500" />
+      <main className="container mx-auto flex min-h-[calc(100svh-4rem)] items-center justify-center px-4 py-10">
+        <div
+          className="flex items-center gap-3 text-muted-foreground"
+          role="status"
+        >
+          <Loader2
+            className="h-5 w-5 animate-spin text-pink-500 dark:text-pink-400"
+            aria-hidden="true"
+          />
 
           <p>Loading settings...</p>
         </div>
@@ -237,37 +247,46 @@ export function ProfileSettings() {
 
   if (profileLoadingState === "error" || !currentUser) {
     return (
-      <main className="container mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl items-center justify-center px-4 py-10">
-        <section className="w-full rounded-xl border border-red-100 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
-            <AlertCircle className="h-7 w-7 text-red-500" />
+      <main className="container mx-auto flex min-h-[calc(100svh-4rem)] max-w-3xl items-center justify-center px-4 py-10">
+        <section className="w-full rounded-xl border border-red-200 bg-card p-8 text-center text-card-foreground shadow-sm dark:border-red-900">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
+            <AlertCircle
+              className="h-7 w-7 text-red-500 dark:text-red-400"
+              aria-hidden="true"
+            />
           </div>
 
-          <h1 className="mt-4 text-xl font-semibold text-gray-800">
+          <h1 className="mt-4 text-xl font-semibold text-card-foreground">
             Could not load profile
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             {profileError || "Your profile information could not be loaded."}
           </p>
 
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/profile"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-gray-200 px-4 text-sm font-medium text-gray-600 transition hover:border-pink-200 hover:text-pink-500"
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to profile
-            </Link>
-
-            <button
+            <Button
+              asChild
               type="button"
-              onClick={handleRetry}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-pink-500 px-4 text-sm font-medium text-white transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:ring-offset-2"
+              variant="outline"
+              className="border-border text-muted-foreground hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
+              <Link href="/profile">
+                <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                Back to profile
+              </Link>
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => {
+                void handleRetry();
+              }}
+              className="bg-pink-500 text-white hover:bg-pink-600"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
               Try again
-            </button>
+            </Button>
           </div>
         </section>
       </main>
@@ -275,57 +294,66 @@ export function ProfileSettings() {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-8">
+    <main className="container mx-auto min-h-[calc(100svh-4rem)] max-w-3xl px-4 py-8 text-foreground">
       <Link
         href="/profile"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-pink-500"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         Back to profile
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
 
-        <p className="mt-1 text-gray-500">Manage your account information</p>
+        <p className="mt-1 text-muted-foreground">
+          Manage your account information
+        </p>
       </div>
 
-      <section className="mb-6 flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-pink-200 bg-pink-100 text-xl font-semibold text-pink-500">
+      <section className="mb-6 flex items-center gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-pink-200 bg-pink-100 text-xl font-semibold text-pink-500 dark:border-pink-900 dark:bg-pink-950/50 dark:text-pink-400">
           {avatarFallback}
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold text-gray-800">
+          <p className="truncate text-lg font-semibold text-card-foreground">
             {currentUser.nickname}
           </p>
 
-          <p className="truncate text-sm text-gray-500">{currentUser.email}</p>
+          <p className="truncate text-sm text-muted-foreground">
+            {currentUser.email}
+          </p>
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-5">
-          <h2 className="text-lg font-semibold text-gray-800">Personal info</h2>
+      <section className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        <div className="border-b border-border px-6 py-5">
+          <h2 className="text-lg font-semibold text-card-foreground">
+            Personal info
+          </h2>
 
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Update your nickname and email address.
           </p>
         </div>
 
         <form onSubmit={handleSave} className="space-y-6 p-6">
           <div>
-            <label
+            <Label
               htmlFor="nickname"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-foreground"
             >
               Nickname
-            </label>
+            </Label>
 
             <div className="relative">
-              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <User
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
 
-              <input
+              <Input
                 id="nickname"
                 name="nickname"
                 type="text"
@@ -335,27 +363,30 @@ export function ProfileSettings() {
                 autoComplete="nickname"
                 disabled={isSaving}
                 required
-                className="h-11 w-full rounded-md border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 hover:border-gray-300 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 disabled:cursor-not-allowed disabled:bg-gray-100"
+                className="h-11 border-input bg-background pl-10 text-foreground placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-pink-400 focus-visible:ring-pink-500/20 disabled:bg-muted"
               />
             </div>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               This is how other users will see you.
             </p>
           </div>
 
           <div>
-            <label
+            <Label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-foreground"
             >
               Email
-            </label>
+            </Label>
 
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Mail
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
 
-              <input
+              <Input
                 id="email"
                 name="email"
                 type="email"
@@ -365,41 +396,45 @@ export function ProfileSettings() {
                 autoComplete="email"
                 disabled={isSaving}
                 required
-                className="h-11 w-full rounded-md border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 hover:border-gray-300 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 disabled:cursor-not-allowed disabled:bg-gray-100"
+                className="h-11 border-input bg-background pl-10 text-foreground placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-pink-400 focus-visible:ring-pink-500/20 disabled:bg-muted"
               />
             </div>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Used for signing in to your account.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-end">
             {hasChanges && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleCancelChanges}
                 disabled={isSaving}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-5 text-sm font-medium text-gray-600 transition hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-border text-muted-foreground hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
               >
                 Cancel changes
-              </button>
+              </Button>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={!hasChanges || isSaving}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-pink-500 px-5 text-sm font-medium text-white transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300"
+              className="bg-pink-500 text-white hover:bg-pink-600 disabled:bg-muted disabled:text-muted-foreground"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2
+                    className="mr-2 h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
                   Saving...
                 </>
               ) : (
                 "Save changes"
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </section>

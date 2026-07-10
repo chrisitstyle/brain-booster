@@ -24,10 +24,6 @@ import {
 } from "@/api/folderService";
 import { getCurrentUser, type UserDTO } from "@/api/profileService";
 import { getUserFlashcardSetsByUserId } from "@/api/userService";
-import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
-import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
-
 import EditFolderForm from "@/app/profile/folders/components/edit-folder-form";
 import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
 import {
@@ -51,6 +47,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
 
 interface StudySet {
   id: string;
@@ -160,9 +159,7 @@ export function ProfileDashboard() {
   );
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
   const [setToDelete, setSetToDelete] = useState<string | null>(null);
-
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isFolderDeleteDialogOpen, setIsFolderDeleteDialogOpen] =
@@ -217,12 +214,7 @@ export function ProfileDashboard() {
         setSets([]);
         setFolders([]);
 
-        toast.error("Failed to load profile content.", {
-          style: {
-            background: "red",
-            color: "white",
-          },
-        });
+        toast.error("Failed to load profile content.");
       })
       .finally(() => {
         if (!isCancelled) {
@@ -284,21 +276,21 @@ export function ProfileDashboard() {
       }).format(new Date(currentUser.createdAt))
     : "";
 
-  const handleEditSetClick = (set: StudySet) => {
+  function handleEditSetClick(set: StudySet) {
     router.push(`/users/${encodeURIComponent(set.author)}/sets/${set.id}/edit`);
-  };
+  }
 
-  const handleAddToFolderClick = (set: StudySet) => {
+  function handleAddToFolderClick(set: StudySet) {
     setSetToAddToFolder(set);
     setIsFolderListOpen(true);
-  };
+  }
 
-  const handleFolderListClose = () => {
+  function handleFolderListClose() {
     setSetToAddToFolder(null);
     setIsFolderListOpen(false);
-  };
+  }
 
-  const handleFolderUpdated = (updatedFolder: FolderDTO) => {
+  function handleFolderUpdated(updatedFolder: FolderDTO) {
     setFolders((previousFolders) =>
       previousFolders.map((folder) =>
         folder.id === updatedFolder.folderId.toString()
@@ -311,9 +303,9 @@ export function ProfileDashboard() {
           : folder,
       ),
     );
-  };
+  }
 
-  const handleDeleteConfirm = async () => {
+  async function handleDeleteConfirm() {
     if (!setToDelete || !token) {
       return;
     }
@@ -328,7 +320,7 @@ export function ProfileDashboard() {
       );
 
       toast.success("Set deleted successfully");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to delete set:", error);
 
       toast.error("Failed to delete set. Please try again.");
@@ -337,38 +329,38 @@ export function ProfileDashboard() {
       setIsDeleteDialogOpen(false);
       setSetToDelete(null);
     }
-  };
+  }
 
-  const handleDeleteCancel = () => {
+  function handleDeleteCancel() {
     setSetToDelete(null);
     setIsDeleteDialogOpen(false);
-  };
+  }
 
-  const handleFolderEditClick = (folder: DashboardFolder) => {
+  function handleFolderEditClick(folder: DashboardFolder) {
     setFolderToEdit(folder);
     setIsEditFolderFormOpen(true);
-  };
+  }
 
-  const handleFolderEditClose = () => {
+  function handleFolderEditClose() {
     setFolderToEdit(null);
     setIsEditFolderFormOpen(false);
-  };
+  }
 
-  const handleFolderDeleteClick = (folder: DashboardFolder) => {
+  function handleFolderDeleteClick(folder: DashboardFolder) {
     setFolderToDelete(folder);
     setIsFolderDeleteDialogOpen(true);
-  };
+  }
 
-  const handleFolderDeleteCancel = () => {
+  function handleFolderDeleteCancel() {
     if (isDeletingFolder) {
       return;
     }
 
     setFolderToDelete(null);
     setIsFolderDeleteDialogOpen(false);
-  };
+  }
 
-  const handleFolderDeleteConfirm = async () => {
+  async function handleFolderDeleteConfirm() {
     if (!folderToDelete || !token) {
       return;
     }
@@ -383,7 +375,7 @@ export function ProfileDashboard() {
       );
 
       toast.success("Folder deleted successfully");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to delete folder:", error);
 
       toast.error("Failed to delete folder. Please try again.");
@@ -392,46 +384,48 @@ export function ProfileDashboard() {
       setIsFolderDeleteDialogOpen(false);
       setFolderToDelete(null);
     }
-  };
+  }
 
   return (
     <>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20 border-4 border-pink-200">
-              <AvatarFallback className="bg-pink-100 text-2xl font-medium text-pink-500">
+          <div className="flex min-w-0 items-center gap-4">
+            <Avatar className="h-20 w-20 shrink-0 border-4 border-pink-200 dark:border-pink-900">
+              <AvatarFallback className="bg-pink-100 text-2xl font-medium text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
                 {isContentLoading && !currentUser ? "" : avatarFallback}
               </AvatarFallback>
             </Avatar>
 
             {currentUser ? (
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-bold text-gray-800">
+                <h1 className="truncate text-2xl font-bold text-foreground">
                   {currentUser.nickname}
                 </h1>
 
-                <p className="truncate text-gray-500">{currentUser.email}</p>
+                <p className="truncate text-muted-foreground">
+                  {currentUser.email}
+                </p>
 
                 {memberSince && (
-                  <p className="mt-1 text-sm text-gray-400">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Member since {memberSince}
                   </p>
                 )}
               </div>
             ) : isContentLoading ? (
               <div className="space-y-2">
-                <div className="h-7 w-36 animate-pulse rounded bg-gray-100" />
-                <div className="h-5 w-48 animate-pulse rounded bg-gray-100" />
-                <div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
+                <div className="h-7 w-36 animate-pulse rounded bg-muted" />
+                <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
               </div>
             ) : (
               <div>
-                <h1 className="text-xl font-semibold text-gray-800">
+                <h1 className="text-xl font-semibold text-foreground">
                   Profile unavailable
                 </h1>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   User information could not be loaded.
                 </p>
               </div>
@@ -442,7 +436,7 @@ export function ProfileDashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-200 text-gray-600 hover:border-pink-200 hover:text-pink-500"
+              className="border-border text-muted-foreground hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500 dark:hover:border-pink-900 dark:hover:bg-pink-950/40 dark:hover:text-pink-400"
               asChild
             >
               <Link href="/profile/settings">
@@ -466,44 +460,50 @@ export function ProfileDashboard() {
 
         <div className="mb-8 grid gap-4 md:grid-cols-3">
           {achievements.map((achievement) => (
-            <Card key={achievement.label} className="border-gray-200 bg-white">
+            <Card
+              key={achievement.label}
+              className="border-border bg-card text-card-foreground"
+            >
               <CardContent className="flex items-center gap-4 p-6">
                 <div
-                  className={cn(
-                    "rounded-full bg-gray-50 p-3",
-                    achievement.color,
-                  )}
+                  className={cn("rounded-full bg-muted p-3", achievement.color)}
                 >
                   <achievement.icon className="h-6 w-6" />
                 </div>
 
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-card-foreground">
                     {achievement.value}
                   </p>
 
-                  <p className="text-sm text-gray-500">{achievement.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {achievement.label}
+                  </p>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card className="mb-8 border-gray-200 bg-white">
+        <Card className="mb-8 border-border bg-card text-card-foreground">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold text-gray-800">
+            <CardTitle className="text-lg font-semibold text-card-foreground">
               Weekly Progress
             </CardTitle>
           </CardHeader>
 
           <CardContent>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-gray-500">5 of 7 days studied</span>
+              <span className="text-sm text-muted-foreground">
+                5 of 7 days studied
+              </span>
 
-              <span className="text-sm font-medium text-pink-500">71%</span>
+              <span className="text-sm font-medium text-pink-500 dark:text-pink-400">
+                71%
+              </span>
             </div>
 
-            <Progress value={71} className="h-2 bg-gray-100" />
+            <Progress value={71} className="h-2 bg-muted" />
 
             <div className="mt-4 flex justify-between">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
@@ -514,13 +514,13 @@ export function ProfileDashboard() {
                         "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium",
                         index < 5
                           ? "bg-pink-500 text-white"
-                          : "bg-gray-100 text-gray-400",
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {index < 5 ? <Flame className="h-4 w-4" /> : null}
                     </div>
 
-                    <span className="text-xs text-gray-500">{day}</span>
+                    <span className="text-xs text-muted-foreground">{day}</span>
                   </div>
                 ),
               )}
@@ -529,12 +529,13 @@ export function ProfileDashboard() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6 w-full justify-start gap-2 border-b border-gray-200 bg-transparent p-0">
+          <TabsList className="mb-6 w-full justify-start gap-2 border-b border-border bg-transparent p-0">
             <TabsTrigger
               value="sets"
               className={cn(
-                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-muted-foreground shadow-none",
                 "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "dark:data-[state=active]:text-pink-400",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
               )}
             >
@@ -545,8 +546,9 @@ export function ProfileDashboard() {
             <TabsTrigger
               value="folders"
               className={cn(
-                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-muted-foreground shadow-none",
                 "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "dark:data-[state=active]:text-pink-400",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
               )}
             >
@@ -557,8 +559,9 @@ export function ProfileDashboard() {
             <TabsTrigger
               value="recent"
               className={cn(
-                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-gray-600 shadow-none",
+                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3 text-muted-foreground shadow-none",
                 "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
+                "dark:data-[state=active]:text-pink-400",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
               )}
             >
@@ -569,7 +572,7 @@ export function ProfileDashboard() {
 
           <TabsContent value="sets" className="mt-0">
             {isContentLoading ? (
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-10 text-center text-muted-foreground">
                 Downloading flashcard sets...
               </div>
             ) : sets.length > 0 ? (
@@ -591,7 +594,7 @@ export function ProfileDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-10 text-center text-muted-foreground">
                 You don&apos;t have any flashcard sets yet.
               </div>
             )}
@@ -599,7 +602,7 @@ export function ProfileDashboard() {
 
           <TabsContent value="folders" className="mt-0">
             {isContentLoading ? (
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-10 text-center text-muted-foreground">
                 Downloading folders...
               </div>
             ) : (
@@ -619,11 +622,11 @@ export function ProfileDashboard() {
                 ))}
 
                 <Link href="/profile/folders/create" className="block">
-                  <Card className="flex cursor-pointer items-center justify-center border-2 border-dashed border-gray-200 bg-white p-6 transition-colors hover:border-pink-300 hover:bg-pink-50">
+                  <Card className="flex cursor-pointer items-center justify-center border-2 border-dashed border-border bg-card p-6 text-card-foreground transition-colors hover:border-pink-300 hover:bg-pink-50 dark:hover:border-pink-900 dark:hover:bg-pink-950/30">
                     <div className="text-center">
-                      <Plus className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+                      <Plus className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
 
-                      <p className="text-sm font-medium text-gray-500">
+                      <p className="text-sm font-medium text-muted-foreground">
                         Create new folder
                       </p>
                     </div>
@@ -631,7 +634,7 @@ export function ProfileDashboard() {
                 </Link>
 
                 {folders.length === 0 && (
-                  <div className="col-span-full py-6 text-center text-gray-500">
+                  <div className="col-span-full py-6 text-center text-muted-foreground">
                     You don&apos;t have any folders yet.
                   </div>
                 )}
@@ -640,11 +643,17 @@ export function ProfileDashboard() {
           </TabsContent>
 
           <TabsContent value="recent" className="mt-0">
-            <div className="space-y-3">
-              {sets.map((set) => (
-                <RecentActivityItem key={set.id} set={set} />
-              ))}
-            </div>
+            {sets.length > 0 ? (
+              <div className="space-y-3">
+                {sets.map((set) => (
+                  <RecentActivityItem key={set.id} set={set} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-muted-foreground">
+                No recent activity yet.
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -653,7 +662,7 @@ export function ProfileDashboard() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border bg-background text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
 
@@ -686,15 +695,14 @@ export function ProfileDashboard() {
         open={isFolderDeleteDialogOpen}
         onOpenChange={setIsFolderDeleteDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border bg-background text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete folder?</AlertDialogTitle>
 
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              folder &quot;
-              {folderToDelete?.title}&quot;. Your flashcard sets will not be
-              deleted, only removed from this folder.
+              folder &quot;{folderToDelete?.title}&quot;. Your flashcard sets
+              will not be deleted, only removed from this folder.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -755,24 +763,24 @@ function StudySetCard({
   const authorInitial = set.author.trim().charAt(0).toUpperCase() || "?";
 
   return (
-    <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
+    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <CardContent className="p-4">
-        <div className="mb-3 flex items-start justify-between">
-          <div className="flex-1">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <Link
               href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
-              className="line-clamp-1 font-semibold text-gray-800 hover:text-pink-500"
+              className="line-clamp-1 font-semibold text-card-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
             >
               {set.title}
             </Link>
 
             {set.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                 {set.description}
               </p>
             )}
 
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {set.termCount} terms
             </p>
           </div>
@@ -784,17 +792,21 @@ function StudySetCard({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 transition-opacity",
+                  "h-8 w-8 shrink-0 transition-opacity",
                   isDropdownOpen || isDeleteDialogOpen
                     ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100",
+                    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
                 )}
+                aria-label={`Open options for ${set.title}`}
               >
-                <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="border-border bg-popover text-popover-foreground"
+            >
               <DropdownMenuItem
                 className="cursor-pointer"
                 onSelect={(event) => {
@@ -820,7 +832,7 @@ function StudySetCard({
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="cursor-pointer text-red-500"
+                className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
                 onSelect={(event) => {
                   event.preventDefault();
                   onDeleteClick(set.id);
@@ -835,12 +847,14 @@ function StudySetCard({
 
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
+            <AvatarFallback className="bg-pink-100 text-xs text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
               {authorInitial}
             </AvatarFallback>
           </Avatar>
 
-          <span className="text-sm text-gray-500">{set.author}</span>
+          <span className="truncate text-sm text-muted-foreground">
+            {set.author}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -861,23 +875,23 @@ function FolderCard({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
-    <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
+    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <Link
             href={`/profile/folders/${folder.id}`}
             className="flex min-w-0 flex-1 items-center gap-3"
           >
-            <div className="rounded-lg bg-pink-100 p-2">
-              <FolderOpen className="h-5 w-5 text-pink-500" />
+            <div className="rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
+              <FolderOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
             </div>
 
             <div className="min-w-0">
-              <h3 className="line-clamp-1 font-semibold text-gray-800 transition-colors group-hover:text-pink-500">
+              <h3 className="line-clamp-1 font-semibold text-card-foreground transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400">
                 {folder.title}
               </h3>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {folder.setCount} {folder.setCount === 1 ? "set" : "sets"}
               </p>
             </div>
@@ -890,17 +904,21 @@ function FolderCard({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 transition-opacity",
+                  "h-8 w-8 shrink-0 transition-opacity",
                   isDropdownOpen || isMenuForcedOpen
                     ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100",
+                    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
                 )}
+                aria-label={`Open options for ${folder.title}`}
               >
-                <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="border-border bg-popover text-popover-foreground"
+            >
               <DropdownMenuItem
                 className="cursor-pointer"
                 onSelect={(event) => {
@@ -913,7 +931,7 @@ function FolderCard({
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className="cursor-pointer text-red-500"
+                className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
                 onSelect={(event) => {
                   event.preventDefault();
                   onDeleteClick(folder);
@@ -932,26 +950,26 @@ function FolderCard({
 
 function RecentActivityItem({ set }: { set: StudySet }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 transition-all hover:border-pink-200 hover:shadow-sm">
-      <div className="flex items-center gap-4">
-        <div className="rounded-lg bg-pink-100 p-2">
-          <BookOpen className="h-5 w-5 text-pink-500" />
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 text-card-foreground transition-all hover:border-pink-200 hover:shadow-sm dark:hover:border-pink-900 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="shrink-0 rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
+          <BookOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <Link
             href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
-            className="font-medium text-gray-800 hover:text-pink-500"
+            className="line-clamp-1 font-medium text-card-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
           >
             {set.title}
           </Link>
 
-          <p className="text-sm text-gray-500">{set.termCount} terms</p>
+          <p className="text-sm text-muted-foreground">{set.termCount} terms</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-400">{set.lastStudied}</span>
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <span className="text-sm text-muted-foreground">{set.lastStudied}</span>
 
         <Button
           size="sm"

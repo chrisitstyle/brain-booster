@@ -3,8 +3,6 @@
 import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import { Textarea } from "@/components/ui/textarea";
 import type { ImportedFlashcard } from "@/features/sets/types";
 
 type ImportMode = "text" | "json" | "csv";
@@ -198,6 +197,7 @@ function parseImportedFlashcardsFromText({
       }
 
       const term = rawCard.slice(0, separatorIndex).trim();
+
       const definition = rawCard
         .slice(separatorIndex + separator.length)
         .trim();
@@ -308,6 +308,7 @@ function parseImportedFlashcardsFromJson(text: string): ParseResult {
 
 function parseCsvRows(text: string, delimiter: string) {
   const rows: string[][] = [];
+
   let row: string[] = [];
   let field = "";
   let inQuotes = false;
@@ -332,6 +333,7 @@ function parseCsvRows(text: string, delimiter: string) {
     if (character === delimiter && !inQuotes) {
       row.push(field);
       field = "";
+
       continue;
     }
 
@@ -348,6 +350,7 @@ function parseCsvRows(text: string, delimiter: string) {
 
       row = [];
       field = "";
+
       continue;
     }
 
@@ -439,14 +442,21 @@ export function ImportFlashcardsDialog({
 }: ImportFlashcardsDialogProps) {
   const [text, setText] = useState("");
   const [importMode, setImportMode] = useState<ImportMode>("text");
+
   const [termDefinitionSeparator, setTermDefinitionSeparator] =
     useState<TermDefinitionSeparator>("tab");
+
   const [cardSeparator, setCardSeparator] = useState<CardSeparator>("newline");
+
   const [customTermDefinitionSeparator, setCustomTermDefinitionSeparator] =
     useState("");
+
   const [customCardSeparator, setCustomCardSeparator] = useState("");
+
   const [csvFileName, setCsvFileName] = useState("");
+
   const [csvFileError, setCsvFileError] = useState<string | undefined>();
+
   const [csvInputKey, setCsvInputKey] = useState(0);
 
   const textPlaceholder = useMemo(
@@ -499,21 +509,22 @@ export function ImportFlashcardsDialog({
   ]);
 
   const parsedFlashcards = parseResult.flashcards;
+
   const previewFlashcard = parsedFlashcards[0];
 
-  const resetCsvState = () => {
+  function resetCsvState() {
     setCsvFileName("");
     setCsvFileError(undefined);
     setCsvInputKey((currentKey) => currentKey + 1);
-  };
+  }
 
-  const handleImportModeChange = (value: string) => {
+  function handleImportModeChange(value: string) {
     setImportMode(value as ImportMode);
     setText("");
     resetCsvState();
-  };
+  }
 
-  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Tab" && !event.shiftKey) {
       insertTextAtCursor({
         event,
@@ -522,11 +533,11 @@ export function ImportFlashcardsDialog({
         insertedText: "\t",
       });
     }
-  };
+  }
 
-  const handleCustomTermDefinitionSeparatorKeyDown = (
+  function handleCustomTermDefinitionSeparatorKeyDown(
     event: KeyboardEvent<HTMLInputElement>,
-  ) => {
+  ) {
     if (event.key === "Tab" && !event.shiftKey) {
       insertTextAtCursor({
         event,
@@ -535,11 +546,11 @@ export function ImportFlashcardsDialog({
         insertedText: "\t",
       });
     }
-  };
+  }
 
-  const handleCustomCardSeparatorKeyDown = (
+  function handleCustomCardSeparatorKeyDown(
     event: KeyboardEvent<HTMLInputElement>,
-  ) => {
+  ) {
     if (event.key === "Tab" && !event.shiftKey) {
       insertTextAtCursor({
         event,
@@ -548,9 +559,9 @@ export function ImportFlashcardsDialog({
         insertedText: "\t",
       });
     }
-  };
+  }
 
-  const handleCsvFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  async function handleCsvFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     setText("");
@@ -568,6 +579,7 @@ export function ImportFlashcardsDialog({
 
     if (file.size > MAX_CSV_FILE_SIZE_IN_BYTES) {
       setCsvFileError("CSV file is too large. Maximum size is 1 MB.");
+
       return;
     }
 
@@ -579,9 +591,9 @@ export function ImportFlashcardsDialog({
     } catch {
       setCsvFileError("Failed to read CSV file.");
     }
-  };
+  }
 
-  const handleImport = () => {
+  function handleImport() {
     if (parsedFlashcards.length === 0 || parseResult.error) {
       return;
     }
@@ -590,17 +602,18 @@ export function ImportFlashcardsDialog({
     setText("");
     resetCsvState();
     onOpenChange(false);
-  };
+  }
 
-  const handleClose = () => {
+  function handleClose() {
     onOpenChange(false);
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto overflow-x-hidden border-border bg-background text-foreground">
         <DialogHeader>
           <DialogTitle>Import your flashcards</DialogTitle>
+
           <DialogDescription>
             Paste your terms and definitions or choose a CSV file, then import
             them into this set.
@@ -608,47 +621,55 @@ export function ImportFlashcardsDialog({
         </DialogHeader>
 
         <div className="min-w-0 space-y-6">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="mb-3 text-sm font-semibold text-gray-700">
+          <div className="rounded-lg border border-border bg-muted/50 p-4">
+            <p className="mb-3 text-sm font-semibold text-foreground">
               Import format
             </p>
 
             <Select value={importMode} onValueChange={handleImportModeChange}>
-              <SelectTrigger className="w-[180px] border-gray-200 bg-white">
+              <SelectTrigger
+                className="w-[180px] border-input bg-background text-foreground"
+                aria-label="Import format"
+              >
                 <SelectValue />
               </SelectTrigger>
 
-              <SelectContent>
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 <SelectItem value="text">Text</SelectItem>
+
                 <SelectItem value="json">JSON</SelectItem>
+
                 {allowCsvImport && <SelectItem value="csv">CSV</SelectItem>}
               </SelectContent>
             </Select>
           </div>
 
           {importMode === "csv" ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4">
+            <div className="rounded-xl border border-dashed border-border bg-card p-4 text-card-foreground">
               <Input
                 key={csvInputKey}
                 type="file"
                 accept=".csv,text/csv"
-                onChange={handleCsvFileChange}
-                className="cursor-pointer border-gray-200 bg-white"
+                onChange={(event) => {
+                  void handleCsvFileChange(event);
+                }}
+                className="cursor-pointer border-input bg-background text-foreground file:text-foreground"
+                aria-label="Choose CSV file"
               />
 
-              <p className="mt-3 text-sm text-gray-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 The first column will be imported as the term and the second
                 column as the definition. Do not include a header row unless you
                 want it to become a flashcard.
               </p>
 
               {csvFileName ? (
-                <p className="mt-2 text-sm text-gray-700">
+                <p className="mt-2 text-sm text-foreground">
                   Selected file:{" "}
                   <span className="font-medium">{csvFileName}</span>
                 </p>
               ) : (
-                <p className="mt-2 text-sm text-gray-400">
+                <p className="mt-2 text-sm text-muted-foreground">
                   No CSV file selected.
                 </p>
               )}
@@ -662,14 +683,15 @@ export function ImportFlashcardsDialog({
                 importMode === "json" ? jsonPlaceholder : textPlaceholder
               }
               wrap="off"
-              className="h-56 max-h-56 min-h-56 w-full min-w-0 resize-none overflow-x-auto overflow-y-auto rounded-xl border-gray-300 bg-white font-mono text-sm leading-6 focus:border-pink-500 focus:ring-pink-500"
+              className="h-56 max-h-56 min-h-56 w-full min-w-0 resize-none overflow-x-auto overflow-y-auto rounded-xl border-input bg-background font-mono text-sm leading-6 text-foreground placeholder:text-muted-foreground focus-visible:border-pink-500 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-400"
+              aria-label="Flashcards to import"
             />
           )}
 
           {importMode === "text" ? (
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-3 text-sm font-semibold text-gray-700">
+              <div className="rounded-lg border border-border bg-muted/50 p-4">
+                <p className="mb-3 text-sm font-semibold text-foreground">
                   Between term and definition
                 </p>
 
@@ -679,13 +701,18 @@ export function ImportFlashcardsDialog({
                     setTermDefinitionSeparator(value as TermDefinitionSeparator)
                   }
                 >
-                  <SelectTrigger className="border-gray-200 bg-white">
+                  <SelectTrigger
+                    className="border-input bg-background text-foreground"
+                    aria-label="Term and definition separator"
+                  >
                     <SelectValue />
                   </SelectTrigger>
 
-                  <SelectContent>
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
                     <SelectItem value="tab">Tab</SelectItem>
+
                     <SelectItem value="comma">Comma</SelectItem>
+
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
@@ -698,13 +725,14 @@ export function ImportFlashcardsDialog({
                     }
                     onKeyDown={handleCustomTermDefinitionSeparatorKeyDown}
                     placeholder="Enter custom separator"
-                    className="mt-3 border-gray-200 bg-white"
+                    className="mt-3 border-input bg-background text-foreground placeholder:text-muted-foreground"
+                    aria-label="Custom term and definition separator"
                   />
                 )}
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-3 text-sm font-semibold text-gray-700">
+              <div className="rounded-lg border border-border bg-muted/50 p-4">
+                <p className="mb-3 text-sm font-semibold text-foreground">
                   Between cards
                 </p>
 
@@ -714,13 +742,18 @@ export function ImportFlashcardsDialog({
                     setCardSeparator(value as CardSeparator)
                   }
                 >
-                  <SelectTrigger className="border-gray-200 bg-white">
+                  <SelectTrigger
+                    className="border-input bg-background text-foreground"
+                    aria-label="Card separator"
+                  >
                     <SelectValue />
                   </SelectTrigger>
 
-                  <SelectContent>
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
                     <SelectItem value="newline">New line</SelectItem>
+
                     <SelectItem value="semicolon">Semicolon</SelectItem>
+
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
@@ -733,63 +766,70 @@ export function ImportFlashcardsDialog({
                     }
                     onKeyDown={handleCustomCardSeparatorKeyDown}
                     placeholder="Enter custom separator"
-                    className="mt-3 border-gray-200 bg-white"
+                    className="mt-3 border-input bg-background text-foreground placeholder:text-muted-foreground"
+                    aria-label="Custom card separator"
                   />
                 )}
               </div>
             </div>
           ) : importMode === "json" ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+            <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
               JSON can be an array of objects with{" "}
-              <span className="font-medium text-gray-800">term</span> and{" "}
-              <span className="font-medium text-gray-800">definition</span>, or
-              an object with a{" "}
-              <span className="font-medium text-gray-800">flashcards</span>{" "}
+              <span className="font-medium text-foreground">term</span> and{" "}
+              <span className="font-medium text-foreground">definition</span>,
+              or an object with a{" "}
+              <span className="font-medium text-foreground">flashcards</span>{" "}
               array.
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+            <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
               CSV supports comma, semicolon and tab-separated files. The parser
               also supports quoted values, for example{" "}
-              <span className="font-medium text-gray-800">
+              <span className="font-medium text-foreground">
                 &quot;USA&quot;,&quot;United States of America&quot;
               </span>
               .
             </div>
           )}
 
-          <div className="min-w-0 rounded-lg border border-gray-200 bg-white">
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-              <h3 className="font-semibold text-gray-800">Preview</h3>
+          <div className="min-w-0 rounded-lg border border-border bg-card text-card-foreground">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h3 className="font-semibold text-card-foreground">Preview</h3>
 
-              <span className="text-sm text-gray-500">
+              <span
+                className="text-sm text-muted-foreground"
+                aria-live="polite"
+              >
                 {parsedFlashcards.length}{" "}
                 {parsedFlashcards.length === 1 ? "card" : "cards"}
               </span>
             </div>
 
             {parseResult.error && (text.trim() || importMode === "csv") ? (
-              <div className="px-4 py-8 text-center text-sm text-red-500">
+              <div
+                className="px-4 py-8 text-center text-sm text-red-500 dark:text-red-400"
+                role="alert"
+              >
                 {parseResult.error}
               </div>
             ) : previewFlashcard ? (
               <div className="grid min-w-0 gap-4 px-4 py-4 md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)]">
-                <span className="text-sm text-gray-400">1</span>
+                <span className="text-sm text-muted-foreground">1</span>
 
-                <p className="min-w-0 break-words text-sm text-gray-800">
+                <p className="min-w-0 break-words text-sm text-card-foreground">
                   {previewFlashcard.term || (
-                    <span className="text-gray-400">No term</span>
+                    <span className="text-muted-foreground">No term</span>
                   )}
                 </p>
 
-                <p className="min-w-0 break-words text-sm text-gray-600">
+                <p className="min-w-0 break-words text-sm text-muted-foreground">
                   {previewFlashcard.definition || (
-                    <span className="text-gray-400">No definition</span>
+                    <span className="text-muted-foreground">No definition</span>
                   )}
                 </p>
               </div>
             ) : (
-              <div className="px-4 py-8 text-center text-sm text-gray-500">
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 {importMode === "csv"
                   ? "Choose a CSV file above to see a preview."
                   : "Paste text above to see a preview."}
@@ -798,37 +838,26 @@ export function ImportFlashcardsDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
+        <DialogFooter className="gap-2 sm:justify-end">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="border-border text-muted-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-500 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
           >
             Cancel
           </Button>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="border-gray-200 text-gray-600 hover:border-pink-300 hover:text-pink-500"
-            >
-              Cancel import
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleImport}
-              disabled={
-                parsedFlashcards.length === 0 || Boolean(parseResult.error)
-              }
-              className="bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300"
-            >
-              Import
-            </Button>
-          </div>
+          <Button
+            type="button"
+            onClick={handleImport}
+            disabled={
+              parsedFlashcards.length === 0 || Boolean(parseResult.error)
+            }
+            className="bg-pink-500 text-white hover:bg-pink-600 disabled:bg-muted disabled:text-muted-foreground"
+          >
+            Import
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

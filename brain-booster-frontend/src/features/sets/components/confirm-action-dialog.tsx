@@ -30,20 +30,31 @@ export function ConfirmActionDialog({
 }: ConfirmActionDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="border-border bg-background text-foreground">
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle className="text-foreground">
+            {title}
+          </AlertDialogTitle>
+
+          <AlertDialogDescription className="text-muted-foreground">
+            {description}
+          </AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel
+            disabled={isLoading}
+            className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            Cancel
+          </AlertDialogCancel>
+
           <AlertDialogAction
             disabled={isLoading}
             onClick={onConfirm}
-            className="bg-red-500 text-white hover:bg-red-600"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted disabled:text-muted-foreground"
           >
-            {confirmLabel}
+            {isLoading ? "Please wait..." : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

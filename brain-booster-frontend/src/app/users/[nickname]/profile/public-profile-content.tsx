@@ -1,163 +1,212 @@
 "use client";
 
+import { useEffect, useMemo, useState, type ElementType } from "react";
 import Link from "next/link";
-import { BookOpen, Calendar, FolderOpen, Search, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  BookOpen,
+  Calendar,
+  FolderOpen,
+  Loader2,
+  Search,
+  User,
+} from "lucide-react";
+import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getFoldersByNickname,
   type Folder as ApiFolder,
 } from "@/api/folderService";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FlashcardSet {
   setId: number;
   user: {
     nickname: string;
-    createdAt: Date;
+    createdAt: Date | string;
   };
   setName: string;
   description: string;
-  createdAt: Date;
+  createdAt: Date | string;
   termCount: number;
+}
+
+interface PublicProfileContentProps {
+  nickname: string;
+  initialSets: FlashcardSet[];
+}
+
+type ProfileTab = "sets" | "folders";
+
+function formatJoinedDate(createdAt?: Date | string) {
+  if (!createdAt) {
+    return "Unknown";
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 export default function PublicProfileContent({
   nickname,
   initialSets,
-}: {
-  nickname: string;
-  initialSets: FlashcardSet[];
-}) {
-  const [activeTab, setActiveTab] = useState("sets");
+}: PublicProfileContentProps) {
+  const [activeTab, setActiveTab] = useState<ProfileTab>("sets");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [folders, setFolders] = useState<ApiFolder[]>([]);
   const [isFoldersLoading, setIsFoldersLoading] = useState(true);
 
-  const flashcardSets = initialSets;
-
   useEffect(() => {
-    const fetchFolders = async () => {
+    let isCancelled = false;
+
+    async function fetchFolders() {
       try {
         setIsFoldersLoading(true);
+
         const data = await getFoldersByNickname(nickname);
+
+        if (isCancelled) {
+          return;
+        }
+
         setFolders(data);
-      } catch (error) {
+      } catch (error: unknown) {
+        if (isCancelled) {
+          return;
+        }
+
         console.error("Error fetching folders:", error);
+
+        toast.error("Failed to load folders.");
         setFolders([]);
       } finally {
-        setIsFoldersLoading(false);
+        if (!isCancelled) {
+          setIsFoldersLoading(false);
+        }
       }
-    };
+    }
 
-    fetchFolders();
+    void fetchFolders();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [nickname]);
 
-  const filteredSets = flashcardSets.filter((set) =>
-    set.setName?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-  const filteredFolders = folders.filter((folder) =>
-    folder.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredSets = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return initialSets;
+    }
 
-  const joinedDateToDisplay =
-    flashcardSets.length > 0 && flashcardSets[0].user?.createdAt
-      ? new Date(flashcardSets[0].user.createdAt).toLocaleDateString("en-US", {
-          month: "long",
-          year: "numeric",
-        })
-      : "Unknown";
+    return initialSets.filter(
+      (set) =>
+        set.setName?.toLowerCase().includes(normalizedSearchQuery) ||
+        set.description?.toLowerCase().includes(normalizedSearchQuery),
+    );
+  }, [initialSets, normalizedSearchQuery]);
 
-  const displayedNickname =
-    flashcardSets.length > 0 && flashcardSets[0].user?.nickname
-      ? flashcardSets[0].user.nickname
-      : nickname;
+  const filteredFolders = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return folders;
+    }
+
+    return folders.filter(
+      (folder) =>
+        folder.name.toLowerCase().includes(normalizedSearchQuery) ||
+        folder.description?.toLowerCase().includes(normalizedSearchQuery),
+    );
+  }, [folders, normalizedSearchQuery]);
+
+  const displayedNickname = initialSets[0]?.user?.nickname || nickname;
+
+  const joinedDateToDisplay = formatJoinedDate(initialSets[0]?.user?.createdAt);
+
+  const avatarFallback =
+    displayedNickname
+      .trim()
+      .split(/\s+/)
+      .map((part) => part.charAt(0))
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  function handleTabChange(value: string) {
+    if (value !== "sets" && value !== "folders") {
+      return;
+    }
+
+    setActiveTab(value);
+    setSearchQuery("");
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
       <div className="container mx-auto px-4 py-8">
-        {/* Profile Header */}
-        <div className="mb-8 flex flex-col items-center text-center">
-          <Avatar className="h-24 w-24 border-4 border-pink-200">
-            <AvatarImage
-              src="/placeholder.svg?height=96&width=96"
-              alt={displayedNickname}
-            />
-            <AvatarFallback className="bg-pink-100 text-3xl text-pink-500">
-              {displayedNickname
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
+        <header className="mb-8 flex flex-col items-center text-center">
+          <Avatar className="h-24 w-24 border-4 border-pink-200 dark:border-pink-900">
+            <AvatarFallback className="bg-pink-100 text-3xl font-semibold text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              {avatarFallback}
             </AvatarFallback>
           </Avatar>
 
-          <h1 className="mt-4 text-2xl font-bold text-gray-800">
+          <h1 className="mt-4 break-words text-2xl font-bold text-foreground">
             {displayedNickname}
           </h1>
 
-          <p className="text-gray-500">@{displayedNickname}</p>
+          <p className="break-all text-muted-foreground">
+            @{displayedNickname}
+          </p>
 
-          <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
-            <Calendar className="h-4 w-4" />
+          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" aria-hidden="true" />
+
             <span>Joined {joinedDateToDisplay}</span>
           </div>
-        </div>
+        </header>
 
-        {/* Tabs Section */}
         <Tabs
           value={activeTab}
-          onValueChange={(value) => {
-            setActiveTab(value);
-            setSearchQuery("");
-          }}
+          onValueChange={handleTabChange}
           className="w-full"
         >
-          <TabsList className="mb-6 h-auto w-full justify-center gap-2 border-b border-gray-200 bg-transparent p-0">
+          <TabsList className="mb-6 h-auto w-full justify-center gap-2 rounded-none border-b border-border bg-transparent p-0">
             <TabsTrigger
               value="sets"
-              className={cn(
-                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-gray-600 shadow-none",
-                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
-                "focus-visible:ring-0 focus-visible:ring-offset-0",
-              )}
+              className="rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-muted-foreground shadow-none transition-colors hover:text-pink-500 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none dark:hover:text-pink-400 dark:data-[state=active]:border-pink-400 dark:data-[state=active]:text-pink-400"
             >
-              <BookOpen className="mr-2 h-4 w-4" />
-              Sets ({flashcardSets.length})
+              <BookOpen className="mr-2 h-4 w-4" aria-hidden="true" />
+              Sets ({initialSets.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="folders"
-              className={cn(
-                "rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-gray-600 shadow-none",
-                "data-[state=active]:border-b-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none",
-                "focus-visible:ring-0 focus-visible:ring-offset-0",
-              )}
+              className="rounded-none border-0 border-b-2 border-transparent bg-transparent px-6 py-3 text-muted-foreground shadow-none transition-colors hover:text-pink-500 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:border-pink-500 data-[state=active]:bg-transparent data-[state=active]:text-pink-500 data-[state=active]:shadow-none dark:hover:text-pink-400 dark:data-[state=active]:border-pink-400 dark:data-[state=active]:text-pink-400"
             >
-              <FolderOpen className="mr-2 h-4 w-4" />
+              <FolderOpen className="mr-2 h-4 w-4" aria-hidden="true" />
               Folders ({folders.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="sets" className="mt-0">
-            {/* Search Bar for Sets */}
-            <div className="mb-6">
-              <div className="relative mx-auto max-w-2xl">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search sets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-gray-200 pl-10 focus:border-pink-300 focus:ring-pink-200"
-                />
-              </div>
-            </div>
+            <ProfileSearchInput
+              value={searchQuery}
+              placeholder="Search sets..."
+              ariaLabel="Search flashcard sets"
+              onChange={setSearchQuery}
+            />
 
             {filteredSets.length > 0 ? (
               <div className="mx-auto max-w-2xl space-y-4">
@@ -174,32 +223,33 @@ export default function PublicProfileContent({
                 icon={BookOpen}
                 title="No flashcard sets found"
                 description={
-                  searchQuery
-                    ? "Try a different search term"
-                    : "This user hasn't created any flashcard sets yet"
+                  normalizedSearchQuery
+                    ? "Try a different search term."
+                    : "This user hasn't created any flashcard sets yet."
                 }
               />
             )}
           </TabsContent>
 
           <TabsContent value="folders" className="mt-0">
-            {/* Search Bar for Folders */}
-            <div className="mb-6">
-              <div className="relative mx-auto max-w-2xl">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search folders..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-gray-200 pl-10 focus:border-pink-300 focus:ring-pink-200"
-                />
-              </div>
-            </div>
+            <ProfileSearchInput
+              value={searchQuery}
+              placeholder="Search folders..."
+              ariaLabel="Search folders"
+              onChange={setSearchQuery}
+            />
 
             {isFoldersLoading ? (
-              <div className="py-12 text-center text-gray-500">
-                Downloading folders...
+              <div
+                className="flex items-center justify-center gap-3 py-12 text-muted-foreground"
+                role="status"
+              >
+                <Loader2
+                  className="h-5 w-5 animate-spin text-pink-500 dark:text-pink-400"
+                  aria-hidden="true"
+                />
+
+                <span>Downloading folders...</span>
               </div>
             ) : filteredFolders.length > 0 ? (
               <div className="mx-auto max-w-2xl space-y-4">
@@ -216,14 +266,48 @@ export default function PublicProfileContent({
                 icon={FolderOpen}
                 title="No folders found"
                 description={
-                  searchQuery
-                    ? "Try a different search term"
-                    : "This user hasn't created any folders yet"
+                  normalizedSearchQuery
+                    ? "Try a different search term."
+                    : "This user hasn't created any folders yet."
                 }
               />
             )}
           </TabsContent>
         </Tabs>
+      </div>
+    </main>
+  );
+}
+
+interface ProfileSearchInputProps {
+  value: string;
+  placeholder: string;
+  ariaLabel: string;
+  onChange: (value: string) => void;
+}
+
+function ProfileSearchInput({
+  value,
+  placeholder,
+  ariaLabel,
+  onChange,
+}: ProfileSearchInputProps) {
+  return (
+    <div className="mb-6">
+      <div className="relative mx-auto max-w-2xl">
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+
+        <Input
+          type="search"
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="border-input bg-background pl-10 text-foreground placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-800"
+          aria-label={ariaLabel}
+        />
       </div>
     </div>
   );
@@ -236,36 +320,44 @@ function PublicStudySetCard({
   set: FlashcardSet;
   nickname: string;
 }) {
+  const encodedNickname = encodeURIComponent(nickname);
+
+  const setHref = `/users/${encodedNickname}/sets/${set.setId}`;
+
+  const profileHref = `/users/${encodedNickname}/profile`;
+
   return (
-    <Card className="group border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
+    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <CardContent className="p-4">
         <div className="mb-3">
           <Link
-            href={`/users/${nickname}/sets/${set.setId}`}
-            className="font-semibold text-gray-800 hover:text-pink-500"
+            href={setHref}
+            className="break-words font-semibold text-card-foreground transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-pink-400"
           >
             {set.setName}
           </Link>
 
           {set.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
               {set.description}
             </p>
           )}
 
-          <p className="mt-1 text-sm text-gray-500">{set.termCount} terms</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {set.termCount} {set.termCount === 1 ? "term" : "terms"}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
-              <User className="h-3 w-3" />
+            <AvatarFallback className="bg-pink-100 text-xs text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              <User className="h-3 w-3" aria-hidden="true" />
             </AvatarFallback>
           </Avatar>
 
           <Link
-            href={`/users/${nickname}/profile`}
-            className="text-sm text-gray-500 hover:text-pink-500"
+            href={profileHref}
+            className="truncate text-sm text-muted-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
           >
             {nickname}
           </Link>
@@ -282,44 +374,51 @@ function PublicFolderCard({
   folder: ApiFolder;
   nickname: string;
 }) {
+  const encodedNickname = encodeURIComponent(nickname);
+
+  const profileHref = `/users/${encodedNickname}/profile`;
+
   return (
-    <Card className="group cursor-pointer border-gray-200 bg-white transition-all hover:border-pink-200 hover:shadow-md">
+    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
       <CardContent className="p-4">
         <div className="mb-3 flex items-center gap-3">
-          <div className="rounded-lg bg-pink-100 p-2">
-            <FolderOpen className="h-5 w-5 text-pink-500" />
+          <div className="shrink-0 rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
+            <FolderOpen
+              className="h-5 w-5 text-pink-500 dark:text-pink-400"
+              aria-hidden="true"
+            />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Link
               href={`/profile/folders/${folder.folderId}`}
-              className="font-semibold text-gray-800 hover:text-pink-500"
+              className="break-words font-semibold text-card-foreground transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-pink-400"
             >
               {folder.name}
             </Link>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {folder.setCount} {folder.setCount === 1 ? "set" : "sets"}
             </p>
           </div>
         </div>
 
         {folder.description && (
-          <p className="mb-3 line-clamp-2 text-sm text-gray-500">
+          <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">
             {folder.description}
           </p>
         )}
 
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-pink-100 text-xs text-pink-500">
-              <User className="h-3 w-3" />
+            <AvatarFallback className="bg-pink-100 text-xs text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
+              <User className="h-3 w-3" aria-hidden="true" />
             </AvatarFallback>
           </Avatar>
 
           <Link
-            href={`/users/${nickname}/profile`}
-            className="text-sm text-gray-500 hover:text-pink-500"
+            href={profileHref}
+            className="truncate text-sm text-muted-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
           >
             {nickname}
           </Link>
@@ -329,23 +428,22 @@ function PublicFolderCard({
   );
 }
 
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
+interface EmptyStateProps {
+  icon: ElementType;
   title: string;
   description: string;
-}) {
+}
+
+function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 rounded-full bg-gray-100 p-4">
-        <Icon className="h-8 w-8 text-gray-400" />
+      <div className="mb-4 rounded-full bg-muted p-4">
+        <Icon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
       </div>
 
-      <h3 className="text-lg font-medium text-gray-800">{title}</h3>
-      <p className="mt-1 text-sm text-gray-500">{description}</p>
+      <h3 className="text-lg font-medium text-foreground">{title}</h3>
+
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

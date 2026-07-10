@@ -1,25 +1,17 @@
 "use client";
 
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAuth } from "@/context/AuthContext";
-import { parseJwt } from "@/utils/jwt";
-
-import { getUserFlashcardSetsByUserId } from "@/api/userService";
 import { deleteFlashcardSet } from "@/api/flashcardSetService";
-
+import { getUserFlashcardSetsByUserId } from "@/api/userService";
 import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
-
+import EmptySetsState from "@/components/sets/empty-sets-state";
 import StudySetCard, {
   type StudySetListItem,
 } from "@/components/sets/study-set-card";
-import EmptySetsState from "@/components/sets/empty-sets-state";
-
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
+import { parseJwt } from "@/utils/jwt";
 
 interface DecodedToken {
   id?: number | string;
@@ -55,18 +51,25 @@ export default function MyProfileSetsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [setToDelete, setSetToDelete] = useState<StudySet | null>(null);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [setToAddToFolder, setSetToAddToFolder] = useState<StudySet | null>(
     null,
   );
+
   const [isFolderListOpen, setIsFolderListOpen] = useState(false);
 
   useEffect(() => {
-    const fetchSets = async () => {
-      if (isAuthLoading) return;
+    if (isAuthLoading) {
+      return;
+    }
 
+    let isCancelled = false;
+
+    async function fetchSets() {
       if (!token) {
         setSets([]);
         setIsLoading(false);
@@ -76,7 +79,11 @@ export default function MyProfileSetsPage() {
       const decoded = parseJwt(token) as DecodedToken | null;
       const userId = Number(decoded?.id);
 
-      if (!decoded?.id || Number.isNaN(userId)) {
+      if (
+        decoded?.id === undefined ||
+        decoded.id === null ||
+        Number.isNaN(userId)
+      ) {
         setSets([]);
         setIsLoading(false);
         return;
@@ -86,6 +93,10 @@ export default function MyProfileSetsPage() {
         setIsLoading(true);
 
         const setsData = await getUserFlashcardSetsByUserId(userId, token);
+
+        if (isCancelled) {
+          return;
+        }
 
         const formattedSets: StudySet[] = setsData.map(
           (set: FlashcardSetDTO) => ({
@@ -98,175 +109,226 @@ export default function MyProfileSetsPage() {
         );
 
         setSets(formattedSets);
-      } catch (error) {
+      } catch (error: unknown) {
+        if (isCancelled) {
+          return;
+        }
+
         console.error("Error fetching sets:", error);
 
-        toast.error("Failed to load study sets.", {
-          style: {
-            background: "red",
-            color: "white",
-          },
-        });
+        toast.error("Failed to load study sets.");
 
         setSets([]);
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
-    };
+    }
 
-    fetchSets();
+    void fetchSets();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [token, isAuthLoading]);
 
-  const filteredSets = useMemo(() => {
-    const normalizedQuery = searchQuery.toLowerCase().trim();
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-    if (!normalizedQuery) return sets;
+  const filteredSets = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return sets;
+    }
 
     return sets.filter(
       (set) =>
-        set.title.toLowerCase().includes(normalizedQuery) ||
-        set.description.toLowerCase().includes(normalizedQuery),
+        set.title.toLowerCase().includes(normalizedSearchQuery) ||
+        set.description.toLowerCase().includes(normalizedSearchQuery),
     );
-  }, [sets, searchQuery]);
+  }, [sets, normalizedSearchQuery]);
 
-  const handleDeleteClick = (set: StudySet) => {
+  function handleDeleteClick(set: StudySet) {
     setSetToDelete(set);
     setIsDeleteDialogOpen(true);
-  };
+  }
 
-  const handleDeleteCancel = () => {
-    if (isDeleting) return;
+  function handleDeleteCancel() {
+    if (isDeleting) {
+      return;
+    }
 
     setSetToDelete(null);
     setIsDeleteDialogOpen(false);
-  };
+  }
 
-  const handleDeleteConfirm = async () => {
-    if (!setToDelete || !token) return;
+  function handleDeleteDialogOpenChange(open: boolean) {
+    if (isDeleting) {
+      return;
+    }
+
+    setIsDeleteDialogOpen(open);
+
+    if (!open) {
+      setSetToDelete(null);
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!setToDelete || !token) {
+      return;
+    }
 
     try {
       setIsDeleting(true);
 
       await deleteFlashcardSet(setToDelete.id, token);
 
-      setSets((prevSets) =>
-        prevSets.filter((set) => set.id !== setToDelete.id),
+      setSets((currentSets) =>
+        currentSets.filter((set) => set.id !== setToDelete.id),
       );
 
-      toast.success("Set deleted successfully", {
-        style: {
-          background: "green",
-          color: "white",
-        },
-      });
-    } catch (error) {
-      console.error("Failed to delete set:", error);
+      toast.success("Set deleted successfully.");
 
-      toast.error("Failed to delete set. Please try again.", {
-        style: {
-          background: "red",
-          color: "white",
-        },
-      });
-    } finally {
-      setIsDeleting(false);
       setIsDeleteDialogOpen(false);
       setSetToDelete(null);
-    }
-  };
+    } catch (error: unknown) {
+      console.error("Failed to delete set:", error);
 
-  const handleAddToFolderClick = (set: StudySet) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete set. Please try again.";
+
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function handleDeleteActionClick(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    void handleDeleteConfirm();
+  }
+
+  function handleAddToFolderClick(set: StudySet) {
     setSetToAddToFolder(set);
     setIsFolderListOpen(true);
-  };
+  }
 
-  const handleFolderListClose = () => {
+  function handleFolderListClose() {
     setSetToAddToFolder(null);
     setIsFolderListOpen(false);
-  };
+  }
+
+  function handleFolderUpdated() {
+    setSetToAddToFolder(null);
+    setIsFolderListOpen(false);
+  }
 
   const isPageLoading = isAuthLoading || isLoading;
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Your sets</h1>
+      <div className="min-h-[calc(100svh-4rem)] bg-background text-foreground">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Your sets</h1>
 
-            <p className="mt-2 text-gray-500">
-              Manage your flashcard sets and add them to folders.
-            </p>
+              <p className="mt-2 text-muted-foreground">
+                Manage your flashcard sets and add them to folders.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              className="bg-pink-500 text-white hover:bg-pink-600"
+            >
+              <Link href="/create-set">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Create set
+              </Link>
+            </Button>
           </div>
 
-          <Button className="bg-pink-500 text-white hover:bg-pink-600" asChild>
-            <Link href="/create-set">
-              <Plus className="mr-2 h-4 w-4" />
-              Create set
-            </Link>
-          </Button>
-        </div>
+          <div className="relative mb-6">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-          <Input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search your sets..."
-            className="border-gray-200 pl-10 focus:border-pink-300 focus:ring-pink-200"
-          />
-        </div>
-
-        {isPageLoading ? (
-          <div className="py-10 text-center text-gray-500">
-            Downloading study sets...
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search your sets..."
+              className="border-input bg-background pl-10 text-foreground placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-800"
+              aria-label="Search your sets"
+            />
           </div>
-        ) : !token ? (
-          <EmptySetsState
-            title="You are not logged in"
-            description="Log in to see and manage your flashcard sets."
-          />
-        ) : filteredSets.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredSets.map((set) => (
-              <StudySetCard
-                key={set.id}
-                set={set}
-                showOwnerActions
-                onDeleteClick={handleDeleteClick}
-                onAddToFolderClick={handleAddToFolderClick}
-                isMenuForcedOpen={
-                  (isDeleteDialogOpen && setToDelete?.id === set.id) ||
-                  (isFolderListOpen && setToAddToFolder?.id === set.id)
-                }
+
+          {isPageLoading ? (
+            <div
+              className="flex items-center justify-center gap-3 py-10 text-muted-foreground"
+              role="status"
+            >
+              <Loader2
+                className="h-5 w-5 animate-spin text-pink-500 dark:text-pink-400"
+                aria-hidden="true"
               />
-            ))}
-          </div>
-        ) : (
-          <EmptySetsState
-            title={
-              searchQuery ? "No sets found" : "You don't have any sets yet"
-            }
-            description={
-              searchQuery
-                ? "Try using a different search phrase."
-                : "Create your first flashcard set to start learning."
-            }
-            showCreateButton
-          />
-        )}
+
+              <span>Downloading study sets...</span>
+            </div>
+          ) : !token ? (
+            <EmptySetsState
+              title="You are not logged in"
+              description="Log in to see and manage your flashcard sets."
+            />
+          ) : filteredSets.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {filteredSets.map((set) => (
+                <StudySetCard
+                  key={set.id}
+                  set={set}
+                  showOwnerActions
+                  onDeleteClick={handleDeleteClick}
+                  onAddToFolderClick={handleAddToFolderClick}
+                  isMenuForcedOpen={
+                    (isDeleteDialogOpen && setToDelete?.id === set.id) ||
+                    (isFolderListOpen && setToAddToFolder?.id === set.id)
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptySetsState
+              title={
+                normalizedSearchQuery
+                  ? "No sets found"
+                  : "You don't have any sets yet"
+              }
+              description={
+                normalizedSearchQuery
+                  ? "Try using a different search phrase."
+                  : "Create your first flashcard set to start learning."
+              }
+              showCreateButton
+            />
+          )}
+        </div>
       </div>
 
       <AlertDialog
         open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border bg-background text-foreground">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete set?</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">
+              Delete set?
+            </AlertDialogTitle>
 
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-muted-foreground">
               This action cannot be undone. This will permanently delete the set
               &quot;{setToDelete?.title}&quot; and all flashcards inside it.
             </AlertDialogDescription>
@@ -276,14 +338,15 @@ export default function MyProfileSetsPage() {
             <AlertDialogCancel
               disabled={isDeleting}
               onClick={handleDeleteCancel}
+              className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
             >
               Cancel
             </AlertDialogCancel>
 
             <AlertDialogAction
-              onClick={handleDeleteConfirm}
+              onClick={handleDeleteActionClick}
               disabled={isDeleting}
-              className="bg-red-500 text-white hover:bg-red-600"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted disabled:text-muted-foreground"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
@@ -297,7 +360,7 @@ export default function MyProfileSetsPage() {
           flashcardSetTitle={setToAddToFolder.title}
           isOpen={isFolderListOpen}
           onClose={handleFolderListClose}
-          onFolderUpdated={() => {}}
+          onFolderUpdated={handleFolderUpdated}
         />
       )}
     </>

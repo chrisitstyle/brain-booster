@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
 import type { HTMLAttributes } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,11 +18,7 @@ import {
 } from "lucide-react";
 
 import { getCurrentUser, type UserDTO } from "@/api/profileService";
-import { useAuth } from "@/context/AuthContext";
-import { useMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
-import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
-
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +38,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useAuth } from "@/context/AuthContext";
+import { useMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
 
 interface NavItem {
   title: string;
@@ -246,7 +246,7 @@ export default function Navbar({ className, items }: NavbarProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b bg-white shadow-sm",
+        "sticky top-0 z-40 w-full border-b border-border bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80",
         className,
       )}
     >
@@ -270,7 +270,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-1 text-gray-600 hover:text-pink-500"
+                        className="flex items-center gap-1 text-muted-foreground hover:bg-accent hover:text-pink-500"
                       >
                         {item.title}
 
@@ -278,7 +278,10 @@ export default function Navbar({ className, items }: NavbarProps) {
                       </Button>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-48 border-border bg-popover"
+                    >
                       {item.children.map((child) => (
                         <DropdownMenuItem
                           key={`${child.title}-${child.href}`}
@@ -301,7 +304,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                       "text-sm font-medium transition-colors hover:text-pink-500",
                       item.href === pathname
                         ? "font-semibold text-pink-500"
-                        : "text-gray-600",
+                        : "text-muted-foreground",
                       item.disabled && "cursor-not-allowed opacity-80",
                     )}
                   >
@@ -313,15 +316,15 @@ export default function Navbar({ className, items }: NavbarProps) {
           </nav>
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {!isMobile && (
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 
               <Input
                 type="search"
                 placeholder="Search..."
-                className="w-[200px] rounded-full bg-gray-100 pl-9 focus-visible:ring-pink-500"
+                className="w-[200px] rounded-full border-border bg-muted/60 pl-9 focus-visible:ring-pink-500"
                 aria-label="Search"
               />
             </div>
@@ -329,8 +332,10 @@ export default function Navbar({ className, items }: NavbarProps) {
 
           {!isMobile ? (
             <div className="flex items-center gap-2">
+              <ThemeToggle />
+
               {isAuthLoading ? (
-                <div className="h-10 w-16 rounded-full bg-gray-100" />
+                <div className="h-10 w-16 animate-pulse rounded-full bg-muted" />
               ) : isAuthenticated ? (
                 <DropdownMenu
                   onOpenChange={(open) => {
@@ -343,12 +348,12 @@ export default function Navbar({ className, items }: NavbarProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex h-10 items-center gap-2 rounded-full border border-gray-200 px-2 py-1 transition-all duration-200 hover:border-pink-300 hover:bg-pink-50"
+                      className="flex h-10 items-center gap-2 rounded-full border border-border px-2 py-1 transition-all duration-200 hover:border-pink-300 hover:bg-pink-50 dark:hover:border-pink-800 dark:hover:bg-pink-950/40"
                       aria-label="Open profile menu"
                     >
-                      <Menu className="h-4 w-4 text-gray-500" />
+                      <Menu className="h-4 w-4 text-muted-foreground" />
 
-                      <Avatar className="h-7 w-7 border-2 border-pink-200">
+                      <Avatar className="h-7 w-7 border-2 border-pink-200 dark:border-pink-800">
                         <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 text-xs font-semibold text-white">
                           {isUserLoading && !currentUser ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -362,11 +367,11 @@ export default function Navbar({ className, items }: NavbarProps) {
 
                   <DropdownMenuContent
                     align="end"
-                    className="mt-2 w-64 rounded-xl border-gray-100 p-2 shadow-lg"
+                    className="mt-2 w-64 rounded-xl border-border bg-popover p-2 shadow-lg"
                   >
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="flex min-w-0 items-center gap-3">
-                        <Avatar className="h-10 w-10 shrink-0 border-2 border-pink-200">
+                        <Avatar className="h-10 w-10 shrink-0 border-2 border-pink-200 dark:border-pink-800">
                           <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 font-semibold text-white">
                             {isUserLoading && !currentUser ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -377,14 +382,14 @@ export default function Navbar({ className, items }: NavbarProps) {
                         </Avatar>
 
                         <div className="flex min-w-0 flex-col">
-                          <span className="truncate text-sm font-semibold text-gray-800">
+                          <span className="truncate text-sm font-semibold text-foreground">
                             {isUserLoading && !currentUser
                               ? "Loading..."
                               : displayedNickname}
                           </span>
 
                           {displayedEmail && (
-                            <span className="truncate text-xs font-normal text-gray-500">
+                            <span className="truncate text-xs font-normal text-muted-foreground">
                               {displayedEmail}
                             </span>
                           )}
@@ -397,52 +402,44 @@ export default function Navbar({ className, items }: NavbarProps) {
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile"
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       >
-                        <User className="h-4 w-4 text-gray-500" />
+                        <User className="h-4 w-4 text-muted-foreground" />
 
-                        <span className="font-medium text-gray-700">
-                          Profile
-                        </span>
+                        <span className="font-medium">Profile</span>
                       </Link>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile/sets"
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       >
-                        <BookOpen className="h-4 w-4 text-gray-500" />
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
 
-                        <span className="font-medium text-gray-700">
-                          My Sets
-                        </span>
+                        <span className="font-medium">My Sets</span>
                       </Link>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile/folders"
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       >
-                        <FolderOpen className="h-4 w-4 text-gray-500" />
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
 
-                        <span className="font-medium text-gray-700">
-                          My Folders
-                        </span>
+                        <span className="font-medium">My Folders</span>
                       </Link>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile/stats"
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       >
-                        <TrendingUp className="h-4 w-4 text-gray-500" />
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
 
-                        <span className="font-medium text-gray-700">
-                          My Stats
-                        </span>
+                        <span className="font-medium">My Stats</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -451,13 +448,11 @@ export default function Navbar({ className, items }: NavbarProps) {
                     <DropdownMenuItem asChild>
                       <Link
                         href="/profile/settings"
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-pink-50"
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       >
-                        <Settings className="h-4 w-4 text-gray-500" />
+                        <Settings className="h-4 w-4 text-muted-foreground" />
 
-                        <span className="font-medium text-gray-700">
-                          Settings
-                        </span>
+                        <span className="font-medium">Settings</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -465,7 +460,7 @@ export default function Navbar({ className, items }: NavbarProps) {
 
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600"
+                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-red-500 transition-colors focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
                     >
                       <LogOut className="h-4 w-4" />
 
@@ -478,7 +473,7 @@ export default function Navbar({ className, items }: NavbarProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-600 hover:text-pink-500"
+                    className="text-muted-foreground hover:text-pink-500"
                     asChild
                   >
                     <Link href="/login">Login</Link>
@@ -495,250 +490,261 @@ export default function Navbar({ className, items }: NavbarProps) {
               )}
             </div>
           ) : (
-            <Sheet open={isOpen} onOpenChange={handleMobileMenuChange}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
+            <>
+              <ThemeToggle />
 
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
+              <Sheet open={isOpen} onOpenChange={handleMobileMenuChange}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
 
-              <SheetContent
-                side="right"
-                className="w-[min(360px,calc(100vw-1rem))] overflow-y-auto p-0 sm:max-w-sm"
-              >
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Mobile Navigation Menu</SheetTitle>
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                </SheetTrigger>
 
-                  <SheetDescription>
-                    Use the menu to navigate through the main sections of the
-                    app.
-                  </SheetDescription>
-                </SheetHeader>
+                <SheetContent
+                  side="right"
+                  className="w-[min(360px,calc(100vw-1rem))] overflow-y-auto border-border bg-background p-0 sm:max-w-sm"
+                >
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Mobile Navigation Menu</SheetTitle>
 
-                <div className="flex min-h-full flex-col px-5 pb-6 pt-10">
-                  <div className="mb-6 pr-8">
-                    <Link
-                      href="/"
-                      className="inline-block text-xl font-bold text-pink-500"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      BrainBooster
-                    </Link>
-                  </div>
+                    <SheetDescription>
+                      Use the menu to navigate through the main sections of the
+                      app.
+                    </SheetDescription>
+                  </SheetHeader>
 
-                  {isAuthenticated && (
-                    <div className="mb-5 flex min-w-0 items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/60 p-3">
-                      <Avatar className="h-11 w-11 shrink-0 border-2 border-pink-200">
-                        <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 font-semibold text-white">
-                          {isUserLoading && !currentUser ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            avatarFallback
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-sm font-semibold text-gray-800">
-                          {isUserLoading && !currentUser
-                            ? "Loading..."
-                            : displayedNickname}
-                        </span>
-
-                        {displayedEmail && (
-                          <span className="truncate text-xs text-gray-500">
-                            {displayedEmail}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="relative mb-6">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-                    <Input
-                      type="search"
-                      placeholder="Search..."
-                      className="h-11 w-full rounded-full border-gray-200 bg-gray-50 pl-10 pr-4 focus-visible:ring-2 focus-visible:ring-pink-500"
-                      aria-label="Search"
-                    />
-                  </div>
-
-                  <nav className="space-y-2">
-                    {navItems.map((item) => (
-                      <div
-                        key={`${item.title}-${item.href}`}
-                        className="space-y-1"
+                  <div className="flex min-h-full flex-col px-5 pb-6 pt-10">
+                    <div className="mb-6 pr-8">
+                      <Link
+                        href="/"
+                        className="inline-block text-xl font-bold text-pink-500"
+                        onClick={() => setIsOpen(false)}
                       >
-                        {item.children ? (
-                          <>
-                            <div className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-800">
-                              {item.title}
-                            </div>
+                        BrainBooster
+                      </Link>
+                    </div>
 
-                            <div className="space-y-1 pl-3">
-                              {item.children.map((child) => (
-                                <Link
-                                  key={`${child.title}-${child.href}`}
-                                  href={child.href}
-                                  className={cn(
-                                    "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                                    child.href === pathname
-                                      ? "bg-pink-50 text-pink-600"
-                                      : "text-gray-500 hover:bg-gray-50 hover:text-pink-500",
-                                  )}
-                                  onClick={() => setIsOpen(false)}
-                                >
-                                  {child.title}
-                                </Link>
-                              ))}
-                            </div>
-                          </>
-                        ) : (
-                          <Link
-                            href={item.disabled ? "#" : item.href}
-                            aria-disabled={item.disabled}
-                            className={cn(
-                              "block rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-                              item.href === pathname
-                                ? "bg-pink-50 text-pink-600"
-                                : "text-gray-700 hover:bg-gray-50 hover:text-pink-500",
-                              item.disabled && "cursor-not-allowed opacity-60",
+                    {isAuthenticated && (
+                      <div className="mb-5 flex min-w-0 items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/60 p-3 dark:border-pink-900/60 dark:bg-pink-950/30">
+                        <Avatar className="h-11 w-11 shrink-0 border-2 border-pink-200 dark:border-pink-800">
+                          <AvatarFallback className="bg-linear-to-br from-pink-400 to-pink-600 font-semibold text-white">
+                            {isUserLoading && !currentUser ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              avatarFallback
                             )}
-                            onClick={() => {
-                              if (!item.disabled) {
-                                setIsOpen(false);
-                              }
-                            }}
-                          >
-                            {item.title}
-                          </Link>
-                        )}
-                      </div>
-                    ))}
-                  </nav>
+                          </AvatarFallback>
+                        </Avatar>
 
-                  <div className="mt-8 border-t border-gray-100 pt-5">
-                    {isAuthLoading ? (
-                      <div className="h-10 w-full rounded-xl bg-gray-100" />
-                    ) : isAuthenticated ? (
-                      <div className="space-y-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link
-                            href="/profile"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <User className="h-4 w-4" />
-                            Profile
-                          </Link>
-                        </Button>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-sm font-semibold text-foreground">
+                            {isUserLoading && !currentUser
+                              ? "Loading..."
+                              : displayedNickname}
+                          </span>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link
-                            href="/profile/sets"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <BookOpen className="h-4 w-4" />
-                            My Sets
-                          </Link>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link
-                            href="/profile/folders"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <FolderOpen className="h-4 w-4" />
-                            My Folders
-                          </Link>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link
-                            href="/profile/stats"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <TrendingUp className="h-4 w-4" />
-                            My Stats
-                          </Link>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link
-                            href="/profile/settings"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <Settings className="h-4 w-4" />
-                            Settings
-                          </Link>
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3 h-10 w-full justify-start gap-2 rounded-lg border-gray-200 text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                          onClick={handleLogout}
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Logout
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-full justify-start rounded-lg px-3 text-gray-600 hover:bg-gray-50 hover:text-pink-500"
-                          asChild
-                        >
-                          <Link href="/login" onClick={() => setIsOpen(false)}>
-                            Login
-                          </Link>
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          className="h-11 w-full rounded-xl bg-pink-500 text-white hover:bg-pink-600"
-                          asChild
-                        >
-                          <Link href="/signup" onClick={() => setIsOpen(false)}>
-                            Sign up free
-                          </Link>
-                        </Button>
+                          {displayedEmail && (
+                            <span className="truncate text-xs text-muted-foreground">
+                              {displayedEmail}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    <div className="relative mb-6">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                      <Input
+                        type="search"
+                        placeholder="Search..."
+                        className="h-11 w-full rounded-full border-border bg-muted/60 pl-10 pr-4 focus-visible:ring-2 focus-visible:ring-pink-500"
+                        aria-label="Search"
+                      />
+                    </div>
+
+                    <nav className="space-y-2">
+                      {navItems.map((item) => (
+                        <div
+                          key={`${item.title}-${item.href}`}
+                          className="space-y-1"
+                        >
+                          {item.children ? (
+                            <>
+                              <div className="rounded-lg px-3 py-2 text-sm font-semibold text-foreground">
+                                {item.title}
+                              </div>
+
+                              <div className="space-y-1 pl-3">
+                                {item.children.map((child) => (
+                                  <Link
+                                    key={`${child.title}-${child.href}`}
+                                    href={child.href}
+                                    className={cn(
+                                      "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                      child.href === pathname
+                                        ? "bg-pink-50 text-pink-600 dark:bg-pink-950/40 dark:text-pink-400"
+                                        : "text-muted-foreground hover:bg-accent hover:text-pink-500",
+                                    )}
+                                    onClick={() => setIsOpen(false)}
+                                  >
+                                    {child.title}
+                                  </Link>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <Link
+                              href={item.disabled ? "#" : item.href}
+                              aria-disabled={item.disabled}
+                              className={cn(
+                                "block rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                                item.href === pathname
+                                  ? "bg-pink-50 text-pink-600 dark:bg-pink-950/40 dark:text-pink-400"
+                                  : "text-foreground hover:bg-accent hover:text-pink-500",
+                                item.disabled &&
+                                  "cursor-not-allowed opacity-60",
+                              )}
+                              onClick={() => {
+                                if (!item.disabled) {
+                                  setIsOpen(false);
+                                }
+                              }}
+                            >
+                              {item.title}
+                            </Link>
+                          )}
+                        </div>
+                      ))}
+                    </nav>
+
+                    <div className="mt-8 border-t border-border pt-5">
+                      {isAuthLoading ? (
+                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+                      ) : isAuthenticated ? (
+                        <div className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/profile"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <User className="h-4 w-4" />
+                              Profile
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/profile/sets"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <BookOpen className="h-4 w-4" />
+                              My Sets
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/profile/folders"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <FolderOpen className="h-4 w-4" />
+                              My Folders
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/profile/stats"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <TrendingUp className="h-4 w-4" />
+                              My Stats
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/profile/settings"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <Settings className="h-4 w-4" />
+                              Settings
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 h-10 w-full justify-start gap-2 rounded-lg border-border text-muted-foreground hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-900 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                            onClick={handleLogout}
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 w-full justify-start rounded-lg px-3 text-muted-foreground hover:bg-accent hover:text-pink-500"
+                            asChild
+                          >
+                            <Link
+                              href="/login"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              Login
+                            </Link>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            className="h-11 w-full rounded-xl bg-pink-500 text-white hover:bg-pink-600"
+                            asChild
+                          >
+                            <Link
+                              href="/signup"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              Sign up free
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </>
           )}
         </div>
       </div>
