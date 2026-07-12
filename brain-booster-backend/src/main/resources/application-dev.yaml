@@ -13,19 +13,40 @@ spring:
 
   flyway:
     enabled: true
+
+    # Allows the flyway:clean command to be executed.
+    # This setting should only be used in the development environment.
     clean-disabled: false
+
     locations:
       - classpath:db/migration
       - classpath:db/dev-migration
 
   jpa:
-    show-sql: true
+    # Disabled because SQL statements are logged through org.hibernate.SQL.
+    # Enabling both mechanisms could result in duplicate SQL logs.
+    show-sql: false
+
+    # Prevents database queries from being executed during HTTP response serialization.
+    # It also helps detect incorrect access to LAZY relationships.
     open-in-view: false
+
     hibernate:
+      # Validates whether the entity mappings match the database schema.
+      # Hibernate does not create or modify database tables.
       ddl-auto: validate
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+        # Formats generated SQL statements to improve readability in the logs.
+        format_sql: true
+
+        # Enables Hibernate statistics, which are useful for analyzing
+        # query counts and detecting performance issues such as N+1 queries.
+        # This setting is recommended only for the development profile.
+        generate_statistics: true
 
 server:
   servlet:
@@ -35,12 +56,27 @@ logging:
   level:
     org:
       springframework:
+        # Reduces the amount of Spring Security logging.
         security: ERROR
+
+    # Logs all SQL statements executed by Hibernate.
+    org.hibernate.SQL: DEBUG
+
+    # Logs values bound to SQL query parameters.
+    # Useful when debugging filters and dynamic queries.
+    # It may produce a large amount of logs and expose sensitive data,
+    # so it should only be enabled in the development profile.
+    org.hibernate.orm.jdbc.bind: TRACE
+
+    # Logs Hibernate statistics, including executed query counts.
+    # Useful when detecting N+1 query problems.
+    org.hibernate.stat: DEBUG
 
 springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
+
   swagger-ui:
     enabled: true
     operations-sorter: method
