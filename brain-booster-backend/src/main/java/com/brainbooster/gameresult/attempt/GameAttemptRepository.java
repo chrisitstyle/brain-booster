@@ -19,14 +19,20 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
 
     @EntityGraph(attributePaths = {"user", "set"})
     @Query("""
-            SELECT attempt
-            FROM GameAttempt attempt
-            WHERE attempt.user.userId = :userId
-              AND (:setId IS NULL OR attempt.set.setId = :setId)
-              AND (:mode IS NULL OR attempt.mode = :mode)
-              AND (:fromDateTime IS NULL OR attempt.completedAt >= :fromDateTime)
-              AND (:toDateTimeExclusive IS NULL OR attempt.completedAt < :toDateTimeExclusive)
-            """)
+        SELECT attempt
+        FROM GameAttempt attempt
+        WHERE attempt.user.userId = :userId
+          AND (:setId IS NULL OR attempt.set.setId = :setId)
+          AND (:mode IS NULL OR attempt.mode = :mode)
+          AND (
+                cast(:fromDateTime as Instant) IS NULL
+                OR attempt.completedAt >= :fromDateTime
+          )
+          AND (
+                cast(:toDateTimeExclusive as Instant) IS NULL
+                OR attempt.completedAt < :toDateTimeExclusive
+          )
+        """)
     Page<GameAttempt> findByUserIdWithFilters(
             @Param("userId") Long userId,
             @Param("setId") Long setId,

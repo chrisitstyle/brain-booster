@@ -1,6 +1,7 @@
 package com.brainbooster.gameresult.attempt;
 
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
+import com.brainbooster.gameresult.dto.GameAttemptSummaryDTO;
 import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,26 +22,40 @@ import java.util.List;
 @RestController
 @RequestMapping("/game-attempts")
 @RequiredArgsConstructor
-@Tag(name = "Game Attempts", description = "Endpoints for reading game attempt history")
+@Tag(
+        name = "Game Attempts",
+        description = "Endpoints for reading game attempt history"
+)
 public class GameAttemptController {
 
     private final GameAttemptService gameAttemptService;
 
     @GetMapping("/me")
     @Operation(summary = "Get current user's game attempt history")
-    public ResponseEntity<Page<GameAttemptDTO>> getMyGameAttempts(
+    public ResponseEntity<Page<GameAttemptSummaryDTO>> getMyGameAttempts(
             @Parameter(description = "Optional flashcard set ID filter")
-            @RequestParam(required = false) Long setId,
+            @RequestParam(required = false)
+            Long setId,
 
-            @Parameter(description = "Optional game mode filter, for example: multiple-choice, written, matching, custom-test")
-            @RequestParam(required = false) String mode,
+            @Parameter(
+                    description = "Optional game mode filter, for example: "
+                            + "multiple-choice, written, matching, custom-test"
+            )
+            @RequestParam(required = false)
+            String mode,
 
-            @Parameter(description = "Optional start date filter in ISO format, for example: 2026-01-01")
+            @Parameter(
+                    description = "Optional start date filter in ISO format, "
+                            + "for example: 2026-01-01"
+            )
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate from,
 
-            @Parameter(description = "Optional end date filter in ISO format, for example: 2026-01-31")
+            @Parameter(
+                    description = "Optional end date filter in ISO format, "
+                            + "for example: 2026-01-31"
+            )
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate to,
@@ -65,19 +80,34 @@ public class GameAttemptController {
     }
 
     @GetMapping("/me/sets/{setId}")
-    @Operation(summary = "Get current user's game attempt history for a specific flashcard set")
-    public ResponseEntity<Page<GameAttemptDTO>> getMyGameAttemptsBySetId(
-            @PathVariable Long setId,
+    @Operation(
+            summary = "Get current user's game attempt history "
+                    + "for a specific flashcard set"
+    )
+    public ResponseEntity<Page<GameAttemptSummaryDTO>>
+    getMyGameAttemptsBySetId(
+            @PathVariable
+            Long setId,
 
-            @Parameter(description = "Optional game mode filter, for example: multiple-choice, written, matching, custom-test")
-            @RequestParam(required = false) String mode,
+            @Parameter(
+                    description = "Optional game mode filter, for example: "
+                            + "multiple-choice, written, matching, custom-test"
+            )
+            @RequestParam(required = false)
+            String mode,
 
-            @Parameter(description = "Optional start date filter in ISO format, for example: 2026-01-01")
+            @Parameter(
+                    description = "Optional start date filter in ISO format, "
+                            + "for example: 2026-01-01"
+            )
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate from,
 
-            @Parameter(description = "Optional end date filter in ISO format, for example: 2026-01-31")
+            @Parameter(
+                    description = "Optional end date filter in ISO format, "
+                            + "for example: 2026-01-31"
+            )
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate to,
@@ -104,16 +134,25 @@ public class GameAttemptController {
     @GetMapping("/{attemptId}")
     @Operation(summary = "Get details of a single game attempt")
     public ResponseEntity<GameAttemptDTO> getGameAttemptById(
-            @PathVariable Long attemptId
+            @PathVariable
+            Long attemptId
     ) {
-        return ResponseEntity.ok(gameAttemptService.getGameAttemptById(attemptId));
+        return ResponseEntity.ok(
+                gameAttemptService.getGameAttemptById(attemptId)
+        );
     }
 
     @GetMapping("/{attemptId}/question-results")
-    @Operation(summary = "Get question-level results for a single game attempt")
-    public ResponseEntity<List<GameQuestionResultDTO>> getQuestionResultsByAttemptId(
-            @PathVariable Long attemptId
+    @Operation(
+            summary = "Get question-level results for a single game attempt"
+    )
+    public ResponseEntity<List<GameQuestionResultDTO>>
+    getQuestionResultsByAttemptId(
+            @PathVariable
+            Long attemptId
     ) {
-        return ResponseEntity.ok(gameAttemptService.getQuestionResultsByAttemptId(attemptId));
+        return ResponseEntity.ok(
+                gameAttemptService.getQuestionResultsByAttemptId(attemptId)
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.brainbooster.gameresult.attempt;
 
 import com.brainbooster.gameresult.GameMode;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
+import com.brainbooster.gameresult.dto.GameAttemptSummaryDTO;
 import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import com.brainbooster.gameresult.mapper.GameAttemptMapper;
 import com.brainbooster.gameresult.mapper.GameQuestionResultMapper;
@@ -27,8 +28,13 @@ import java.util.List;
 public class GameAttemptService {
 
     private static final ZoneOffset DATE_FILTER_ZONE_OFFSET = ZoneOffset.UTC;
-    private static final String GAME_ATTEMPT_NOT_FOUND_MESSAGE = "Game attempt not found";
-    private static final String INVALID_GAME_MODE_MESSAGE_PREFIX = "Invalid game mode: ";
+
+    private static final String GAME_ATTEMPT_NOT_FOUND_MESSAGE =
+            "Game attempt not found";
+
+    private static final String INVALID_GAME_MODE_MESSAGE_PREFIX =
+            "Invalid game mode: ";
+
     private static final String GAME_ATTEMPT_ACCESS_DENIED_MESSAGE =
             "You do not have permission to access this game attempt.";
 
@@ -38,7 +44,7 @@ public class GameAttemptService {
     private final GameQuestionResultMapper gameQuestionResultMapper;
 
     @Transactional(readOnly = true)
-    public Page<GameAttemptDTO> getMyGameAttempts(
+    public Page<GameAttemptSummaryDTO> getMyGameAttempts(
             Long setId,
             String mode,
             LocalDate from,
@@ -55,7 +61,7 @@ public class GameAttemptService {
     }
 
     @Transactional(readOnly = true)
-    public Page<GameAttemptDTO> getMyGameAttemptsBySetId(
+    public Page<GameAttemptSummaryDTO> getMyGameAttemptsBySetId(
             Long setId,
             String mode,
             LocalDate from,
@@ -75,7 +81,8 @@ public class GameAttemptService {
     public GameAttemptDTO getGameAttemptById(Long attemptId) {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
-        GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
+        GameAttempt gameAttempt = gameAttemptRepository
+                .findWithQuestionResultsByAttemptId(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         GAME_ATTEMPT_NOT_FOUND_MESSAGE
@@ -86,7 +93,7 @@ public class GameAttemptService {
         return gameAttemptMapper.toDto(gameAttempt);
     }
 
-    private Page<GameAttemptDTO> getMyGameAttemptsWithFilters(
+    private Page<GameAttemptSummaryDTO> getMyGameAttemptsWithFilters(
             Long setId,
             String mode,
             LocalDate from,
@@ -108,14 +115,17 @@ public class GameAttemptService {
                         toDateTimeExclusive,
                         pageable
                 )
-                .map(gameAttemptMapper::toDto);
+                .map(gameAttemptMapper::toSummaryDto);
     }
 
     @Transactional(readOnly = true)
-    public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(Long attemptId) {
+    public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(
+            Long attemptId
+    ) {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
-        GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
+        GameAttempt gameAttempt = gameAttemptRepository
+                .findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         GAME_ATTEMPT_NOT_FOUND_MESSAGE
@@ -164,13 +174,19 @@ public class GameAttemptService {
                 .toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
-    private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
-        boolean isOwner = gameAttempt.getUser()
+    private void verifyOwnerOrAdmin(
+            GameAttempt gameAttempt,
+            User authenticatedUser
+    ) {
+        boolean isOwner = gameAttempt
+                .getUser()
                 .getUserId()
                 .equals(authenticatedUser.getUserId());
 
         if (!isOwner && !SecurityUtils.isAdmin(authenticatedUser)) {
-            throw new AccessDeniedException(GAME_ATTEMPT_ACCESS_DENIED_MESSAGE);
+            throw new AccessDeniedException(
+                    GAME_ATTEMPT_ACCESS_DENIED_MESSAGE
+            );
         }
     }
 }
