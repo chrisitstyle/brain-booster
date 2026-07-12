@@ -1,22 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
+
 import type { Flashcard } from "@/api/flashcardService";
-import type { SaveGameQuestionResultRequest } from "@/types/games";
-import { Button } from "@/components/ui/button";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
 import GameTimer from "@/components/games/shared/GameTimer";
-import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
-import {
-  getElapsedGameSeconds,
-  useGameElapsedSeconds,
-} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import { createDefinitionAnswerQuestionResult } from "@/components/games/utils/gameQuestionResults";
+import { Button } from "@/components/ui/button";
+import type { SaveGameQuestionResultRequest } from "@/types/games";
+
 import { buildQuizQuestions } from "./game-utils";
 
 interface QuizGameProps {
@@ -67,7 +69,9 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
   } = gameState;
 
   const isFinished = currentIndex >= questions.length;
+
   const currentQuestion = questions[currentIndex];
+
   const isAnswered = selectedAnswer !== null;
 
   const elapsedSeconds = useGameElapsedSeconds(startedAt, finishedAt);
@@ -129,7 +133,9 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
     userAnswer: string;
     wasCorrect: boolean;
   }) {
-    if (!currentFlashcard) return null;
+    if (!currentFlashcard) {
+      return null;
+    }
 
     return createDefinitionAnswerQuestionResult({
       flashcard: currentFlashcard,
@@ -141,9 +147,12 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
   }
 
   function handleAnswer(answer: string) {
-    if (!currentQuestion || isAnswered) return;
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
     const isCorrect = answer === currentQuestion.correctAnswer;
+
     const questionResult = createCurrentQuestionResult({
       userAnswer: answer,
       wasCorrect: isCorrect,
@@ -159,7 +168,9 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
   }
 
   function handleDontKnow() {
-    if (!currentQuestion || isAnswered) return;
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
     const questionResult = createCurrentQuestionResult({
       userAnswer: "I don't know",
@@ -201,30 +212,29 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
         primaryActionLabel="Try again"
         onPrimaryAction={restartGame}
       >
-        {" "}
         <div className="mt-4 flex justify-center">
-          {" "}
-          <GameTimer seconds={elapsedSeconds} />{" "}
-        </div>{" "}
+          <GameTimer seconds={elapsedSeconds} />
+        </div>
       </GameResultCard>
     );
   }
 
   return (
     <GameShell>
-      {" "}
       <GameProgress current={score} total={questions.length} suffix="correct" />
+
       <div className="flex justify-end">
         <GameTimer seconds={elapsedSeconds} />
       </div>
+
       <div key={currentIndex} className="game-enter space-y-6">
-        <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
+        <div className="relative rounded-2xl border border-pink-200 bg-pink-50/60 p-5 dark:border-pink-900 dark:bg-pink-950/20">
           {!isAnswered && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute right-3 top-3 h-8 px-3 text-xs font-medium text-pink-500 hover:bg-pink-100 hover:text-pink-600"
+              className="absolute right-3 top-3 h-8 px-3 text-xs font-medium text-pink-500 hover:bg-pink-100 hover:text-pink-600 dark:text-pink-400 dark:hover:bg-pink-950/50 dark:hover:text-pink-300"
               onClick={handleDontKnow}
             >
               Don&apos;t know?
@@ -232,17 +242,21 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
           )}
 
           <div className="pr-28">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <span>•</span>
+
+              <span aria-hidden="true">•</span>
+
               <span>Score: {score}</span>
             </div>
 
-            <p className="mt-5 text-sm text-gray-500">What does this mean?</p>
+            <p className="mt-5 text-sm text-muted-foreground">
+              What does this mean?
+            </p>
 
-            <h1 className="mt-2 text-3xl font-bold text-gray-800">
+            <h1 className="mt-2 break-words text-3xl font-bold text-foreground">
               {currentQuestion.prompt}
             </h1>
           </div>
@@ -251,19 +265,20 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
         <div className="grid gap-3">
           {currentQuestion.options.map((option) => {
             const isCorrect = option === currentQuestion.correctAnswer;
+
             const isSelected = option === selectedAnswer;
 
             let className =
-              "justify-start border-gray-200 bg-white text-gray-700 transition hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600";
+              "h-auto min-h-12 justify-start whitespace-normal break-words border-border bg-background text-left text-foreground transition-colors hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400";
 
             if (isAnswered && isCorrect) {
               className =
-                "justify-start border-green-500 bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700";
+                "h-auto min-h-12 justify-start whitespace-normal break-words border-green-500 bg-green-50 text-left text-green-700 hover:bg-green-50 hover:text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-950/30 dark:hover:text-green-400";
             }
 
             if (isAnswered && isSelected && !isCorrect) {
               className =
-                "justify-start border-red-500 bg-red-50 text-red-700 hover:bg-red-50 hover:text-red-700";
+                "h-auto min-h-12 justify-start whitespace-normal break-words border-red-500 bg-red-50 text-left text-red-700 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-400";
             }
 
             return (
@@ -272,6 +287,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
                 type="button"
                 variant="outline"
                 className={className}
+                disabled={isAnswered}
                 onClick={() => handleAnswer(option)}
               >
                 {option}
@@ -280,6 +296,7 @@ export default function QuizGame({ flashcards, setId }: QuizGameProps) {
           })}
         </div>
       </div>
+
       {isAnswered && (
         <Button
           type="button"

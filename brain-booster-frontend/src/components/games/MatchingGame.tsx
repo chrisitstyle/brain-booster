@@ -1,21 +1,23 @@
 "use client";
 
 import { useMemo } from "react";
+
 import type { Flashcard } from "@/api/flashcardService";
-import { Button } from "@/components/ui/button";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
 import GameTimer from "@/components/games/shared/GameTimer";
-import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
-import {
-  getElapsedGameSeconds,
-  useGameElapsedSeconds,
-} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import { createMatchingQuestionResults } from "@/components/games/utils/gameQuestionResults";
+import { Button } from "@/components/ui/button";
+
 import { shuffleArray } from "./game-utils";
 
 interface MatchingGameProps {
@@ -95,6 +97,18 @@ function createNewMatchingRound(
     finishedAt: null,
   };
 }
+
+const baseButtonClass =
+  "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-border bg-background px-4 py-3 text-left leading-relaxed text-foreground transition-colors hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-100 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400";
+
+const selectedButtonClass =
+  "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-pink-400 bg-pink-50 px-4 py-3 text-left leading-relaxed text-pink-600 ring-2 ring-pink-100 transition disabled:opacity-100 dark:border-pink-700 dark:bg-pink-950/40 dark:text-pink-400 dark:ring-pink-900/50";
+
+const mismatchButtonClass =
+  "game-shake h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-red-300 bg-red-50 px-4 py-3 text-left leading-relaxed text-red-700 transition disabled:opacity-100 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400";
+
+const matchedButtonClass =
+  "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-green-200 bg-green-50 px-4 py-3 text-left leading-relaxed text-green-700 transition disabled:opacity-100 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400";
 
 export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
   const storageKey = getGameStorageKey(setId, "matching");
@@ -200,7 +214,10 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
         termId,
         definitionId,
       }),
-      mismatchPair: { termId, definitionId },
+      mismatchPair: {
+        termId,
+        definitionId,
+      },
     });
 
     window.setTimeout(() => {
@@ -215,7 +232,9 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
   function handleTermClick(card: Flashcard) {
     const cardId = getFlashcardId(card);
 
-    if (isMatched(cardId) || mismatchPair) return;
+    if (isMatched(cardId) || mismatchPair) {
+      return;
+    }
 
     updateGameState({
       selectedTermId: cardId,
@@ -229,7 +248,9 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
   function handleDefinitionClick(card: Flashcard) {
     const cardId = getFlashcardId(card);
 
-    if (isMatched(cardId) || mismatchPair) return;
+    if (isMatched(cardId) || mismatchPair) {
+      return;
+    }
 
     updateGameState({
       selectedDefinitionId: cardId,
@@ -240,56 +261,40 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
     }
   }
 
-  function getBaseButtonClass() {
-    return "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-gray-200 bg-white px-4 py-3 text-left leading-relaxed text-gray-700 transition hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-100";
-  }
-
-  function getSelectedButtonClass() {
-    return "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-pink-400 bg-pink-50 px-4 py-3 text-left leading-relaxed text-pink-600 ring-2 ring-pink-100 transition disabled:opacity-100";
-  }
-
-  function getMismatchButtonClass() {
-    return "game-shake h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-red-300 bg-red-50 px-4 py-3 text-left leading-relaxed text-red-700 transition disabled:opacity-100";
-  }
-
-  function getMatchedButtonClass() {
-    return "h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl border-green-200 bg-green-50 px-4 py-3 text-left leading-relaxed text-green-700 transition hover:bg-green-50 hover:text-green-700 disabled:opacity-100";
-  }
-
   function getTermButtonClass(card: Flashcard) {
     const cardId = getFlashcardId(card);
 
     if (isMatched(cardId)) {
-      return getMatchedButtonClass();
+      return matchedButtonClass;
     }
 
     if (mismatchPair?.termId === cardId) {
-      return getMismatchButtonClass();
+      return mismatchButtonClass;
     }
 
     if (selectedTermId === cardId) {
-      return getSelectedButtonClass();
+      return selectedButtonClass;
     }
 
-    return getBaseButtonClass();
+    return baseButtonClass;
   }
 
   function getDefinitionButtonClass(card: Flashcard) {
     const cardId = getFlashcardId(card);
 
     if (isMatched(cardId)) {
-      return getMatchedButtonClass();
+      return matchedButtonClass;
     }
 
     if (mismatchPair?.definitionId === cardId) {
-      return getMismatchButtonClass();
+      return mismatchButtonClass;
     }
 
     if (selectedDefinitionId === cardId) {
-      return getSelectedButtonClass();
+      return selectedButtonClass;
     }
 
-    return getBaseButtonClass();
+    return baseButtonClass;
   }
 
   if (flashcards.length < 2) {
@@ -312,51 +317,56 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
         primaryActionLabel="Try again"
         onPrimaryAction={resetGame}
       >
-        {" "}
         <div className="mt-4 flex justify-center">
-          {" "}
-          <GameTimer seconds={elapsedSeconds} />{" "}
+          <GameTimer seconds={elapsedSeconds} />
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+
+        <p className="mt-2 text-sm text-muted-foreground">
           Matched pairs: {matchedIds.length} / {cardsForRound.length}
         </p>
-        <p className="mt-1 text-sm text-gray-500">Mistakes: {mistakes}</p>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Mistakes: {mistakes}
+        </p>
       </GameResultCard>
     );
   }
 
   return (
     <GameShell maxWidth="xl">
-      {" "}
       <GameProgress
         current={matchedIds.length}
         total={cardsForRound.length}
         suffix="matched"
       />
+
       <div className="flex justify-end">
         <GameTimer seconds={elapsedSeconds} />
       </div>
+
       <div key={roundId} className="game-enter space-y-6">
-        <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
+        <div className="rounded-2xl border border-pink-200 bg-pink-50/60 p-5 dark:border-pink-900 dark:bg-pink-950/20">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-500">Matching mode</p>
+              <p className="text-sm text-muted-foreground">Matching mode</p>
 
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="text-2xl font-bold text-foreground">
                 Match terms with their definitions
               </h1>
             </div>
 
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Mistakes:{" "}
-              <span className="font-semibold text-pink-500">{mistakes}</span>
+              <span className="font-semibold text-pink-500 dark:text-pink-400">
+                {mistakes}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="grid min-w-0 gap-6 md:grid-cols-2">
           <div className="min-w-0 space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Terms
             </h2>
 
@@ -383,7 +393,7 @@ export default function MatchingGame({ flashcards, setId }: MatchingGameProps) {
           </div>
 
           <div className="min-w-0 space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Definitions
             </h2>
 

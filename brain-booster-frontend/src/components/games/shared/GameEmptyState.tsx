@@ -11,7 +11,7 @@ export default function GameEmptyState({
 
   return (
     <div
-      className={`mx-auto ${maxWidthClass} rounded-2xl border border-pink-100 bg-white p-6 text-center text-gray-700 shadow-sm`}
+      className={`mx-auto ${maxWidthClass} rounded-2xl border border-border bg-card p-6 text-center text-card-foreground shadow-sm`}
     >
       {message}
     </div>
