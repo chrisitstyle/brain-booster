@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+
 import { Button } from "@/components/ui/button";
+
 import GameProgress from "./GameProgress";
 
 interface GameResultCardProps {
@@ -28,12 +30,12 @@ export default function GameResultCard({
   children,
 }: GameResultCardProps) {
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border border-pink-100 bg-white p-6 text-center shadow-sm">
-      <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+    <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 text-center text-card-foreground shadow-sm">
+      <h1 className="text-2xl font-bold text-card-foreground">{title}</h1>
 
-      <p className="mt-4 text-lg text-gray-700">
+      <p className="mt-4 text-lg text-muted-foreground">
         {scoreLabel}:{" "}
-        <span className="font-semibold text-pink-500">
+        <span className="font-semibold text-pink-500 dark:text-pink-400">
           {score} / {total}
         </span>
       </p>
@@ -49,7 +51,7 @@ export default function GameResultCard({
           <Button
             type="button"
             variant="outline"
-            className="w-full border-pink-200 text-pink-500 hover:bg-pink-50"
+            className="w-full border-border bg-background text-pink-500 hover:border-pink-200 hover:bg-pink-50 hover:text-pink-600 dark:text-pink-400 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-300"
             onClick={onSecondaryAction}
           >
             {secondaryActionLabel}

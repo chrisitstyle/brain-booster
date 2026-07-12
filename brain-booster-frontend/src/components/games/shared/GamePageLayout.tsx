@@ -23,14 +23,19 @@ export default function GamePageLayout({
   storageKeyToClearOnLeave,
 }: GamePageLayoutProps) {
   const router = useRouter();
+
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
 
   const isRefreshingRef = useRef(false);
 
-  const backToSetHref = `/users/${nickname}/sets/${setId}`;
+  const encodedNickname = encodeURIComponent(nickname);
+
+  const backToSetHref = `/users/${encodedNickname}/sets/${setId}`;
 
   useEffect(() => {
-    if (!warnBeforeLeaving) return;
+    if (!warnBeforeLeaving) {
+      return;
+    }
 
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       isRefreshingRef.current = true;
@@ -48,16 +53,22 @@ export default function GamePageLayout({
 
   useEffect(() => {
     return () => {
-      if (!storageKeyToClearOnLeave) return;
+      if (!storageKeyToClearOnLeave) {
+        return;
+      }
 
-      if (isRefreshingRef.current) return;
+      if (isRefreshingRef.current) {
+        return;
+      }
 
       window.sessionStorage.removeItem(storageKeyToClearOnLeave);
     };
   }, [storageKeyToClearOnLeave]);
 
   function clearGameProgress() {
-    if (!storageKeyToClearOnLeave) return;
+    if (!storageKeyToClearOnLeave) {
+      return;
+    }
 
     window.sessionStorage.removeItem(storageKeyToClearOnLeave);
   }
@@ -79,14 +90,14 @@ export default function GamePageLayout({
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <main className="min-h-[calc(100svh-4rem)] bg-background px-4 py-8 text-foreground sm:px-8">
       <div className="mx-auto max-w-4xl">
         <button
           type="button"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-pink-500"
+          className="mb-6 inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-pink-400"
           onClick={handleBackToSetClick}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           Back to set
         </button>
 

@@ -1,88 +1,78 @@
 "use client";
 
+import { useMemo } from "react";
+
 import type { Flashcard } from "@/api/flashcardService";
-import type { SaveGameQuestionResultRequest } from "@/types/games";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
 import GameTimer from "@/components/games/shared/GameTimer";
-import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
-import {
-  getElapsedGameSeconds,
-  useGameElapsedSeconds,
-} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import { createDefinitionAnswerQuestionResult } from "@/components/games/utils/gameQuestionResults";
-import { shuffleArray } from "./game-utils";
+import { Button } from "@/components/ui/button";
+import type { SaveGameQuestionResultRequest } from "@/types/games";
 
-interface TypingGameProps {
+import { buildQuizQuestions } from "./game-utils";
+
+interface QuizGameProps {
   flashcards: Flashcard[];
   setId: number | string;
 }
 
-type AnswerStatus = "correct" | "incorrect" | "revealed" | null;
-
-interface TypingGameState {
-  questions: Flashcard[];
+interface QuizGameState {
   currentIndex: number;
-  userAnswer: string;
-  answerStatus: AnswerStatus;
+  selectedAnswer: string | null;
   score: number;
+  questions: ReturnType<typeof buildQuizQuestions>;
   questionResults: SaveGameQuestionResultRequest[];
   isResultSaved: boolean;
   startedAt: number;
   finishedAt: number | null;
 }
 
-function normalizeAnswer(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[.,!?;:()"'`]/g, "")
-    .replace(/\s+/g, " ");
-}
+export default function QuizGame({ flashcards, setId }: QuizGameProps) {
+  const storageKey = getGameStorageKey(setId, "multiple-choice");
 
-function createNewTypingGame(flashcards: Flashcard[]): TypingGameState {
-  return {
-    questions: shuffleArray(flashcards),
-    currentIndex: 0,
-    userAnswer: "",
-    answerStatus: null,
-    score: 0,
-    questionResults: [],
-    isResultSaved: false,
-    startedAt: Date.now(),
-    finishedAt: null,
-  };
-}
-
-export default function TypingGame({ flashcards, setId }: TypingGameProps) {
-  const storageKey = getGameStorageKey(setId, "written");
+  const initialQuestions = useMemo(
+    () => buildQuizQuestions(flashcards),
+    [flashcards],
+  );
 
   const [gameState, setGameState, clearGameState] =
-    usePersistedGameState<TypingGameState>(storageKey, () =>
-      createNewTypingGame(flashcards),
-    );
+    usePersistedGameState<QuizGameState>(storageKey, () => ({
+      currentIndex: 0,
+      selectedAnswer: null,
+      score: 0,
+      questions: initialQuestions,
+      questionResults: [],
+      isResultSaved: false,
+      startedAt: Date.now(),
+      finishedAt: null,
+    }));
 
   const {
-    questions,
     currentIndex,
-    userAnswer,
-    answerStatus,
+    selectedAnswer,
     score,
-    questionResults = [],
+    questions,
+    questionResults,
     isResultSaved,
     startedAt,
     finishedAt,
   } = gameState;
 
   const isFinished = currentIndex >= questions.length;
+
   const currentQuestion = questions[currentIndex];
-  const isAnswered = answerStatus !== null;
+
+  const isAnswered = selectedAnswer !== null;
 
   const elapsedSeconds = useGameElapsedSeconds(startedAt, finishedAt);
 
@@ -90,7 +80,15 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
     ? getElapsedGameSeconds(startedAt, finishedAt)
     : undefined;
 
-  function updateGameState(nextState: Partial<TypingGameState>) {
+  const currentFlashcard = currentQuestion
+    ? flashcards.find(
+        (flashcard) =>
+          flashcard.term === currentQuestion.prompt &&
+          flashcard.definition === currentQuestion.correctAnswer,
+      )
+    : undefined;
+
+  function updateGameState(nextState: Partial<QuizGameState>) {
     setGameState((previousState) => ({
       ...previousState,
       ...nextState,
@@ -99,7 +97,7 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
 
   useSaveGameResultOnFinish({
     setId,
-    mode: "written",
+    mode: "multiple-choice",
     score,
     totalQuestions: questions.length,
     durationSeconds,
@@ -115,44 +113,53 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
 
   function restartGame() {
     clearGameState();
-    setGameState(createNewTypingGame(flashcards));
+
+    setGameState({
+      currentIndex: 0,
+      selectedAnswer: null,
+      score: 0,
+      questions: buildQuizQuestions(flashcards),
+      questionResults: [],
+      isResultSaved: false,
+      startedAt: Date.now(),
+      finishedAt: null,
+    });
   }
 
   function createCurrentQuestionResult({
-    userAnswerValue,
+    userAnswer,
     wasCorrect,
   }: {
-    userAnswerValue: string;
+    userAnswer: string;
     wasCorrect: boolean;
   }) {
-    if (!currentQuestion) return null;
+    if (!currentFlashcard) {
+      return null;
+    }
 
     return createDefinitionAnswerQuestionResult({
-      flashcard: currentQuestion,
+      flashcard: currentFlashcard,
       questionOrder: currentIndex,
-      questionType: "written",
-      userAnswer: userAnswerValue,
+      questionType: "multiple-choice",
+      userAnswer,
       wasCorrect,
     });
   }
 
-  function handleCheckAnswer() {
-    if (!currentQuestion || isAnswered) return;
+  function handleAnswer(answer: string) {
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
-    const normalizedUserAnswer = normalizeAnswer(userAnswer);
-    const normalizedCorrectAnswer = normalizeAnswer(currentQuestion.definition);
-
-    if (!normalizedUserAnswer) return;
-
-    const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+    const isCorrect = answer === currentQuestion.correctAnswer;
 
     const questionResult = createCurrentQuestionResult({
-      userAnswerValue: userAnswer,
+      userAnswer: answer,
       wasCorrect: isCorrect,
     });
 
     updateGameState({
-      answerStatus: isCorrect ? "correct" : "incorrect",
+      selectedAnswer: answer,
       score: isCorrect ? score + 1 : score,
       questionResults: questionResult
         ? [...questionResults, questionResult]
@@ -161,15 +168,17 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
   }
 
   function handleDontKnow() {
-    if (!currentQuestion || isAnswered) return;
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
     const questionResult = createCurrentQuestionResult({
-      userAnswerValue: "I don't know",
+      userAnswer: "I don't know",
       wasCorrect: false,
     });
 
     updateGameState({
-      answerStatus: "revealed",
+      selectedAnswer: currentQuestion.correctAnswer,
       questionResults: questionResult
         ? [...questionResults, questionResult]
         : questionResults,
@@ -180,23 +189,22 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
     const nextIndex = currentIndex + 1;
 
     updateGameState({
+      selectedAnswer: null,
       currentIndex: nextIndex,
-      userAnswer: "",
-      answerStatus: null,
       finishedAt: nextIndex >= questions.length ? Date.now() : finishedAt,
     });
   }
 
-  if (flashcards.length < 1) {
+  if (flashcards.length < 2) {
     return (
-      <GameEmptyState message="Add at least 1 flashcard to start written mode." />
+      <GameEmptyState message="Add at least 2 flashcards to start multiple choice mode." />
     );
   }
 
   if (isFinished || !currentQuestion) {
     return (
       <GameResultCard
-        title="Written mode completed"
+        title="Multiple choice completed"
         scoreLabel="Your score"
         score={score}
         total={questions.length}
@@ -204,30 +212,29 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
         primaryActionLabel="Try again"
         onPrimaryAction={restartGame}
       >
-        {" "}
         <div className="mt-4 flex justify-center">
-          {" "}
-          <GameTimer seconds={elapsedSeconds} />{" "}
-        </div>{" "}
+          <GameTimer seconds={elapsedSeconds} />
+        </div>
       </GameResultCard>
     );
   }
 
   return (
     <GameShell>
-      {" "}
       <GameProgress current={score} total={questions.length} suffix="correct" />
+
       <div className="flex justify-end">
         <GameTimer seconds={elapsedSeconds} />
       </div>
+
       <div key={currentIndex} className="game-enter space-y-6">
-        <div className="relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
+        <div className="relative rounded-2xl border border-pink-200 bg-pink-50/60 p-5 dark:border-pink-900 dark:bg-pink-950/20">
           {!isAnswered && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute right-3 top-3 h-8 px-3 text-xs font-medium text-pink-500 hover:bg-pink-100 hover:text-pink-600"
+              className="absolute right-3 top-3 h-8 px-3 text-xs font-medium text-pink-500 hover:bg-pink-100 hover:text-pink-600 dark:text-pink-400 dark:hover:bg-pink-950/50 dark:hover:text-pink-300"
               onClick={handleDontKnow}
             >
               Don&apos;t know?
@@ -235,82 +242,62 @@ export default function TypingGame({ flashcards, setId }: TypingGameProps) {
           )}
 
           <div className="pr-28">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <span>•</span>
+
+              <span aria-hidden="true">•</span>
+
               <span>Score: {score}</span>
             </div>
 
-            <p className="mt-5 text-sm text-gray-500">
-              Type the correct answer for:
+            <p className="mt-5 text-sm text-muted-foreground">
+              What does this mean?
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold text-gray-800">
-              {currentQuestion.term}
+            <h1 className="mt-2 break-words text-3xl font-bold text-foreground">
+              {currentQuestion.prompt}
             </h1>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Input
-            value={userAnswer}
-            disabled={isAnswered}
-            placeholder="Type your answer..."
-            className="h-12 rounded-xl border-gray-200 bg-white text-gray-800 placeholder:text-gray-400 focus-visible:ring-pink-400"
-            onChange={(event) =>
-              updateGameState({
-                userAnswer: event.target.value,
-              })
+        <div className="grid gap-3">
+          {currentQuestion.options.map((option) => {
+            const isCorrect = option === currentQuestion.correctAnswer;
+
+            const isSelected = option === selectedAnswer;
+
+            let className =
+              "h-auto min-h-12 justify-start whitespace-normal break-words border-border bg-background text-left text-foreground transition-colors hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400";
+
+            if (isAnswered && isCorrect) {
+              className =
+                "h-auto min-h-12 justify-start whitespace-normal break-words border-green-500 bg-green-50 text-left text-green-700 hover:bg-green-50 hover:text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-950/30 dark:hover:text-green-400";
             }
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                if (isAnswered) {
-                  handleNext();
-                } else {
-                  handleCheckAnswer();
-                }
-              }
-            }}
-          />
 
-          {answerStatus === "correct" && (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-              Correct! Great job.
-            </div>
-          )}
+            if (isAnswered && isSelected && !isCorrect) {
+              className =
+                "h-auto min-h-12 justify-start whitespace-normal break-words border-red-500 bg-red-50 text-left text-red-700 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-400";
+            }
 
-          {answerStatus === "incorrect" && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <p className="font-semibold">Not quite.</p>
-              <p className="mt-1">
-                Correct answer:{" "}
-                <span className="font-semibold">
-                  {currentQuestion.definition}
-                </span>
-              </p>
-            </div>
-          )}
-
-          {answerStatus === "revealed" && (
-            <div className="rounded-xl border border-pink-200 bg-pink-50 p-4 text-sm text-pink-700">
-              <p className="font-semibold">Correct answer:</p>
-              <p className="mt-1">{currentQuestion.definition}</p>
-            </div>
-          )}
+            return (
+              <Button
+                key={option}
+                type="button"
+                variant="outline"
+                className={className}
+                disabled={isAnswered}
+                onClick={() => handleAnswer(option)}
+              >
+                {option}
+              </Button>
+            );
+          })}
         </div>
       </div>
-      {!isAnswered ? (
-        <Button
-          type="button"
-          className="w-full bg-pink-500 text-white hover:bg-pink-600"
-          disabled={!userAnswer.trim()}
-          onClick={handleCheckAnswer}
-        >
-          Check answer
-        </Button>
-      ) : (
+
+      {isAnswered && (
         <Button
           type="button"
           className="w-full bg-pink-500 text-white hover:bg-pink-600"

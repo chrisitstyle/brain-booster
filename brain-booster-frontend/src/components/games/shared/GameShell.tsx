@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import "./game-animations.css";
 
 interface GameShellProps {
@@ -18,7 +19,7 @@ export default function GameShell({
 }: GameShellProps) {
   return (
     <div
-      className={`mx-auto ${maxWidthClasses[maxWidth]} space-y-6 rounded-2xl border border-pink-100 bg-white p-6 shadow-sm`}
+      className={`mx-auto ${maxWidthClasses[maxWidth]} space-y-6 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm`}
     >
       {children}
     </div>

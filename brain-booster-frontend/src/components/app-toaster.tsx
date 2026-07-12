@@ -28,9 +28,13 @@ export function AppToaster(props: AppToasterProps) {
   return (
     <SonnerToaster
       theme={resolvedTheme === "dark" ? "dark" : "light"}
-      position="top-right"
+      position="bottom-right"
       richColors
       closeButton
+      expand={false}
+      visibleToasts={4}
+      gap={12}
+      offset={24}
       {...props}
     />
   );

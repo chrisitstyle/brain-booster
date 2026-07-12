@@ -11,7 +11,7 @@ export default function GameQuestionCard({
 }: GameQuestionCardProps) {
   return (
     <div
-      className={`relative rounded-2xl border border-pink-100 bg-pink-50/40 p-5 ${className}`}
+      className={`relative rounded-2xl border border-pink-200 bg-pink-50/60 p-5 text-foreground dark:border-pink-900 dark:bg-pink-950/20 ${className}`}
     >
       {children}
     </div>

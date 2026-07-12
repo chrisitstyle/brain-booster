@@ -1,26 +1,28 @@
 "use client";
 
 import { useMemo } from "react";
+
 import type { Flashcard } from "@/api/flashcardService";
-import type { SaveGameQuestionResultRequest } from "@/types/games";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  getElapsedGameSeconds,
+  useGameElapsedSeconds,
+} from "@/components/games/hooks/useGameElapsedSeconds";
+import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
+import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import GameEmptyState from "@/components/games/shared/GameEmptyState";
 import GameProgress from "@/components/games/shared/GameProgress";
 import GameResultCard from "@/components/games/shared/GameResultCard";
 import GameShell from "@/components/games/shared/GameShell";
 import GameTimer from "@/components/games/shared/GameTimer";
-import { useSaveGameResultOnFinish } from "@/components/games/hooks/useSaveGameResultOnFinish";
-import {
-  getElapsedGameSeconds,
-  useGameElapsedSeconds,
-} from "@/components/games/hooks/useGameElapsedSeconds";
 import { usePersistedGameState } from "@/components/games/shared/usePersistedGameState";
-import { getGameStorageKey } from "@/components/games/shared/game-storage";
 import {
   createQuestionResult,
   mapCustomTestQuestionType,
 } from "@/components/games/utils/gameQuestionResults";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { SaveGameQuestionResultRequest } from "@/types/games";
+
 import { shuffleArray } from "./game-utils";
 
 type AnswerWith = "term" | "definition" | "both";
@@ -201,7 +203,9 @@ function buildTestQuestions(
 
   return selectedCards.map((card, index) => {
     const type = enabledTypes[index % enabledTypes.length];
+
     const answerWith = getQuestionSide(config.answerWith);
+
     const { prompt, correctAnswer } = getPromptAndAnswer(card, answerWith);
 
     if (type === "multipleChoice") {
@@ -277,8 +281,30 @@ function buildTestQuestions(
   });
 }
 
+const defaultOptionClass =
+  "h-auto min-h-12 justify-start whitespace-normal break-words border-border bg-background text-left text-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400";
+
+const correctOptionClass =
+  "h-auto min-h-12 justify-start whitespace-normal break-words border-green-300 bg-green-50 text-left text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400";
+
+const incorrectOptionClass =
+  "h-auto min-h-12 justify-start whitespace-normal break-words border-red-300 bg-red-50 text-left text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400";
+
+const matchingDefaultClass =
+  "border-border bg-background text-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400";
+
+const matchingSelectedClass =
+  "border-pink-400 bg-pink-50 text-pink-600 ring-2 ring-pink-100 dark:border-pink-700 dark:bg-pink-950/40 dark:text-pink-400 dark:ring-pink-900/50";
+
+const matchingMismatchClass =
+  "game-shake border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400";
+
+const matchingCorrectClass =
+  "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400";
+
 export default function TestGame({ flashcards, setId }: TestGameProps) {
   const maxQuestions = flashcards.length;
+
   const storageKey = getGameStorageKey(setId, "custom-test");
 
   const [gameState, setGameState, clearGameState] =
@@ -308,6 +334,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   } = gameState;
 
   const currentQuestion = questions[currentIndex];
+
   const isFinished = hasStarted && currentIndex >= questions.length;
 
   const elapsedSeconds = useGameElapsedSeconds(startedAt, finishedAt);
@@ -320,17 +347,15 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
     Boolean,
   ).length;
 
-  const matchingPromptCards = useMemo(() => {
-    if (!currentQuestion?.matchingCards) return [];
+  const matchingPromptCards = useMemo(
+    () => currentQuestion?.matchingCards ?? [],
+    [currentQuestion],
+  );
 
-    return currentQuestion.matchingCards;
-  }, [currentQuestion]);
-
-  const matchingAnswerCards = useMemo(() => {
-    if (!currentQuestion?.matchingAnswerCards) return [];
-
-    return currentQuestion.matchingAnswerCards;
-  }, [currentQuestion]);
+  const matchingAnswerCards = useMemo(
+    () => currentQuestion?.matchingAnswerCards ?? [],
+    [currentQuestion],
+  );
 
   function updateGameState(nextState: Partial<TestGameState>) {
     setGameState((previousState) => ({
@@ -368,7 +393,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   function updateQuestionCount(value: string) {
     const numberValue = Number(value);
 
-    if (Number.isNaN(numberValue)) return;
+    if (Number.isNaN(numberValue)) {
+      return;
+    }
 
     updateConfig({
       questionCount: Math.min(Math.max(numberValue, 1), maxQuestions),
@@ -389,7 +416,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function startTest() {
-    if (enabledTypesCount === 0) return;
+    if (enabledTypesCount === 0) {
+      return;
+    }
 
     const nextQuestions = buildTestQuestions(flashcards, config);
 
@@ -432,6 +461,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
 
   function resetEverything() {
     clearGameState();
+
     setGameState(createInitialTestState(flashcards));
   }
 
@@ -442,7 +472,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
     userAnswer: string;
     wasCorrect: boolean;
   }) {
-    if (!currentQuestion || currentQuestion.type === "matching") return null;
+    if (!currentQuestion || currentQuestion.type === "matching") {
+      return null;
+    }
 
     const questionType = mapCustomTestQuestionType(currentQuestion.type);
 
@@ -472,7 +504,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function createCurrentMatchingQuestionResults() {
-    if (!currentQuestion?.matchingCards) return [];
+    if (!currentQuestion?.matchingCards) {
+      return [];
+    }
 
     return currentQuestion.matchingCards.map((card, index) => {
       const mistakesCount =
@@ -493,7 +527,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function handleAnswer(answer: string) {
-    if (!currentQuestion || isAnswered) return;
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
     const isCorrect = answer === currentQuestion.correctAnswer;
 
@@ -513,9 +549,12 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function handleTrueFalseAnswer(answer: boolean) {
-    if (!currentQuestion || isAnswered) return;
+    if (!currentQuestion || isAnswered) {
+      return;
+    }
 
     const isCorrect = answer === currentQuestion.isTrueStatement;
+
     const userAnswer = answer ? "True" : "False";
 
     const questionResult = createCurrentQuestionResult({
@@ -534,7 +573,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function handleWrittenCheck() {
-    if (!currentQuestion || isAnswered || !writtenAnswer.trim()) return;
+    if (!currentQuestion || isAnswered || !writtenAnswer.trim()) {
+      return;
+    }
 
     const isCorrect =
       normalizeAnswer(writtenAnswer) ===
@@ -555,15 +596,17 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function isMatchingCompleted() {
-    return (
+    return Boolean(
       currentQuestion?.type === "matching" &&
       currentQuestion.matchingCards &&
-      matchedIds.length === currentQuestion.matchingCards.length
+      matchedIds.length === currentQuestion.matchingCards.length,
     );
   }
 
   function handleMatchingPromptClick(cardId: number) {
-    if (matchedIds.includes(cardId) || mismatchIds.length > 0) return;
+    if (matchedIds.includes(cardId) || mismatchIds.length > 0) {
+      return;
+    }
 
     updateGameState({
       selectedPromptId: cardId,
@@ -575,7 +618,9 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   }
 
   function handleMatchingAnswerClick(cardId: number) {
-    if (matchedIds.includes(cardId) || mismatchIds.length > 0) return;
+    if (matchedIds.includes(cardId) || mismatchIds.length > 0) {
+      return;
+    }
 
     updateGameState({
       selectedAnswerId: cardId,
@@ -620,6 +665,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
 
   function finishMatchingQuestion() {
     const nextIndex = currentIndex + 1;
+
     const matchingQuestionResults = createCurrentMatchingQuestionResults();
 
     updateGameState({
@@ -640,42 +686,55 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
   if (!hasStarted) {
     return (
       <GameShell>
-        {" "}
         <div className="mb-8">
-          {" "}
-          <p className="text-sm font-semibold text-pink-500">Custom test</p>
-          <h1 className="mt-1 text-3xl font-bold text-gray-800">
+          <p className="text-sm font-semibold text-pink-500 dark:text-pink-400">
+            Custom test
+          </p>
+
+          <h1 className="mt-1 text-3xl font-bold text-foreground">
             Set up your test
           </h1>
-          <p className="mt-2 text-sm text-gray-500">
+
+          <p className="mt-2 text-sm text-muted-foreground">
             Choose question types and how answers should be shown.
           </p>
         </div>
+
         <div className="space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <label className="font-semibold text-gray-800">
+            <label
+              htmlFor="test-question-count"
+              className="font-semibold text-foreground"
+            >
               Questions{" "}
-              <span className="text-sm font-normal text-gray-500">
+              <span className="text-sm font-normal text-muted-foreground">
                 (max {maxQuestions})
               </span>
             </label>
 
             <Input
+              id="test-question-count"
               type="number"
               min={1}
               max={maxQuestions}
               value={config.questionCount}
-              className="h-12 w-24 rounded-xl border-pink-100 text-center font-semibold focus-visible:ring-pink-400"
+              className="h-12 w-24 rounded-xl border-input bg-background text-center font-semibold text-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20"
               onChange={(event) => updateQuestionCount(event.target.value)}
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 border-b border-gray-200 pb-5">
-            <label className="font-semibold text-gray-800">Answer with</label>
+          <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+            <label
+              htmlFor="test-answer-with"
+              className="font-semibold text-foreground"
+            >
+              Answer with
+            </label>
 
             <select
+              id="test-answer-with"
               value={config.answerWith}
-              className="h-11 rounded-full border border-pink-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-pink-200 focus:border-pink-400"
+              className="h-11 rounded-full border border-input bg-background px-4 text-sm font-semibold text-foreground outline-none transition hover:border-pink-200 focus:border-pink-400 focus:ring-4 focus:ring-pink-500/15 dark:hover:border-pink-900"
               onChange={(event) =>
                 updateConfig({
                   answerWith: event.target.value as AnswerWith,
@@ -695,6 +754,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
             ["written", "Written"],
           ].map(([type, label]) => {
             const questionType = type as TestQuestionType;
+
             const isEnabled = config.enabledTypes[questionType];
 
             return (
@@ -702,17 +762,20 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
                 key={type}
                 className="flex items-center justify-between gap-4"
               >
-                <span className="font-semibold text-gray-800">{label}</span>
+                <span className="font-semibold text-foreground">{label}</span>
 
                 <button
                   type="button"
-                  className={`relative h-7 w-12 rounded-full transition ${
-                    isEnabled ? "bg-pink-500" : "bg-gray-300"
+                  role="switch"
+                  aria-checked={isEnabled}
+                  aria-label={`Enable ${label}`}
+                  className={`relative h-7 w-12 rounded-full transition-colors ${
+                    isEnabled ? "bg-pink-500" : "bg-muted"
                   }`}
                   onClick={() => toggleQuestionType(questionType)}
                 >
                   <span
-                    className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
+                    className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
                       isEnabled ? "left-6" : "left-1"
                     }`}
                   />
@@ -721,16 +784,21 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
             );
           })}
         </div>
+
         {enabledTypesCount === 0 && (
-          <p className="mt-6 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+          <p
+            className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
+            role="alert"
+          >
             Select at least one question type.
           </p>
         )}
+
         <div className="mt-8 flex justify-between gap-3">
           <Button
             type="button"
             variant="outline"
-            className="border-pink-200 text-pink-500 hover:bg-pink-50"
+            className="border-border bg-background text-pink-500 hover:border-pink-200 hover:bg-pink-50 dark:text-pink-400 dark:hover:border-pink-900 dark:hover:bg-pink-950/30"
             onClick={resetEverything}
           >
             Reset
@@ -762,31 +830,32 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
         secondaryActionLabel="Change settings"
         onSecondaryAction={restartSetup}
       >
-        {" "}
         <div className="mt-4 flex justify-center">
-          {" "}
-          <GameTimer seconds={elapsedSeconds} />{" "}
-        </div>{" "}
+          <GameTimer seconds={elapsedSeconds} />
+        </div>
       </GameResultCard>
     );
   }
 
-  if (!currentQuestion) return null;
+  if (!currentQuestion) {
+    return null;
+  }
 
   return (
     <GameShell maxWidth="lg">
-      {" "}
       <GameProgress
         current={currentIndex}
         total={questions.length}
         suffix="answered"
       />
+
       <div className="flex justify-end">
         <GameTimer seconds={elapsedSeconds} />
       </div>
+
       <div key={currentQuestion.id} className="game-enter space-y-6">
-        <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
-          <div className="flex items-center justify-between gap-4 text-sm text-gray-500">
+        <div className="rounded-2xl border border-pink-200 bg-pink-50/60 p-5 dark:border-pink-900 dark:bg-pink-950/20">
+          <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
             <span>
               Question {currentIndex + 1} of {questions.length}
             </span>
@@ -798,11 +867,11 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
 
           {currentQuestion.type !== "matching" && (
             <>
-              <p className="mt-5 text-sm text-gray-500">
+              <p className="mt-5 text-sm text-muted-foreground">
                 Answer with {currentQuestion.answerWith}
               </p>
 
-              <h1 className="mt-2 text-2xl font-bold text-gray-800">
+              <h1 className="mt-2 break-words text-2xl font-bold text-foreground">
                 {currentQuestion.prompt}
               </h1>
             </>
@@ -813,19 +882,17 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
           <div className="grid gap-3">
             {currentQuestion.options?.map((option) => {
               const isCorrect = option === currentQuestion.correctAnswer;
+
               const isSelected = selectedAnswer === option;
 
-              let className =
-                "h-auto min-h-12 justify-start whitespace-normal border-gray-200 bg-white text-left text-gray-700 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600";
+              let className = defaultOptionClass;
 
               if (isAnswered && isCorrect) {
-                className =
-                  "h-auto min-h-12 justify-start whitespace-normal border-green-300 bg-green-50 text-left text-green-700";
+                className = correctOptionClass;
               }
 
               if (isAnswered && isSelected && !isCorrect) {
-                className =
-                  "h-auto min-h-12 justify-start whitespace-normal border-red-300 bg-red-50 text-left text-red-700";
+                className = incorrectOptionClass;
               }
 
               return (
@@ -846,9 +913,11 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
 
         {currentQuestion.type === "trueFalse" && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-gray-700">
+            <div className="rounded-xl border border-border bg-background p-4 text-foreground">
               <span className="font-semibold">{currentQuestion.prompt}</span>
-              <span className="mx-2 text-gray-400">=</span>
+
+              <span className="mx-2 text-muted-foreground">=</span>
+
               <span>{currentQuestion.trueFalseAnswer}</span>
             </div>
 
@@ -856,7 +925,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
               <Button
                 type="button"
                 variant="outline"
-                className="border-gray-200 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
+                className="border-border bg-background text-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
                 disabled={isAnswered}
                 onClick={() => handleTrueFalseAnswer(true)}
               >
@@ -866,7 +935,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
               <Button
                 type="button"
                 variant="outline"
-                className="border-gray-200 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
+                className="border-border bg-background text-foreground hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 dark:hover:border-pink-900 dark:hover:bg-pink-950/30 dark:hover:text-pink-400"
                 disabled={isAnswered}
                 onClick={() => handleTrueFalseAnswer(false)}
               >
@@ -879,8 +948,8 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
                 className={`rounded-xl border p-4 text-sm ${
                   selectedAnswer ===
                   (currentQuestion.isTrueStatement ? "True" : "False")
-                    ? "border-green-200 bg-green-50 text-green-700"
-                    : "border-red-200 bg-red-50 text-red-700"
+                    ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                    : "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
                 }`}
               >
                 Correct answer:{" "}
@@ -898,7 +967,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
               value={writtenAnswer}
               disabled={isAnswered}
               placeholder="Type your answer..."
-              className="h-12 rounded-xl border-gray-200 focus-visible:ring-pink-400"
+              className="h-12 rounded-xl border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-pink-300 focus-visible:ring-pink-500/20 dark:focus-visible:border-pink-800"
               onChange={(event) =>
                 updateGameState({
                   writtenAnswer: event.target.value,
@@ -920,8 +989,8 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
                 className={`rounded-xl border p-4 text-sm ${
                   normalizeAnswer(writtenAnswer) ===
                   normalizeAnswer(currentQuestion.correctAnswer)
-                    ? "border-green-200 bg-green-50 text-green-700"
-                    : "border-red-200 bg-red-50 text-red-700"
+                    ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                    : "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
                 }`}
               >
                 Correct answer:{" "}
@@ -936,11 +1005,11 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
         {currentQuestion.type === "matching" && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-xl font-bold text-foreground">
                 Match the pairs
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Matching is counted as correct only if you finish it without
                 mistakes.
               </p>
@@ -948,14 +1017,24 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
 
             <div className="grid min-w-0 gap-5 md:grid-cols-2">
               <div className="min-w-0 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Prompts
                 </h3>
 
                 {matchingPromptCards.map((card) => {
                   const isMatched = matchedIds.includes(card.flashcardId);
+
                   const isSelected = selectedPromptId === card.flashcardId;
+
                   const isMismatch = mismatchIds.includes(card.flashcardId);
+
+                  const stateClassName = isMatched
+                    ? matchingCorrectClass
+                    : isMismatch
+                      ? matchingMismatchClass
+                      : isSelected
+                        ? matchingSelectedClass
+                        : matchingDefaultClass;
 
                   return (
                     <Button
@@ -963,15 +1042,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
                       type="button"
                       variant="outline"
                       disabled={isMatched || mismatchIds.length > 0}
-                      className={`h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl px-4 py-3 text-left leading-relaxed disabled:opacity-100 ${
-                        isMatched
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : isMismatch
-                            ? "game-shake border-red-300 bg-red-50 text-red-700"
-                            : isSelected
-                              ? "border-pink-400 bg-pink-50 text-pink-600 ring-2 ring-pink-100"
-                              : "border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
-                      }`}
+                      className={`h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl px-4 py-3 text-left leading-relaxed disabled:opacity-100 ${stateClassName}`}
                       onClick={() =>
                         handleMatchingPromptClick(card.flashcardId)
                       }
@@ -983,14 +1054,24 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
               </div>
 
               <div className="min-w-0 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Answers
                 </h3>
 
                 {matchingAnswerCards.map((card) => {
                   const isMatched = matchedIds.includes(card.flashcardId);
+
                   const isSelected = selectedAnswerId === card.flashcardId;
+
                   const isMismatch = mismatchIds.includes(card.flashcardId);
+
+                  const stateClassName = isMatched
+                    ? matchingCorrectClass
+                    : isMismatch
+                      ? matchingMismatchClass
+                      : isSelected
+                        ? matchingSelectedClass
+                        : matchingDefaultClass;
 
                   return (
                     <Button
@@ -998,15 +1079,7 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
                       type="button"
                       variant="outline"
                       disabled={isMatched || mismatchIds.length > 0}
-                      className={`h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl px-4 py-3 text-left leading-relaxed disabled:opacity-100 ${
-                        isMatched
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : isMismatch
-                            ? "game-shake border-red-300 bg-red-50 text-red-700"
-                            : isSelected
-                              ? "border-pink-400 bg-pink-50 text-pink-600 ring-2 ring-pink-100"
-                              : "border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600"
-                      }`}
+                      className={`h-auto min-h-14 w-full min-w-0 justify-start whitespace-normal break-words rounded-xl px-4 py-3 text-left leading-relaxed disabled:opacity-100 ${stateClassName}`}
                       onClick={() =>
                         handleMatchingAnswerClick(card.flashcardId)
                       }
@@ -1018,15 +1091,16 @@ export default function TestGame({ flashcards, setId }: TestGameProps) {
               </div>
             </div>
 
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Mistakes:{" "}
-              <span className="font-semibold text-pink-500">
+              <span className="font-semibold text-pink-500 dark:text-pink-400">
                 {matchingMistakes}
               </span>
             </div>
           </div>
         )}
       </div>
+
       <div className="flex justify-end">
         {currentQuestion.type === "written" && !isAnswered && (
           <Button
