@@ -12,4 +12,4 @@ TRUNCATE TABLE
     game_results,
     game_attempts,
     game_question_results
-CASCADE;
+RESTART IDENTITY CASCADE;

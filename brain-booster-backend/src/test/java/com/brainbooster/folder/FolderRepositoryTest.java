@@ -1,20 +1,19 @@
 package com.brainbooster.folder;
 
+import com.brainbooster.integration.AbstractRepositoryTest;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-@ActiveProfiles("test")
-class FolderRepositoryTest {
+@Sql(scripts = "/insert-test-data.sql")
+class FolderRepositoryTest extends AbstractRepositoryTest {
 
     @Autowired
     private FolderRepository folderRepository;
