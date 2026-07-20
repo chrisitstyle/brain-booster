@@ -1,6 +1,16 @@
+-- clear all tables before inserting fresh test data to prevent unique constraint violations
+TRUNCATE TABLE
+    "user",
+    FLASHCARD_SET,
+    FOLDER,
+    FOLDER_FLASHCARD_SET,
+    FLASHCARD,
+    USER_STARRED_FLASHCARD
+RESTART IDENTITY CASCADE;
+
 -- add users
 INSERT INTO "user" (user_id, nickname, email, password, role, created_at)
-VALUES (1, 'testadmin', 'testadmin123@test.pl', '$2a$10$LV8wtoOAffLu7OuBIo/5EelC7B3xz2Du8v9nneLRWDYxOXalh1sPa', 'ADMIN', '2024-11-14 18:54:04.887255');
+VALUES (1, 'testadmin', 'testadmin123@test.com', '$2a$10$LV8wtoOAffLu7OuBIo/5EelC7B3xz2Du8v9nneLRWDYxOXalh1sPa', 'ADMIN', '2024-11-14 18:54:04.887255');
 
 INSERT INTO "user" (user_id, nickname, email, password, role, created_at)
 VALUES (2, 'johndoe', 'johndoe@example.com', '$2a$10$LV8wtoOAffLu7OuBIo/5EelC7B3xz2Du8v9nneLRWDYxOXalh1sPa', 'USER', '2024-11-07 13:35:29.346632');

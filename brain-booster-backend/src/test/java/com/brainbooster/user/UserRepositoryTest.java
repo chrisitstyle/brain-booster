@@ -29,7 +29,7 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("existsByEmail - Should return true when email exists")
     void existsByEmail_ShouldReturnTrue() {
         // given
-        String existingEmail = "testadmin123@test.pl";
+        String existingEmail = "testadmin123@test.com";
 
         // when
         boolean exists = userRepository.existsByEmail(existingEmail);
@@ -113,7 +113,7 @@ class UserRepositoryTest extends AbstractRepositoryTest {
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getEmail()).isEqualTo("testadmin123@test.pl");
+        assertThat(result.get().getEmail()).isEqualTo("testadmin123@test.com");
     }
 
     @Test
