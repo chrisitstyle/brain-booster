@@ -17,6 +17,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - [Learning Games and Analytics](#-learning-games-and-analytics)
 - [API Overview](#-api-overview)
 - [OpenAPI / Swagger](#-openapi--swagger)
+- [Automated Testing](#-automated-testing)
 - [Roadmap](#-roadmap)
 - [License](#-license)
 - [Author](#-author)
@@ -71,6 +72,9 @@ In addition to classic flashcard review, the application provides multiple learn
 - **Responsive UI**  
   Modern, clean, and responsive interface for desktop and mobile devices.
 
+- **Integration Testing**  
+  Robust testing suite ensuring system reliability using **Testcontainers**.
+
 ## 🛠 Tech Stack
 
 ### Backend
@@ -86,6 +90,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - Flyway
 - Gradle
 - Lombok
+- Testcontainers
 
 ### Frontend
 
@@ -747,6 +752,14 @@ If Swagger UI is not available, check that:
 - `springdoc.swagger-ui.enabled=true` is configured for the active profile,
 - the URL includes the backend context path: `/api/v1`.
 
+## 🧪 Automated Testing
+
+The backend ensures high reliability by using **Testcontainers** to run tests against a real **PostgreSQL** database instead of an in-memory substitute.
+
+- **Performance Optimized** - uses a shared **Singleton Container pattern** to drastically reduce test execution time across the entire suite.
+- **Integration Tests** - validate full HTTP-to-DB flows, including Spring Security (JWT) filters, with automated database state resets between runs.
+- **Repository Tests** - lightweight, transactional slice tests ensuring that native queries, constraints, and Flyway migrations behave exactly as they would in production.
+
 ## 🗺 Roadmap
 
 Planned features and improvements:
@@ -771,9 +784,6 @@ Planned features and improvements:
 
 - **Frontend Route Guard Improvements**  
   Improve authentication-based and role-based route protection on the frontend.
-
-- **Automated Tests**  
-  Expand backend and frontend test coverage for games, attempts, analytics, and authorization.
 
 - **Deployment Improvements**  
   Extend the Docker setup with production deployment configuration and CI/CD automation.
