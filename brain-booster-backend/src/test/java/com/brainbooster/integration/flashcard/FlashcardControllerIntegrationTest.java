@@ -381,8 +381,8 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void deleteFlashcardById_ShouldReturn403_WhenNotOwner() throws Exception {
         // given
         User owner = userRepository.findById(2L).orElseThrow();
-        User hacker = userRepository.findById(3L).orElseThrow();
-        String hackerToken = jwtService.generateToken(hacker);
+        User anotherUser = userRepository.findById(3L).orElseThrow();
+        String anotherUserToken = jwtService.generateToken(anotherUser);
 
         FlashcardSet set = flashcardSetRepository.save(
                 TestEntities
@@ -400,7 +400,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
 
         // when, then
         mockMvc.perform(delete("/flashcards/" + flashcard.getFlashcardId())
-                        .header("Authorization", "Bearer " + hackerToken)
+                        .header("Authorization", "Bearer " + anotherUserToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
