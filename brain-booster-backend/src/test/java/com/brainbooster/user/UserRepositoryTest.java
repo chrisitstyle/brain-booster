@@ -1,25 +1,21 @@
 package com.brainbooster.user;
 
 
+import com.brainbooster.integration.AbstractRepositoryTest;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(SpringExtension.class)
-@DataJpaTest
-@ActiveProfiles("test")
-class UserRepositoryTest {
+@Sql(scripts = "/insert-test-data.sql")
+class UserRepositoryTest extends AbstractRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -33,7 +29,7 @@ class UserRepositoryTest {
     @DisplayName("existsByEmail - Should return true when email exists")
     void existsByEmail_ShouldReturnTrue() {
         // given
-        String existingEmail = "testadmin123@test.pl";
+        String existingEmail = "testadmin123@test.com";
 
         // when
         boolean exists = userRepository.existsByEmail(existingEmail);
@@ -117,7 +113,7 @@ class UserRepositoryTest {
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getEmail()).isEqualTo("testadmin123@test.pl");
+        assertThat(result.get().getEmail()).isEqualTo("testadmin123@test.com");
     }
 
     @Test

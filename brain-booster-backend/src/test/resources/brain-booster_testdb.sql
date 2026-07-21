@@ -9,7 +9,7 @@ CREATE TABLE "user"
 );
 
 INSERT INTO "user" (user_id, nickname, email, password, role, created_at)
-VALUES (1, 'testadmin', 'testadmin123@test.pl',
+VALUES (1, 'testadmin', 'testadmin123@test.com',
         '$2a$10$LV8wtoOAffLu7OuBIo/5EelC7B3xz2Du8v9nneLRWDYxOXalh1sPa', 'ADMIN', '2024-11-14 18:54:04.887255');
 
 INSERT INTO "user" (user_id, nickname, email, password, role, created_at)

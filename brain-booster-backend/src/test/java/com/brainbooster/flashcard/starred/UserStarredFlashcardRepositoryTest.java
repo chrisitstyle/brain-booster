@@ -2,27 +2,21 @@ package com.brainbooster.flashcard.starred;
 
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcardset.FlashcardSet;
+import com.brainbooster.integration.AbstractRepositoryTest;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.Instant;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(SpringExtension.class)
-@DataJpaTest
-@ActiveProfiles("test")
-class UserStarredFlashcardRepositoryTest {
+class UserStarredFlashcardRepositoryTest extends AbstractRepositoryTest {
 
     private static final Instant CREATED_AT =
             Instant.parse("2024-01-01T00:00:00Z");

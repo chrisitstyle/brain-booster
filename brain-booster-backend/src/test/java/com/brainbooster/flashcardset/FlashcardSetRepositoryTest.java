@@ -1,26 +1,20 @@
 package com.brainbooster.flashcardset;
 
+import com.brainbooster.integration.AbstractRepositoryTest;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(SpringExtension.class)
-@DataJpaTest
-@ActiveProfiles("test")
-class FlashcardSetRepositoryTest {
+class FlashcardSetRepositoryTest extends AbstractRepositoryTest {
 
     @Autowired
     private FlashcardSetRepository flashcardSetRepository;

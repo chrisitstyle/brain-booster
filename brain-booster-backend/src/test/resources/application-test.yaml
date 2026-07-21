@@ -2,25 +2,15 @@ spring:
   application:
     name: Brain Booster Backend Test
 
-  datasource:
-    url: jdbc:h2:mem:brainbooster_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;NON_KEYWORDS=USER
-    driver-class-name: org.h2.Driver
-    username: testuser
-    password: "testpassword"
+  # Testcontainers + @ServiceConnection will automatically inject the appropriate URL, username, and password for Postgres
 
   flyway:
-    enabled: false
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:brain-booster_testdb.sql
-      continue-on-error: true
+    enabled: true
+    clean-disabled: false # useful in tests, allows using flyway.clean() if needed
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate  # flyway creates the database structure, hibernate only validates if java entities match the tables
     show-sql: true
     properties:
       hibernate:

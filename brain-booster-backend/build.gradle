@@ -11,6 +11,7 @@ plugins {
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.flywaydb.flyway' version '12.3.0'
+    id 'jacoco'
 }
 
 group = 'com.brainbooster'
@@ -54,13 +55,45 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.mockito:mockito-core:5.12.0'
     testImplementation 'org.assertj:assertj-core:3.27.7'
-    testImplementation 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Testcontainers dependencies
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
+    testImplementation 'org.testcontainers:testcontainers-postgresql:2.0.5'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport // generating report after testing
 }
+
+jacocoTestReport {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    violationRules {
+        rule {
+            element = 'BUNDLE' // verify overall coverage across the entire project bundle
+
+            limit {
+                counter = 'INSTRUCTION' // validate coverage based on Java bytecode instructions
+                value = 'COVEREDRATIO'
+                minimum = 0.70 // minimum required code coverage threshold
+            }
+        }
+    }
+}
+
+// attach coverage verification to gradle standard "check" task
+check.dependsOn jacocoTestCoverageVerification
+
 
 tasks.named('bootRun') {
     systemProperties = System.properties
