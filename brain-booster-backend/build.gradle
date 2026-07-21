@@ -11,6 +11,7 @@ plugins {
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.flywaydb.flyway' version '12.3.0'
+    id 'jacoco'
 }
 
 group = 'com.brainbooster'
@@ -63,7 +64,36 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport // generating report after testing
 }
+
+jacocoTestReport {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    violationRules {
+        rule {
+            element = 'BUNDLE' // verify overall coverage across the entire project bundle
+
+            limit {
+                counter = 'INSTRUCTION' // validate coverage based on Java bytecode instructions
+                value = 'COVEREDRATIO'
+                minimum = 0.70 // minimum required code coverage threshold
+            }
+        }
+    }
+}
+
+// attach coverage verification to gradle standard "check" task
+check.dependsOn jacocoTestCoverageVerification
+
 
 tasks.named('bootRun') {
     systemProperties = System.properties
