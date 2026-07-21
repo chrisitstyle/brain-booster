@@ -65,7 +65,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("My English Words"))
                 .andExpect(jsonPath("$.description").value("Folder for C1 level"))
-                .andExpect(jsonPath("$.nickname").value("it-user"));
+                .andExpect(jsonPath("$.nickname").value("it-user1"));
     }
 
     @Test

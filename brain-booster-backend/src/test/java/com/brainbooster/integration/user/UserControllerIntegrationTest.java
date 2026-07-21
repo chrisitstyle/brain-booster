@@ -87,7 +87,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         User existingUser = User.builder()
                 .userId(2L)
-                .email("it-user@test.com")
+                .email("it-user1@test.com")
                 .role(Role.USER)
                 .build();
 
@@ -98,8 +98,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + realToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("it-user"))
-                .andExpect(jsonPath("$.email").value("it-user@test.com"));
+                .andExpect(jsonPath("$.nickname").value("it-user1"))
+                .andExpect(jsonPath("$.email").value("it-user1@test.com"));
     }
 
     @Test
@@ -120,9 +120,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2)) // it-admin and it-user
+                .andExpect(jsonPath("$.length()").value(3)) // it-admin and it-user1, it-user2
                 .andExpect(jsonPath("$[0].nickname").value("it-admin"))
-                .andExpect(jsonPath("$[1].nickname").value("it-user"));
+                .andExpect(jsonPath("$[1].nickname").value("it-user1"));
     }
 
     @Test
@@ -142,8 +142,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + realToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("it-user"))
-                .andExpect(jsonPath("$.email").value("it-user@test.com"));
+                .andExpect(jsonPath("$.nickname").value("it-user1"))
+                .andExpect(jsonPath("$.email").value("it-user1@test.com"));
     }
 
     // --- UPDATE AND DELETE TESTS ---
@@ -233,7 +233,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         flashcardSetRepository.save(testSet);
 
         // when & then
-        mockMvc.perform(get("/users/nickname/it-user/flashcard-sets")
+        mockMvc.perform(get("/users/nickname/it-user1/flashcard-sets")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -254,11 +254,11 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         folderRepository.save(testFolder);
 
         // when & then
-        mockMvc.perform(get("/users/it-user/folders")
+        mockMvc.perform(get("/users/it-user1/folders")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].name").value("Backend Development"))
-                .andExpect(jsonPath("$[0].nickname").value("it-user"));
+                .andExpect(jsonPath("$[0].nickname").value("it-user1"));
     }
 }
