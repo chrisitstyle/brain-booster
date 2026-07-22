@@ -9,10 +9,6 @@ on:
       - ".github/workflows/security-audit.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "brain-booster-frontend/package.json"
-      - "brain-booster-frontend/pnpm-lock.yaml"
-      - ".github/workflows/security-audit.yml"
   schedule:
     # automatically run every Monday at 05:00 UTC
     - cron: "0 5 * * 1"
@@ -37,17 +33,31 @@ jobs:
         with:
           persist-credentials: false # do not store GITHUB_TOKEN on the runner
 
+      # step 1: check if dependency files were modified
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            audit:
+              - "brain-booster-frontend/package.json"
+              - "brain-booster-frontend/pnpm-lock.yaml"
+              - ".github/workflows/security-audit.yml"
+
       - name: Install pnpm
+        if: steps.changes.outputs.audit == 'true' || github.event_name == 'schedule'
         uses: pnpm/action-setup@v6
         with:
           version: 11.11
 
       - name: Set up Node.js
+        if: steps.changes.outputs.audit == 'true' || github.event_name == 'schedule'
         uses: actions/setup-node@v6
         with:
           node-version: 24
 
-      # step 1: check for high and critical vulnerabilities in frontend dependencies
+      # step 2: check for high and critical vulnerabilities in frontend dependencies
       - name: Run pnpm audit (High & Critical only)
+        if: steps.changes.outputs.audit == 'true' || github.event_name == 'schedule'
         working-directory: ./brain-booster-frontend
         run: pnpm audit --audit-level high

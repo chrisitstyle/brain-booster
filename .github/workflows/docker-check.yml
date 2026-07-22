@@ -9,10 +9,6 @@ on:
       - ".github/workflows/docker-check.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "**/Dockerfile"
-      - "**/docker-compose*.yml"
-      - ".github/workflows/docker-check.yml"
   workflow_dispatch: # allows manual triggering of the workflow
 
 permissions:
@@ -34,27 +30,42 @@ jobs:
         with:
           persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
-      # step 1: lint Dockerfiles to catch bugs and enforce best practices
+      # step 1: check if Docker files were modified
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            docker:
+              - "**/Dockerfile"
+              - "**/docker-compose*.yml"
+              - ".github/workflows/docker-check.yml"
+
+      # step 2: lint Dockerfiles to catch bugs and enforce best practices
       - name: Lint Backend Dockerfile
+        if: steps.changes.outputs.docker == 'true'
         uses: hadolint/hadolint-action@v3.1.0
         continue-on-error: true # prevent pipeline failure if the linter is too strict initially
         with:
           dockerfile: brain-booster-backend/Dockerfile
 
       - name: Lint Frontend Dockerfile
+        if: steps.changes.outputs.docker == 'true'
         uses: hadolint/hadolint-action@v3.1.0
         continue-on-error: true
         with:
           dockerfile: brain-booster-frontend/Dockerfile
 
-      # step 2: create a dummy environment file required for Docker Compose validation
+      # step 3: create a dummy environment file required for Docker Compose validation
       - name: Create dummy .env file
+        if: steps.changes.outputs.docker == 'true'
         run: |
           touch .env
           echo "✅ Dummy .env file created for CI purposes."
 
-      # step 3: validate docker-compose.yml structure and syntax
+      # step 4: validate docker-compose.yml structure and syntax
       - name: Validate Docker Compose Configuration
+        if: steps.changes.outputs.docker == 'true'
         run: |
           if [ -f docker-compose.yml ]; then
             docker compose config --quiet
@@ -63,8 +74,9 @@ jobs:
             echo "⚠️ No docker-compose.yml found in the root directory."
           fi
 
-      # step 4: verify that images build successfully
+      # step 5: verify that images build successfully
       - name: Test Build Docker Compose Services
+        if: steps.changes.outputs.docker == 'true'
         run: |
           if [ -f docker-compose.yml ]; then
             echo "Running dry-run build for Docker Compose services..."
