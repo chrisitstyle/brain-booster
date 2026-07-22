@@ -1,0 +1,57 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "brain-booster-frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "brain-booster-frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  workflow_dispatch: # allows manual triggering of the workflow
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-build:
+    name: Lint & Build (Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+          cache-dependency-path: brain-booster-frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ./brain-booster-frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Linter
+        working-directory: ./brain-booster-frontend
+        run: pnpm lint
+
+      - name: Build Next.js application
+        working-directory: ./brain-booster-frontend
+        run: pnpm build

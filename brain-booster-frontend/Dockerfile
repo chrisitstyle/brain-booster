@@ -28,9 +28,14 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# the 'node' user and group are built into the image, so skip creation
+# copy built files from the builder stage and set ownership to the built-in 'node' user / u:g
+COPY --chown=node:node --from=builder /app/public ./public
+COPY --chown=node:node --from=builder /app/.next/standalone ./
+COPY --chown=node:node --from=builder /app/.next/static ./.next/static
+
+# switch to the non-root user before running the application
+USER node
 
 EXPOSE 3000
 

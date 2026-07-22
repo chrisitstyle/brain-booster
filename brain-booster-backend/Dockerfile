@@ -16,10 +16,17 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
-COPY --from=build /app/build/libs/*.jar app.jar
+# create a system group and user without root privileges / g:u
+RUN addgroup --system springuser && adduser --system --ingroup springuser springuser
+
+# copy the built JAR from the build stage and set ownership to the new user / u:g
+COPY --chown=springuser:springuser --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -Dfile.encoding=UTF-8"
+
+# switch to the non-root user before running the application
+USER springuser:springuser
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

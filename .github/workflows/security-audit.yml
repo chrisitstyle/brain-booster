@@ -1,0 +1,53 @@
+name: Frontend Security Audit
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "brain-booster-frontend/package.json"
+      - "brain-booster-frontend/pnpm-lock.yaml"
+      - ".github/workflows/security-audit.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "brain-booster-frontend/package.json"
+      - "brain-booster-frontend/pnpm-lock.yaml"
+      - ".github/workflows/security-audit.yml"
+  schedule:
+    # automatically run every Monday at 05:00 UTC
+    - cron: "0 5 * * 1"
+  workflow_dispatch: # allows manual triggering from the github UI
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-frontend:
+    name: Audit Frontend Vulnerabilities (pnpm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false # do not store GITHUB_TOKEN on the runner
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # step 1: check for high and critical vulnerabilities in frontend dependencies
+      - name: Run pnpm audit (High & Critical only)
+        working-directory: ./brain-booster-frontend
+        run: pnpm audit --audit-level high
