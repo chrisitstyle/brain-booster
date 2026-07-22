@@ -28,19 +28,20 @@
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "recharts": "^3.8.1",
+    "sharp": "^0.35.3",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tw-animate-css": "^1.2.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@tailwindcss/postcss": "^4.1.3",
+    "@types/node": "^20.17.30",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "eslint": "^9",
+    "eslint": "^9.24.0",
     "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4.1.3",
+    "typescript": "^5.8.3"
   },
   "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882"
 }
