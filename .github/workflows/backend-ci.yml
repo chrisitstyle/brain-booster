@@ -2,31 +2,44 @@ name: Backend CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'brain-booster-backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "brain-booster-backend/**"
+      - ".github/workflows/backend-ci.yml"
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'brain-booster-backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "brain-booster-backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch: # allows manual triggering of the workflow
+
+# security: read-only access to repository
+permissions:
+  contents: read
+
+# cancel older runs of this workflow on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: Build & Test (Spring Boot)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: gradle
+          java-version: "25"
+          distribution: "temurin"
+          cache: "gradle"
 
       - name: Make gradlew executable
         working-directory: ./brain-booster-backend
@@ -34,4 +47,6 @@ jobs:
 
       - name: Build and run tests with Gradle
         working-directory: ./brain-booster-backend
-        run: ./gradlew check build
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+        run: ./gradlew check build --no-daemon --stacktrace

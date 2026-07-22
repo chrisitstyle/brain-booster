@@ -11,15 +11,26 @@ on:
     paths:
       - "brain-booster-frontend/**"
       - ".github/workflows/frontend-ci.yml"
+  workflow_dispatch: # allows manual triggering of the workflow
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-build:
     name: Lint & Build (Next.js)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
