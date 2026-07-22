@@ -14,6 +14,7 @@ on:
       - "**/docker-compose*.yml"
       - ".github/workflows/docker-check.yml"
   workflow_dispatch: # allows manual triggering of the workflow
+
 permissions:
   contents: read
 
@@ -33,6 +34,7 @@ jobs:
         with:
           persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
+      # step 1: lint Dockerfiles to catch bugs and enforce best practices
       - name: Lint Backend Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         continue-on-error: true # prevent pipeline failure if the linter is too strict initially
@@ -45,12 +47,13 @@ jobs:
         with:
           dockerfile: brain-booster-frontend/Dockerfile
 
-      # CI requirement for docker-compose config
+      # step 2: create a dummy environment file required for Docker Compose validation
       - name: Create dummy .env file
         run: |
           touch .env
           echo "✅ Dummy .env file created for CI purposes."
 
+      # step 3: validate docker-compose.yml structure and syntax
       - name: Validate Docker Compose Configuration
         run: |
           if [ -f docker-compose.yml ]; then
@@ -60,6 +63,7 @@ jobs:
             echo "⚠️ No docker-compose.yml found in the root directory."
           fi
 
+      # step 4: verify that images build successfully
       - name: Test Build Docker Compose Services
         run: |
           if [ -f docker-compose.yml ]; then
