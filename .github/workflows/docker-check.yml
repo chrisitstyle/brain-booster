@@ -1,0 +1,56 @@
+name: Docker Configuration Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "**/Dockerfile"
+      - "**/docker-compose*.yml"
+      - ".github/workflows/docker-check.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "**/Dockerfile"
+      - "**/docker-compose*.yml"
+      - ".github/workflows/docker-check.yml"
+
+jobs:
+  validate-and-lint:
+    name: Lint & Validate Docker Configurations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # step 1: lint Dockerfiles to catch bugs and enforce best practices
+      - name: Lint Backend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        continue-on-error: true # prevent pipeline failure if the linter is too strict initially
+        with:
+          dockerfile: brain-booster-backend/Dockerfile
+
+      - name: Lint Frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        continue-on-error: true
+        with:
+          dockerfile: brain-booster-frontend/Dockerfile
+
+      # step 2: validate docker-compose.yml structure and syntax
+      - name: Validate Docker Compose Configuration
+        run: |
+          if [ -f docker-compose.yml ]; then
+            docker compose config --quiet
+            echo "✅ Main Docker Compose configuration is valid."
+          else
+            echo "⚠️ No docker-compose.yml found in the root directory."
+          fi
+
+      # step 3: verify that images build successfully
+      - name: Test Build Docker Compose Services
+        run: |
+          if [ -f docker-compose.yml ]; then
+            echo "Running dry-run build for Docker Compose services..."
+            docker compose build
+            echo "✅ All images in the composition built successfully."
+          fi
