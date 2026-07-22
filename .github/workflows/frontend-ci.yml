@@ -8,9 +8,6 @@ on:
       - ".github/workflows/frontend-ci.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "brain-booster-frontend/**"
-      - ".github/workflows/frontend-ci.yml"
   workflow_dispatch: # allows manual triggering of the workflow
 
 permissions:
@@ -32,12 +29,24 @@ jobs:
         with:
           persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
+      # step 1: check if frontend files were modified
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - "brain-booster-frontend/**"
+              - ".github/workflows/frontend-ci.yml"
+
       - name: Install pnpm
+        if: steps.changes.outputs.frontend == 'true'
         uses: pnpm/action-setup@v6
         with:
           version: 11.11
 
       - name: Set up Node.js
+        if: steps.changes.outputs.frontend == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -45,13 +54,16 @@ jobs:
           cache-dependency-path: brain-booster-frontend/pnpm-lock.yaml
 
       - name: Install dependencies
+        if: steps.changes.outputs.frontend == 'true'
         working-directory: ./brain-booster-frontend
         run: pnpm install --frozen-lockfile
 
       - name: Run Linter
+        if: steps.changes.outputs.frontend == 'true'
         working-directory: ./brain-booster-frontend
         run: pnpm lint
 
       - name: Build Next.js application
+        if: steps.changes.outputs.frontend == 'true'
         working-directory: ./brain-booster-frontend
         run: pnpm build

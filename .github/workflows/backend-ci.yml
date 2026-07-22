@@ -8,9 +8,6 @@ on:
       - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "brain-booster-backend/**"
-      - ".github/workflows/backend-ci.yml"
   workflow_dispatch: # allows manual triggering of the workflow
 
 # security: read-only access to repository
@@ -34,7 +31,18 @@ jobs:
         with:
           persist-credentials: false # prevents subsequent steps or 3rd-party scripts from reusing the Git credentials
 
+      # step 1: check if backend files were modified
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - "brain-booster-backend/**"
+              - ".github/workflows/backend-ci.yml"
+
       - name: Set up JDK 25
+        if: steps.changes.outputs.backend == 'true'
         uses: actions/setup-java@v5
         with:
           java-version: "25"
@@ -42,10 +50,12 @@ jobs:
           cache: "gradle"
 
       - name: Make gradlew executable
+        if: steps.changes.outputs.backend == 'true'
         working-directory: ./brain-booster-backend
         run: chmod +x gradlew
 
       - name: Build and run tests with Gradle
+        if: steps.changes.outputs.backend == 'true'
         working-directory: ./brain-booster-backend
         env:
           TESTCONTAINERS_RYUK_DISABLED: "true"
