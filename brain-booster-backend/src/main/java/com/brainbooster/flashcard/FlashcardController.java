@@ -83,11 +83,27 @@ public class FlashcardController {
 
     }
 
+    @Operation(
+            summary = "Star flashcard",
+            description = "Marks a flashcard as starred for the currently authenticated user.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(responseCode = "200", description = "Flashcard starred successfully")
+    @ApiResponse(responseCode = "401", description = "User is not authenticated")
+    @ApiResponse(responseCode = "404", description = "Flashcard not found")
     @PostMapping("/{flashcardId}/starred")
     public FlashcardDTO starFlashcard(@PathVariable Long flashcardId) {
         return flashcardService.starFlashcard(flashcardId);
     }
 
+    @Operation(
+            summary = "Unstar flashcard",
+            description = "Removes starred status from a flashcard for the currently authenticated user.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(responseCode = "200", description = "Flashcard unstarred successfully")
+    @ApiResponse(responseCode = "401", description = "User is not authenticated")
+    @ApiResponse(responseCode = "404", description = "Flashcard not found")
     @DeleteMapping("/{flashcardId}/starred")
     public FlashcardDTO unstarFlashcard(@PathVariable Long flashcardId) {
         return flashcardService.unstarFlashcard(flashcardId);

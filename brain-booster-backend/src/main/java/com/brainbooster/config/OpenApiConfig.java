@@ -79,6 +79,15 @@ public class OpenApiConfig {
     }
 
     @Bean
+    public GroupedOpenApi flashcardsApi(){
+        return GroupedOpenApi.builder()
+                .group("flashcards")
+                .pathsToMatch("/flashcards/**")
+                .build();
+    }
+
+
+    @Bean
     public GroupedOpenApi gameResultsApi() {
         return GroupedOpenApi.builder()
                 .group("game-results")
