@@ -28,15 +28,9 @@ import java.util.List;
 public class GameAttemptService {
 
     private static final ZoneOffset DATE_FILTER_ZONE_OFFSET = ZoneOffset.UTC;
-
-    private static final String GAME_ATTEMPT_NOT_FOUND_MESSAGE =
-            "Game attempt not found";
-
-    private static final String INVALID_GAME_MODE_MESSAGE_PREFIX =
-            "Invalid game mode: ";
-
-    private static final String GAME_ATTEMPT_ACCESS_DENIED_MESSAGE =
-            "You do not have permission to access this game attempt.";
+    private static final String GAME_ATTEMPT_NOT_FOUND_MESSAGE = "Game attempt not found";
+    private static final String INVALID_GAME_MODE_MESSAGE_PREFIX = "Invalid game mode: ";
+    private static final String GAME_ATTEMPT_ACCESS_DENIED_MESSAGE = "You do not have permission to access this game attempt.";
 
     private final GameAttemptRepository gameAttemptRepository;
     private final GameAttemptMapper gameAttemptMapper;
@@ -44,97 +38,57 @@ public class GameAttemptService {
     private final GameQuestionResultMapper gameQuestionResultMapper;
 
     @Transactional(readOnly = true)
-    public Page<GameAttemptSummaryDTO> getMyGameAttempts(
-            Long setId,
-            String mode,
-            LocalDate from,
-            LocalDate to,
-            Pageable pageable
-    ) {
-        return getMyGameAttemptsWithFilters(
-                setId,
-                mode,
-                from,
-                to,
-                pageable
-        );
+    public Page<GameAttemptSummaryDTO> getMyGameAttempts(Long setId, String mode, LocalDate from, LocalDate to,
+                                                         Pageable pageable) {
+        return getMyGameAttemptsWithFilters(setId, mode, from, to, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<GameAttemptSummaryDTO> getMyGameAttemptsBySetId(
-            Long setId,
-            String mode,
-            LocalDate from,
-            LocalDate to,
-            Pageable pageable
-    ) {
-        return getMyGameAttemptsWithFilters(
-                setId,
-                mode,
-                from,
-                to,
-                pageable
-        );
+    public Page<GameAttemptSummaryDTO> getMyGameAttemptsBySetId(Long setId, String mode, LocalDate from, LocalDate to,
+                                                                Pageable pageable) {
+        return getMyGameAttemptsWithFilters(setId, mode, from, to, pageable);
     }
 
     @Transactional(readOnly = true)
     public GameAttemptDTO getGameAttemptById(Long attemptId) {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
-        GameAttempt gameAttempt = gameAttemptRepository
-                .findWithQuestionResultsByAttemptId(attemptId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        GAME_ATTEMPT_NOT_FOUND_MESSAGE
-                ));
+        GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
 
         return gameAttemptMapper.toDto(gameAttempt);
     }
 
-    private Page<GameAttemptSummaryDTO> getMyGameAttemptsWithFilters(
-            Long setId,
-            String mode,
-            LocalDate from,
-            LocalDate to,
-            Pageable pageable
-    ) {
+    private Page<GameAttemptSummaryDTO> getMyGameAttemptsWithFilters(Long setId, String mode, LocalDate from,
+                                                                     LocalDate to, Pageable pageable) {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
         GameMode parsedMode = parseGameMode(mode);
         Instant fromDateTime = toStartOfDay(from);
         Instant toDateTimeExclusive = toExclusiveEndDate(to);
 
-        return gameAttemptRepository
-                .findByUserIdWithFilters(
-                        authenticatedUser.getUserId(),
-                        setId,
-                        parsedMode,
-                        fromDateTime,
-                        toDateTimeExclusive,
-                        pageable
-                )
-                .map(gameAttemptMapper::toSummaryDto);
+        return gameAttemptRepository.findByUserIdWithFilters(
+                authenticatedUser.getUserId(),
+                setId,
+                parsedMode,
+                fromDateTime,
+                toDateTimeExclusive,
+                pageable
+        ).map(gameAttemptMapper::toSummaryDto);
     }
 
     @Transactional(readOnly = true)
-    public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(
-            Long attemptId
-    ) {
+    public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(Long attemptId) {
         User authenticatedUser = SecurityUtils.getAuthenticatedUser();
 
-        GameAttempt gameAttempt = gameAttemptRepository
-                .findById(attemptId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        GAME_ATTEMPT_NOT_FOUND_MESSAGE
-                ));
+        GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
 
-        return gameQuestionResultRepository
-                .findByAttempt_AttemptIdOrderByQuestionOrderAsc(attemptId)
+        return gameQuestionResultRepository.findByAttempt_AttemptIdOrderByQuestionOrderAsc(attemptId)
                 .stream()
                 .map(gameQuestionResultMapper::toDto)
                 .toList();
@@ -148,10 +102,7 @@ public class GameAttemptService {
         try {
             return GameMode.fromValue(mode);
         } catch (IllegalArgumentException _) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    INVALID_GAME_MODE_MESSAGE_PREFIX + mode
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, INVALID_GAME_MODE_MESSAGE_PREFIX + mode);
         }
     }
 
@@ -159,34 +110,21 @@ public class GameAttemptService {
         if (date == null) {
             return null;
         }
-
-        return date.atStartOfDay()
-                .toInstant(DATE_FILTER_ZONE_OFFSET);
+        return date.atStartOfDay().toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
     private Instant toExclusiveEndDate(LocalDate date) {
         if (date == null) {
             return null;
         }
-
-        return date.plusDays(1)
-                .atStartOfDay()
-                .toInstant(DATE_FILTER_ZONE_OFFSET);
+        return date.plusDays(1).atStartOfDay().toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
-    private void verifyOwnerOrAdmin(
-            GameAttempt gameAttempt,
-            User authenticatedUser
-    ) {
-        boolean isOwner = gameAttempt
-                .getUser()
-                .getUserId()
-                .equals(authenticatedUser.getUserId());
+    private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
+        boolean isOwner = gameAttempt.getUser().getUserId().equals(authenticatedUser.getUserId());
 
         if (!isOwner && !SecurityUtils.isAdmin(authenticatedUser)) {
-            throw new AccessDeniedException(
-                    GAME_ATTEMPT_ACCESS_DENIED_MESSAGE
-            );
+            throw new AccessDeniedException(GAME_ATTEMPT_ACCESS_DENIED_MESSAGE);
         }
     }
 }
