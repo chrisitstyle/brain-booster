@@ -104,6 +104,14 @@ public class OpenApiConfig {
     }
 
     @Bean
+    public GroupedOpenApi gameAnalyticsApi() {
+        return GroupedOpenApi.builder()
+                .group("game-analytics")
+                .pathsToMatch("/game-analytics/**")
+                .build();
+    }
+
+    @Bean
     public GroupedOpenApi profileSettingsApi() {
         return GroupedOpenApi.builder()
                 .group("profile-settings")
