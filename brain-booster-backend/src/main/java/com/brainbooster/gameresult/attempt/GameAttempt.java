@@ -20,18 +20,9 @@ import java.util.List;
 @Table(
         name = "game_attempts",
         indexes = {
-                @Index(
-                        name = "idx_game_attempts_user_id_completed_at",
-                        columnList = "user_id, completed_at"
-                ),
-                @Index(
-                        name = "idx_game_attempts_set_id_completed_at",
-                        columnList = "set_id, completed_at"
-                ),
-                @Index(
-                        name = "idx_game_attempts_user_set_mode_completed_at",
-                        columnList = "user_id, set_id, mode, completed_at"
-                )
+                @Index(name = "idx_game_attempts_user_id_completed_at", columnList = "user_id, completed_at"),
+                @Index(name = "idx_game_attempts_set_id_completed_at", columnList = "set_id, completed_at"),
+                @Index(name = "idx_game_attempts_user_set_mode_completed_at", columnList = "user_id, set_id, mode, completed_at")
         }
 )
 public class GameAttempt {
@@ -65,11 +56,7 @@ public class GameAttempt {
     private Instant completedAt;
 
     @Builder.Default
-    @OneToMany(
-            mappedBy = "attempt",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GameQuestionResult> questionResults = new ArrayList<>();
 
     @PrePersist
