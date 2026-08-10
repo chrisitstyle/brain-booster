@@ -9,6 +9,7 @@ import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
@@ -40,14 +41,14 @@ class FlashcardServiceTest {
             mock(UserStarredFlashcardRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final FlashcardDTOMapper flashcardDTOMapper = mock(FlashcardDTOMapper.class);
-
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy = new OwnerOrAdminPolicy();
     private final FlashcardService flashcardService = new FlashcardService(
             flashcardRepository,
             flashcardSetRepository,
             starredFlashcardRepository,
             userRepository,
-            flashcardDTOMapper
-    );
+            flashcardDTOMapper,
+            ownerOrAdminPolicy);
 
     @AfterEach
     void tearDown() {

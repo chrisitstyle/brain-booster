@@ -6,13 +6,12 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
-import com.brainbooster.user.Role;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -34,6 +33,7 @@ public class FolderService {
     private final FlashcardSetRepository flashcardSetRepository;
     private final FolderDTOMapper folderDTOMapper;
     private final EntityManager entityManager;
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @Transactional
     public FolderDTO createFolder(FolderCreationDTO dto) {
@@ -154,23 +154,19 @@ public class FolderService {
     private void verifyFolderAccess(Folder folder, String errorMessage) {
         User authUser = SecurityUtils.getAuthenticatedUser();
 
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = folder.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(errorMessage);
-        }
+        ownerOrAdminPolicy.verify(
+                authUser,
+                folder.getUser().getUserId(),
+                errorMessage);
     }
 
     private void verifySetCanBeAdded(FlashcardSet flashcardSet) {
         User authUser = SecurityUtils.getAuthenticatedUser();
-
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
-        boolean isSetOwner = flashcardSet.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isSetOwner) {
-            throw new AccessDeniedException(ADD_SET_TO_FOLDER_ACCESS_DENIED_MSG);
-        }
+        ownerOrAdminPolicy.verify(
+                authUser,
+                flashcardSet.getUser().getUserId(),
+                ADD_SET_TO_FOLDER_ACCESS_DENIED_MSG
+        );
     }
 
     private String buildFolderNotFoundMessage(Long folderId) {
