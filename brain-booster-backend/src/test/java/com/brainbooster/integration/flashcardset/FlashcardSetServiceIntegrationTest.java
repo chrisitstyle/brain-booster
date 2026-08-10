@@ -2,6 +2,7 @@ package com.brainbooster.integration.flashcardset;
 
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
+import com.brainbooster.flashcard.dto.FlashcardContentDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
@@ -26,8 +27,7 @@ import org.springframework.test.context.jdbc.Sql;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 @Sql(scripts = "/insert-it-test-users.sql")
 class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
@@ -49,8 +49,8 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void mockAuthenticatedUser(User user) {
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                user, null, user.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
@@ -63,7 +63,11 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
         User owner = userRepository.findById(2L).orElseThrow();
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "My Set",
-                "My Desc");
+                "My Desc",
+                List.of(
+                        new FlashcardContentDTO("Term 1", "Definition 1")
+                )
+        );
 
         // when
         FlashcardSetDTO result = flashcardSetService.addFlashcardSet(creationDTO, owner.getUserId());
@@ -75,12 +79,45 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("addFlashcardSet - Should save flashcards together with set")
+    void addFlashcardSet_ShouldSaveFlashcardsWithSet() {
+        // given
+        User owner = userRepository.findById(2L).orElseThrow();
+
+        FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
+                "My Set",
+                "My Desc",
+                List.of(
+                        new FlashcardContentDTO("Term 1", "Definition 1"),
+                        new FlashcardContentDTO("Term 2", "Definition 2")
+                )
+        );
+
+        // when
+        FlashcardSetDTO result =
+                flashcardSetService.addFlashcardSet(creationDTO, owner.getUserId());
+
+        // then
+        List<Flashcard> savedFlashcards =
+                flashcardRepository.findAllByFlashcardSet_SetId(result.setId());
+
+        assertThat(savedFlashcards)
+                .hasSize(2)
+                .extracting(Flashcard::getTerm, Flashcard::getDefinition)
+                .containsExactlyInAnyOrder(
+                        tuple("Term 1", "Definition 1"),
+                        tuple("Term 2", "Definition 2"));
+    }
+
+    @Test
     @DisplayName("addFlashcardSet - Should throw NoSuchElementException when user does not exist")
     void addFlashcardSet_ShouldThrowNoSuchElementException_WhenUserNotFound() {
         // given
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "My Set",
-                "My Desc");
+                "My Desc",
+                List.of(
+                        new FlashcardContentDTO("Term 1", "Definition 1")));
 
         // when, then
         assertThatThrownBy(() -> flashcardSetService.addFlashcardSet(creationDTO, 999L))

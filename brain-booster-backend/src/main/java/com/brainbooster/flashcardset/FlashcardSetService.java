@@ -1,5 +1,6 @@
 package com.brainbooster.flashcardset;
 
+import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
@@ -43,17 +44,27 @@ public class FlashcardSetService {
 
     @Transactional
     public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
-                                           Long authenticatedUserId) {
-
+            Long authenticatedUserId) {
         User setOwner = userRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NoSuchElementException(
-                        buildUserNotFoundMessage(authenticatedUserId)
-                ));
+                        buildUserNotFoundMessage(authenticatedUserId)));
 
         FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
+
         flashcardSet.setUser(setOwner);
 
         FlashcardSet savedFlashcardSet = flashcardSetRepository.save(flashcardSet);
+
+        List<Flashcard> flashcards = flashcardSetCreationDTO.flashcards()
+                .stream()
+                .map(flashcardDTO -> Flashcard.builder()
+                        .flashcardSet(savedFlashcardSet)
+                        .term(flashcardDTO.term())
+                        .definition(flashcardDTO.definition())
+                        .build())
+                .toList();
+
+        flashcardRepository.saveAll(flashcards);
 
         return flashcardSetDTOMapper.apply(savedFlashcardSet);
     }

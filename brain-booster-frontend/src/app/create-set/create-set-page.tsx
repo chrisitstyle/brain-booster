@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { addFlashcard } from "@/api/flashcardService";
 import { addFlashcardSet } from "@/api/flashcardSetService";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,31 +82,16 @@ export default function CreateSetPage() {
     try {
       setIsLoading(true);
 
-      const createdSet = await addFlashcardSet(
+      await addFlashcardSet(
         {
           setName: title.trim(),
           description: description.trim(),
+          flashcards: flashcardEditor.validFlashcards.map((flashcard) => ({
+            term: flashcard.term.trim(),
+            definition: flashcard.definition.trim(),
+          })),
         },
         token,
-      );
-
-      const newSetId = createdSet.setId;
-
-      if (!newSetId) {
-        throw new Error("Failed to retrieve the new set ID from server.");
-      }
-
-      await Promise.all(
-        flashcardEditor.validFlashcards.map((flashcard) =>
-          addFlashcard(
-            {
-              setId: newSetId,
-              term: flashcard.term.trim(),
-              definition: flashcard.definition.trim(),
-            },
-            token,
-          ),
-        ),
       );
 
       toast.success("Study set and flashcards created successfully!");
@@ -128,7 +112,7 @@ export default function CreateSetPage() {
   return (
     <>
       <div className="flex min-h-[calc(100svh-4rem)] flex-col bg-background text-foreground">
-        <header className="sticky top-16 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
+        <header className="sticky top-16 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-backdrop-filter:bg-background/80 md:px-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Button
               type="button"
@@ -192,7 +176,7 @@ export default function CreateSetPage() {
               </Button>
 
               <Select defaultValue="both">
-                <SelectTrigger className="w-[180px] border-input bg-background text-foreground">
+                <SelectTrigger className="w-45 border-input bg-background text-foreground">
                   <SelectValue placeholder="Study both sides" />
                 </SelectTrigger>
 

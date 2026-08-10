@@ -1,6 +1,7 @@
 package com.brainbooster.utils;
 
 import com.brainbooster.flashcard.Flashcard;
+import com.brainbooster.flashcard.dto.FlashcardContentDTO;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
@@ -362,15 +363,19 @@ public class TestEntities {
     /**
      * Creates a {@link FlashcardSetCreationDTO} used for testing creation requests.
      * <p>
-     * Contains only the fields required to create a new set (name, description).
+     * Contains valid default data required to create a new flashcard set,
+     * including its name, description, and flashcards.
      *
      * @return a FlashcardSetCreationDTO object.
      */
     public static FlashcardSetCreationDTO createFlashcardSetCreationDTO() {
         return new FlashcardSetCreationDTO(
                 "test_flashcardset_name",
-                "test_flashcardset_description"
-        );
+                "test_flashcardset_description",
+                List.of(
+                        new FlashcardContentDTO(
+                                "test_term",
+                                "test_definition")));
     }
 
     /**
