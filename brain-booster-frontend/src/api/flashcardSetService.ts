@@ -3,6 +3,12 @@ import { apiRequest } from "@/api/apiClient";
 export interface CreateFlashcardSetData {
   setName: string;
   description: string;
+  flashcards: CreateFlashcardContentData[];
+}
+
+export interface CreateFlashcardContentData {
+  term: string;
+  definition: string;
 }
 
 export interface UpdateFlashcardSetData {

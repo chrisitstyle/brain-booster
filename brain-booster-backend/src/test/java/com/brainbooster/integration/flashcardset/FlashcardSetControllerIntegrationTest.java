@@ -3,6 +3,7 @@ package com.brainbooster.integration.flashcardset;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
+import com.brainbooster.flashcard.dto.FlashcardContentDTO;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
@@ -18,6 +19,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -50,7 +53,10 @@ class FlashcardSetControllerIntegrationTest extends AbstractIntegrationTest {
         String userToken = jwtService.generateToken(userFromDB);
 
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
-                "My New Set","Set Description");
+                "My New Set",
+                "Set Description",
+                List.of(new FlashcardContentDTO("Term 1", "Definition 1"))
+        );
 
         // when, then
         mockMvc.perform(post("/flashcard-sets")
@@ -72,7 +78,10 @@ class FlashcardSetControllerIntegrationTest extends AbstractIntegrationTest {
         // blank name should trigger @Valid failure
         FlashcardSetCreationDTO invalidDto = new FlashcardSetCreationDTO(
                 "",
-                "Description");
+                "Description",
+                List.of(
+                        new FlashcardContentDTO("Term 1", "Definition 1"))
+        );
 
         // when, then
         mockMvc.perform(post("/flashcard-sets")
@@ -88,7 +97,10 @@ class FlashcardSetControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "Name",
-                "Desc");
+                "Desc",
+                List.of(
+                        new FlashcardContentDTO("Term 1", "Definition 1"))
+        );
 
         // when, then
         mockMvc.perform(post("/flashcard-sets")
