@@ -1,53 +1,40 @@
-import { getApiBaseUrl } from "@/api/apiConfig";
+import { apiRequest } from "@/api/apiClient";
 
-export async function registerUser(data: {
+interface RegisterUserData {
   nickname: string;
   email: string;
   password: string;
-}) {
-  const response = await fetch(`${getApiBaseUrl()}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-
-  if (response.status !== 201) {
-    let errMsg: string;
-    const text = await response.text();
-    try {
-      const { message } = JSON.parse(text);
-      errMsg = message || text;
-    } catch {
-      errMsg = text;
-    }
-    throw new Error(errMsg);
-  }
-
-  return response.text();
 }
 
-export async function authenticateUser(data: {
+interface AuthenticateUserData {
   email: string;
   password: string;
-}) {
-  const response = await fetch(`${getApiBaseUrl()}/auth/authenticate`, {
+}
+
+interface AuthenticateUserResponse {
+  token: string;
+}
+
+export async function registerUser(data: RegisterUserData): Promise<string> {
+  return apiRequest<string>("/auth/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: data,
+    responseType: "text",
+    fallbackMessage: "Registration failed",
   });
+}
 
-  if (!response.ok) {
-    let errMsg: string;
-    const text = await response.text();
-    try {
-      const { message } = JSON.parse(text);
-      errMsg = message || "Login failed";
-    } catch {
-      errMsg = text || "Login failed";
-    }
-    throw new Error(errMsg);
-  }
+export async function authenticateUser(
+  data: AuthenticateUserData,
+): Promise<string> {
+  const response = await apiRequest<AuthenticateUserResponse>(
+    "/auth/authenticate",
+    {
+      method: "POST",
+      body: data,
+      fallbackMessage: "Login failed",
+    },
+  );
 
-  const result = await response.json();
-  return result.token;
+  return response.token;
 }

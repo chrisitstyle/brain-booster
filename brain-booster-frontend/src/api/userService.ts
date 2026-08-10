@@ -1,49 +1,23 @@
-import { getApiBaseUrl } from "@/api/apiConfig";
+import { apiRequest } from "@/api/apiClient";
+import type { FlashcardSet } from "@/api/flashcardSetService";
 
 export const getUserFlashcardSetsByUserId = async (
   userId: number,
   token: string,
-) => {
-  const response = await fetch(
-    `${getApiBaseUrl()}/users/${userId}/flashcard-sets`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `Error: ${response.status} - Cannot fetch flashcard sets for user with this ID`,
-    );
-  }
-
-  return response.json();
+): Promise<FlashcardSet[]> => {
+  return apiRequest<FlashcardSet[]>(`/users/${userId}/flashcard-sets`, {
+    token,
+    fallbackMessage: "Cannot fetch flashcard sets for user with this ID",
+  });
 };
 
-export const getUserFlashcardSetsByNickname = async (nickname: string) => {
-  const response = await fetch(
-    `${getApiBaseUrl()}/users/nickname/${nickname}/flashcard-sets`,
+export const getUserFlashcardSetsByNickname = async (
+  nickname: string,
+): Promise<FlashcardSet[]> => {
+  return apiRequest<FlashcardSet[]>(
+    `/users/nickname/${nickname}/flashcard-sets`,
     {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      fallbackMessage: "Failed to fetch flashcard sets",
     },
   );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-
-    const errorMessage =
-      errorData?.message ||
-      `Error: ${response.status} - An unknown error occurred while fetching flashcard sets.`;
-
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
 };

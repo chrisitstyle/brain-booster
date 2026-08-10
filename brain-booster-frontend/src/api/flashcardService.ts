@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/api/apiConfig";
+import { apiRequest } from "@/api/apiClient";
 
 export interface CreateFlashcardData {
   setId: number;
@@ -19,65 +19,26 @@ export interface UpdateFlashcardData {
   definition: string;
 }
 
-async function getErrorMessage(response: Response, fallbackMessage: string) {
-  const text = await response.text();
-
-  try {
-    const parsed = JSON.parse(text);
-    return parsed.message || fallbackMessage;
-  } catch {
-    return text || fallbackMessage;
-  }
-}
-
 export async function addFlashcard(
   data: CreateFlashcardData,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(`${getApiBaseUrl()}/flashcards`, {
+  return apiRequest<Flashcard>("/flashcards", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+    token,
+    body: data,
+    fallbackMessage: "Failed to create flashcard",
   });
-
-  if (!response.ok) {
-    const message = await getErrorMessage(
-      response,
-      "Failed to create flashcard",
-    );
-    throw new Error(message);
-  }
-
-  return await response.json();
 }
 
 export async function getFlashcardsBySetId(
   setId: string | number,
   token?: string | null,
 ): Promise<Flashcard[]> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/flashcard-sets/${setId}/flashcards`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const message = await getErrorMessage(
-      response,
-      "Failed to fetch flashcards",
-    );
-    throw new Error(message);
-  }
-
-  return await response.json();
+  return apiRequest<Flashcard[]>(`/flashcard-sets/${setId}/flashcards`, {
+    token,
+    fallbackMessage: "Failed to fetch flashcards",
+  });
 }
 
 export async function updateFlashcardById(
@@ -85,89 +46,44 @@ export async function updateFlashcardById(
   data: UpdateFlashcardData,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(`${getApiBaseUrl()}/flashcards/${flashcardId}`, {
+  return apiRequest<Flashcard>(`/flashcards/${flashcardId}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+    token,
+    body: data,
+    fallbackMessage: "Failed to update flashcard",
   });
-
-  if (!response.ok) {
-    const message = await getErrorMessage(
-      response,
-      "Failed to update flashcard",
-    );
-    throw new Error(message);
-  }
-
-  return await response.json();
 }
 
 export async function deleteFlashcard(
   flashcardId: string | number,
   token: string,
 ): Promise<void> {
-  const response = await fetch(`${getApiBaseUrl()}/flashcards/${flashcardId}`, {
+  return apiRequest<void>(`/flashcards/${flashcardId}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    token,
+    responseType: "void",
+    fallbackMessage: "Failed to delete flashcard",
   });
-
-  if (!response.ok) {
-    const message = await getErrorMessage(
-      response,
-      "Failed to delete flashcard",
-    );
-    throw new Error(message);
-  }
 }
 
 export async function starFlashcard(
   flashcardId: string | number,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/flashcards/${flashcardId}/starred`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const message = await getErrorMessage(response, "Failed to star flashcard");
-    throw new Error(message);
-  }
-
-  return await response.json();
+  return apiRequest<Flashcard>(`/flashcards/${flashcardId}/starred`, {
+    method: "POST",
+    token,
+    fallbackMessage: "Failed to star flashcard",
+  });
 }
 
 export async function unstarFlashcard(
   flashcardId: string | number,
   token: string,
 ): Promise<Flashcard> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/flashcards/${flashcardId}/starred`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const message = await getErrorMessage(
-      response,
-      "Failed to unstar flashcard",
-    );
-    throw new Error(message);
-  }
-
-  return await response.json();
+  return apiRequest<Flashcard>(`/flashcards/${flashcardId}/starred`, {
+    method: "DELETE",
+    token,
+    fallbackMessage: "Failed to unstar flashcard",
+  });
 }

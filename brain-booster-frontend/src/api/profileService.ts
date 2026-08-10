@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/api/apiConfig";
+import { apiRequest } from "@/api/apiClient";
 
 export interface UserDTO {
   userId: number;
@@ -13,81 +13,38 @@ export interface UserEmailUpdateResponse {
   token: string;
 }
 
-interface ErrorResponse {
-  message?: string;
-}
-
-async function getErrorMessage(
-  response: Response,
-  fallbackMessage: string,
-): Promise<string> {
-  const errorData = (await response
-    .json()
-    .catch(() => null)) as ErrorResponse | null;
-
-  return errorData?.message ?? fallbackMessage;
-}
-
 export async function getCurrentUser(token: string): Promise<UserDTO> {
-  const response = await fetch(`${getApiBaseUrl()}/users/me`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  return apiRequest<UserDTO>("/users/me", {
+    token,
     cache: "no-store",
+    fallbackMessage: "Failed to load user profile",
   });
-
-  if (!response.ok) {
-    throw new Error(
-      await getErrorMessage(response, "Failed to load user profile"),
-    );
-  }
-
-  return response.json();
 }
 
 export async function updateNickname(
   newNickname: string,
   token: string,
 ): Promise<UserDTO> {
-  const response = await fetch(`${getApiBaseUrl()}/profile/settings/nickname`, {
+  return apiRequest<UserDTO>("/profile/settings/nickname", {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+    token,
+    body: {
       newNickname,
-    }),
+    },
+    fallbackMessage: "Failed to update nickname",
   });
-
-  if (!response.ok) {
-    throw new Error(
-      await getErrorMessage(response, "Failed to update nickname"),
-    );
-  }
-
-  return response.json();
 }
 
 export async function updateEmail(
   newEmail: string,
   token: string,
 ): Promise<UserEmailUpdateResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/profile/settings/email`, {
+  return apiRequest<UserEmailUpdateResponse>("/profile/settings/email", {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+    token,
+    body: {
       newEmail,
-    }),
+    },
+    fallbackMessage: "Failed to update email",
   });
-
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Failed to update email"));
-  }
-
-  return response.json();
 }

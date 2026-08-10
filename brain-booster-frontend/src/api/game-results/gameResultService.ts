@@ -1,62 +1,52 @@
 import type { GameResult, SaveGameResultRequest } from "@/types/games";
-
-import {
-  createAuthHeaders,
-  fetchJson,
-  fetchWithoutBody,
-  getApiUrl,
-} from "./apiClient";
+import { apiRequest } from "@/api/apiClient";
 
 export async function saveGameResult(
   request: SaveGameResultRequest,
   token: string,
 ) {
-  return fetchJson<GameResult>(getApiUrl("/game-results"), {
+  return apiRequest<GameResult>("/game-results", {
     method: "POST",
-    headers: createAuthHeaders(token),
-    body: JSON.stringify(request),
+    token,
+    body: request,
   });
 }
 
 export async function getMyGameResults(token: string) {
-  return fetchJson<GameResult[]>(getApiUrl("/game-results/me"), {
-    method: "GET",
-    headers: createAuthHeaders(token),
+  return apiRequest<GameResult[]>("/game-results/me", {
+    token,
   });
 }
 
 export async function getMyGameResultsBySetId(setId: number, token: string) {
-  return fetchJson<GameResult[]>(getApiUrl(`/game-results/me?setId=${setId}`), {
-    method: "GET",
-    headers: createAuthHeaders(token),
+  return apiRequest<GameResult[]>("/game-results/me", {
+    token,
+    query: { setId },
   });
 }
 
 export async function getAllGameResults(token: string) {
-  return fetchJson<GameResult[]>(getApiUrl("/game-results"), {
-    method: "GET",
-    headers: createAuthHeaders(token),
+  return apiRequest<GameResult[]>("/game-results", {
+    token,
   });
 }
 
 export async function getAllGameResultsBySetId(setId: number, token: string) {
-  return fetchJson<GameResult[]>(getApiUrl(`/game-results?setId=${setId}`), {
-    method: "GET",
-    headers: createAuthHeaders(token),
+  return apiRequest<GameResult[]>("/game-results", {
+    token,
+    query: { setId },
   });
 }
 
 export async function getGameResultById(resultId: number, token: string) {
-  return fetchJson<GameResult>(getApiUrl(`/game-results/${resultId}`), {
-    method: "GET",
-    headers: createAuthHeaders(token),
-  });
+  return apiRequest<GameResult>(`/game-results/${resultId}`, { token });
 }
 
 export async function deleteGameResult(resultId: number, token: string) {
-  return fetchWithoutBody(getApiUrl(`/game-results/${resultId}`), {
+  return apiRequest<void>(`/game-results/${resultId}`, {
     method: "DELETE",
-    headers: createAuthHeaders(token),
+    token,
+    responseType: "void",
   });
 }
 
