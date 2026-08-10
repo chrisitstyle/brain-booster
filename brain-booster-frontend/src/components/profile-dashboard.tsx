@@ -1,31 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Clock,
   Flame,
   FolderOpen,
-  MoreHorizontal,
   Plus,
   Settings,
   Trophy,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { deleteFlashcardSet } from "@/api/flashcardSetService";
 import {
   deleteFolderById,
-  getMyFolders,
   type Folder as FolderDTO,
 } from "@/api/folderService";
-import { getCurrentUser, type UserDTO } from "@/api/profileService";
-import { getUserFlashcardSetsByUserId } from "@/api/userService";
+import { FolderCard } from "@/app/profile/components/folder-card";
+import { StudySetCard } from "@/app/profile/components/study-set-card";
+import { RecentActivityItem } from "@/app/profile/components/recent-activity-item";
 import EditFolderForm from "@/app/profile/folders/components/edit-folder-form";
 import FolderListComponent from "@/app/profile/folders/components/folder-list-component";
+import {
+  type DashboardFolder,
+  type StudySet,
+  useProfileDashboardData,
+} from "@/app/profile/hooks/use-profile-dashboard-data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,50 +43,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { PROFILE_UPDATED_EVENT } from "@/utils/profile-events";
-
-interface StudySet {
-  id: string;
-  title: string;
-  description: string;
-  termCount: number;
-  author: string;
-  lastStudied?: string;
-}
-
-interface FlashcardSetDTO {
-  setId: number;
-  user: {
-    nickname: string;
-  };
-  setName: string;
-  description: string;
-  createdAt: string;
-  termCount: number;
-}
-
-interface DashboardFolder {
-  id: string;
-  title: string;
-  description: string;
-  setCount: number;
-}
-
-interface ProfileDashboardData {
-  user: UserDTO;
-  sets: StudySet[];
-  folders: DashboardFolder[];
-}
 
 const achievements = [
   {
@@ -105,58 +69,14 @@ const achievements = [
   },
 ];
 
-async function getProfileDashboardData(
-  token: string,
-): Promise<ProfileDashboardData> {
-  const user = await getCurrentUser(token);
-
-  const [setsData, foldersData] = await Promise.all([
-    getUserFlashcardSetsByUserId(user.userId, token),
-    getMyFolders(token),
-  ]);
-
-  const formattedSets: StudySet[] = setsData.map((set: FlashcardSetDTO) => ({
-    id: set.setId.toString(),
-    title: set.setName,
-    description: set.description,
-    termCount: set.termCount,
-    author: set.user.nickname || user.nickname,
-    lastStudied: new Date(set.createdAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-  }));
-
-  const formattedFolders: DashboardFolder[] = foldersData.map(
-    (folder: FolderDTO) => ({
-      id: folder.folderId.toString(),
-      title: folder.name,
-      description: folder.description ?? "",
-      setCount: folder.setCount,
-    }),
-  );
-
-  return {
-    user,
-    sets: formattedSets,
-    folders: formattedFolders,
-  };
-}
-
 export function ProfileDashboard() {
   const router = useRouter();
   const { token } = useAuth();
 
+  const { currentUser, sets, setSets, folders, setFolders, isContentLoading } =
+    useProfileDashboardData(token);
+
   const [activeTab, setActiveTab] = useState("sets");
-
-  const [currentUser, setCurrentUser] = useState<UserDTO | null>(null);
-
-  const [sets, setSets] = useState<StudySet[]>([]);
-  const [folders, setFolders] = useState<DashboardFolder[]>([]);
-
-  const [loadedContentToken, setLoadedContentToken] = useState<string | null>(
-    null,
-  );
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [setToDelete, setSetToDelete] = useState<string | null>(null);
@@ -182,89 +102,6 @@ export function ProfileDashboard() {
   const [setToAddToFolder, setSetToAddToFolder] = useState<StudySet | null>(
     null,
   );
-
-  const isContentLoading = Boolean(token && loadedContentToken !== token);
-
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    let isCancelled = false;
-    const requestToken = token;
-
-    void getProfileDashboardData(requestToken)
-      .then(({ user, sets: loadedSets, folders: loadedFolders }) => {
-        if (isCancelled) {
-          return;
-        }
-
-        setCurrentUser(user);
-        setSets(loadedSets);
-        setFolders(loadedFolders);
-      })
-      .catch((error: unknown) => {
-        if (isCancelled) {
-          return;
-        }
-
-        console.error("Error fetching profile content:", error);
-
-        setCurrentUser(null);
-        setSets([]);
-        setFolders([]);
-
-        toast.error("Failed to load profile content.");
-      })
-      .finally(() => {
-        if (!isCancelled) {
-          setLoadedContentToken(requestToken);
-        }
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    let isCancelled = false;
-    const requestToken = token;
-
-    function handleProfileUpdated() {
-      void getProfileDashboardData(requestToken)
-        .then(({ user, sets: loadedSets, folders: loadedFolders }) => {
-          if (isCancelled) {
-            return;
-          }
-
-          setCurrentUser(user);
-          setSets(loadedSets);
-          setFolders(loadedFolders);
-        })
-        .catch((error: unknown) => {
-          if (isCancelled) {
-            return;
-          }
-
-          console.error("Error refreshing profile content:", error);
-
-          toast.error("Failed to refresh profile content.");
-        });
-    }
-
-    window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
-
-    return () => {
-      isCancelled = true;
-
-      window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
-    };
-  }, [token]);
 
   const avatarFallback =
     currentUser?.nickname.trim().charAt(0).toUpperCase() || "?";
@@ -742,247 +579,5 @@ export function ProfileDashboard() {
         />
       )}
     </>
-  );
-}
-
-function StudySetCard({
-  set,
-  onEditClick,
-  onDeleteClick,
-  onAddToFolderClick,
-  isDeleteDialogOpen,
-}: {
-  set: StudySet;
-  onEditClick: (set: StudySet) => void;
-  onDeleteClick: (id: string) => void;
-  onAddToFolderClick: (set: StudySet) => void;
-  isDeleteDialogOpen: boolean;
-}) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const authorInitial = set.author.trim().charAt(0).toUpperCase() || "?";
-
-  return (
-    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
-      <CardContent className="p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <Link
-              href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
-              className="line-clamp-1 font-semibold text-card-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
-            >
-              {set.title}
-            </Link>
-
-            {set.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {set.description}
-              </p>
-            )}
-
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {set.termCount} terms
-            </p>
-          </div>
-
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 shrink-0 transition-opacity",
-                  isDropdownOpen || isDeleteDialogOpen
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-                )}
-                aria-label={`Open options for ${set.title}`}
-              >
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover text-popover-foreground"
-            >
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onEditClick(set);
-                  setIsDropdownOpen(false);
-                }}
-              >
-                Edit
-              </DropdownMenuItem>
-
-              <DropdownMenuItem>Share</DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onAddToFolderClick(set);
-                  setIsDropdownOpen(false);
-                }}
-              >
-                Add to folder
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onDeleteClick(set.id);
-                  setIsDropdownOpen(false);
-                }}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-pink-100 text-xs text-pink-500 dark:bg-pink-950/50 dark:text-pink-400">
-              {authorInitial}
-            </AvatarFallback>
-          </Avatar>
-
-          <span className="truncate text-sm text-muted-foreground">
-            {set.author}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function FolderCard({
-  folder,
-  onEditClick,
-  onDeleteClick,
-  isMenuForcedOpen,
-}: {
-  folder: DashboardFolder;
-  onEditClick: (folder: DashboardFolder) => void;
-  onDeleteClick: (folder: DashboardFolder) => void;
-  isMenuForcedOpen: boolean;
-}) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  return (
-    <Card className="group border-border bg-card text-card-foreground transition-all hover:border-pink-200 hover:shadow-md dark:hover:border-pink-900">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            href={`/profile/folders/${folder.id}`}
-            className="flex min-w-0 flex-1 items-center gap-3"
-          >
-            <div className="rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
-              <FolderOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
-            </div>
-
-            <div className="min-w-0">
-              <h3 className="line-clamp-1 font-semibold text-card-foreground transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400">
-                {folder.title}
-              </h3>
-
-              <p className="text-sm text-muted-foreground">
-                {folder.setCount} {folder.setCount === 1 ? "set" : "sets"}
-              </p>
-            </div>
-          </Link>
-
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 shrink-0 transition-opacity",
-                  isDropdownOpen || isMenuForcedOpen
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-                )}
-                aria-label={`Open options for ${folder.title}`}
-              >
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover text-popover-foreground"
-            >
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onEditClick(folder);
-                  setIsDropdownOpen(false);
-                }}
-              >
-                Edit
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/40 dark:focus:text-red-400"
-                onSelect={(event) => {
-                  event.preventDefault();
-                  onDeleteClick(folder);
-                  setIsDropdownOpen(false);
-                }}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecentActivityItem({ set }: { set: StudySet }) {
-  return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 text-card-foreground transition-all hover:border-pink-200 hover:shadow-sm dark:hover:border-pink-900 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-4">
-        <div className="shrink-0 rounded-lg bg-pink-100 p-2 dark:bg-pink-950/50">
-          <BookOpen className="h-5 w-5 text-pink-500 dark:text-pink-400" />
-        </div>
-
-        <div className="min-w-0">
-          <Link
-            href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
-            className="line-clamp-1 font-medium text-card-foreground transition-colors hover:text-pink-500 dark:hover:text-pink-400"
-          >
-            {set.title}
-          </Link>
-
-          <p className="text-sm text-muted-foreground">{set.termCount} terms</p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-4 sm:justify-end">
-        <span className="text-sm text-muted-foreground">{set.lastStudied}</span>
-
-        <Button
-          size="sm"
-          className="bg-pink-500 text-white hover:bg-pink-600"
-          asChild
-        >
-          <Link
-            href={`/users/${encodeURIComponent(set.author)}/sets/${set.id}`}
-          >
-            Study
-          </Link>
-        </Button>
-      </div>
-    </div>
   );
 }
