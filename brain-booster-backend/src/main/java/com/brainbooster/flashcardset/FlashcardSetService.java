@@ -9,13 +9,12 @@ import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
-import com.brainbooster.user.Role;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,6 +39,7 @@ public class FlashcardSetService {
     private final UserStarredFlashcardRepository starredFlashcardRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final FlashcardDTOMapper flashcardDTOMapper;
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @Transactional
     public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
@@ -125,12 +125,10 @@ public class FlashcardSetService {
      */
     private void verifySetAccess(FlashcardSet flashcardSet, String errorMessage) {
         User authUser = SecurityUtils.getAuthenticatedUser();
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = flashcardSet.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(errorMessage);
-        }
+        ownerOrAdminPolicy.verify(
+                authUser,
+                flashcardSet.getUser().getUserId(),
+                errorMessage);
     }
 
     private String buildUserNotFoundMessage(Long userId) {

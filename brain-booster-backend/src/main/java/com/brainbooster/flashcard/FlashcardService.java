@@ -9,6 +9,7 @@ import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
@@ -34,6 +35,7 @@ public class FlashcardService {
     private final UserStarredFlashcardRepository starredFlashcardRepository;
     private final UserRepository userRepository;
     private final FlashcardDTOMapper flashcardDTOMapper;
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @Transactional
     public FlashcardDTO addFlashcard(FlashcardCreationDTO flashcardCreationDTO) {
@@ -132,13 +134,10 @@ public class FlashcardService {
     private void verifyFlashcardSetAccess(FlashcardSet flashcardSetFromDB, String errorMessage) {
         User authUser = SecurityUtils.getAuthenticatedUser();
 
-        // actual permission verification (admin or owner)
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = flashcardSetFromDB.getUser().getUserId().equals(authUser.getUserId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(errorMessage);
-        }
+        ownerOrAdminPolicy.verify(
+                authUser,
+                flashcardSetFromDB.getUser().getUserId(),
+                errorMessage);
     }
 
     private String buildFlashcardNotFoundMessage(Long flashcardId) {

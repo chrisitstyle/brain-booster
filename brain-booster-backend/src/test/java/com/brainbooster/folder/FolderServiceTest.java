@@ -6,6 +6,7 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.SecurityUtils;
 import jakarta.persistence.EntityManager;
@@ -33,15 +34,14 @@ class FolderServiceTest {
 
     @Mock
     private FolderRepository folderRepository;
-
     @Mock
     private FlashcardSetRepository flashcardSetRepository;
-
     @Mock
     private FolderDTOMapper folderDTOMapper;
-
     @Mock
     private EntityManager entityManager;
+    @Mock
+    private OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @InjectMocks
     private FolderService folderService;
@@ -160,6 +160,11 @@ class FolderServiceTest {
             assertThat(folder.getName()).isEqualTo("Updated Folder");
             assertThat(folder.getDescription()).isEqualTo("Updated folder description");
         }
+        verify(ownerOrAdminPolicy).verify(
+                authUser,
+                folder.getUser().getUserId(),
+                "You are not allowed to edit this folder!"
+        );
     }
 
     @Test
@@ -174,6 +179,10 @@ class FolderServiceTest {
 
             folderService.deleteFolder(1L);
 
+            verify(ownerOrAdminPolicy).verify(
+                    authUser,
+                    folder.getUser().getUserId(),
+                    "You are not allowed to delete this folder!");
             verify(folderRepository).delete(folder);
         }
     }
@@ -203,6 +212,15 @@ class FolderServiceTest {
             assertThat(folder.getFlashcardSets()).contains(flashcardSet);
             verify(entityManager).flush();
             verify(entityManager).clear();
+            verify(ownerOrAdminPolicy).verify(
+                    authUser,
+                    folder.getUser().getUserId(),
+                    "You are not allowed to edit this folder!");
+
+            verify(ownerOrAdminPolicy).verify(
+                    authUser,
+                    flashcardSet.getUser().getUserId(),
+                    "You cannot add this set to your folder!");
         }
     }
 
@@ -221,6 +239,11 @@ class FolderServiceTest {
 
             assertThat(folder.getFlashcardSets()).isEmpty();
         }
+
+        verify(ownerOrAdminPolicy).verify(
+                authUser,
+                folder.getUser().getUserId(),
+                "You are not allowed to edit this folder!");
     }
 
     @Test

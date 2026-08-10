@@ -9,6 +9,7 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
@@ -53,6 +54,9 @@ class FlashcardSetServiceTest {
 
     @Mock
     private FlashcardDTOMapper flashcardDTOMapper;
+
+    @Mock
+    private OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @InjectMocks
     private FlashcardSetService flashcardSetService;
@@ -349,6 +353,10 @@ class FlashcardSetServiceTest {
                 .isNotNull()
                 .isEqualTo(flashcardSetDTO);
 
+        verify(ownerOrAdminPolicy).verify(
+                any(User.class),
+                eq(flashcardSet.getUser().getUserId()),
+                eq("You are not allowed to edit this flashcard set!"));
         verify(flashcardSetRepository, times(1)).save(flashcardSet);
     }
 
@@ -382,6 +390,10 @@ class FlashcardSetServiceTest {
         flashcardSetService.deleteFlashcardSetById(1L);
 
         // then
+        verify(ownerOrAdminPolicy).verify(
+                any(User.class),
+                eq(flashcardSet.getUser().getUserId()),
+                eq("You are not allowed to delete this flashcard set!"));
         verify(flashcardSetRepository, times(1)).delete(flashcardSet);
     }
 
