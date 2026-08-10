@@ -11,10 +11,11 @@ import com.brainbooster.gameresult.dto.SaveGameQuestionResultRequest;
 import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import com.brainbooster.gameresult.mapper.GameResultMapper;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.authorization.AdminPolicy;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,22 +35,22 @@ public class GameResultService {
     private static final String FLASHCARD_SET_WITH_ID_MSG_PREFIX = "FlashcardSet with id: ";
     private static final String GAME_RESULT_WITH_ID_MSG_PREFIX = "GameResult with id: ";
     private static final String FLASHCARD_WITH_ID_MSG_PREFIX = "Flashcard with id: ";
-    private static final String ACCESS_GAME_RESULT_DENIED_MSG =
-            "You are not allowed to access this game result.";
-    private static final String DELETE_GAME_RESULT_DENIED_MSG =
-            "You are not allowed to delete this game result.";
-    private static final String SCORE_GREATER_THAN_TOTAL_QUESTIONS_MSG =
-            "Score cannot be greater than total questions.";
+    private static final String ACCESS_GAME_RESULT_DENIED_MSG = "You are not allowed to access this game result.";
+    private static final String DELETE_GAME_RESULT_DENIED_MSG = "You are not allowed to delete this game result.";
+    private static final String SCORE_GREATER_THAN_TOTAL_QUESTIONS_MSG = "Score cannot be greater than total questions.";
 
     private final GameResultRepository gameResultRepository;
     private final GameAttemptRepository gameAttemptRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardRepository flashcardRepository;
     private final GameResultMapper gameResultMapper;
+    private final CurrentUserProvider currentUserProvider;
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy;
+    private final AdminPolicy adminPolicy;
 
     @Transactional
     public GameResultDTO saveGameResult(SaveGameResultRequest request) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         validateScore(request.score(), request.totalQuestions());
 
@@ -84,24 +85,21 @@ public class GameResultService {
                 authUser,
                 flashcardSet,
                 request,
-                completedAt
-        );
+                completedAt);
 
         return gameResultMapper.toDto(savedGameResult);
     }
 
     @Transactional(readOnly = true)
     public List<GameResultDTO> getMyGameResults(Long setId) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         List<GameResult> gameResults = setId == null
                 ? gameResultRepository.findByUser_UserIdOrderByCompletedAtDesc(
-                authUser.getUserId()
-        )
+                authUser.getUserId())
                 : gameResultRepository.findByUser_UserIdAndSet_SetIdOrderByCompletedAtDesc(
                 authUser.getUserId(),
-                setId
-        );
+                setId);
 
         return gameResults.stream()
                 .map(gameResultMapper::toDto)
@@ -110,7 +108,8 @@ public class GameResultService {
 
     @Transactional(readOnly = true)
     public List<GameResultDTO> getAllGameResults(Long setId) {
-        SecurityUtils.verifyAdmin();
+        User authUser = currentUserProvider.getCurrentUser();
+        adminPolicy.verify(authUser);
 
         List<GameResult> gameResults = setId == null
                 ? gameResultRepository.findAllByOrderByCompletedAtDesc()
@@ -243,7 +242,7 @@ public class GameResultService {
     }
 
     private GameResult getAccessibleGameResult(Long resultId, String accessDeniedMessage) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
         GameResult gameResult = findGameResultById(resultId);
 
         verifyGameResultAccess(gameResult, authUser, accessDeniedMessage);
@@ -261,14 +260,12 @@ public class GameResultService {
     private void verifyGameResultAccess(
             GameResult gameResult,
             User authUser,
-            String accessDeniedMessage
-    ) {
-        boolean isAdmin = SecurityUtils.isAdmin(authUser);
-        boolean isOwner = gameResult.getUser().getUserId().equals(authUser.getUserId());
+            String accessDeniedMessage) {
 
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(accessDeniedMessage);
-        }
+        ownerOrAdminPolicy.verify(
+                authUser,
+                gameResult.getUser().getUserId(),
+                accessDeniedMessage);
     }
 
     private String buildFlashcardSetNotFoundMessage(Long setId) {

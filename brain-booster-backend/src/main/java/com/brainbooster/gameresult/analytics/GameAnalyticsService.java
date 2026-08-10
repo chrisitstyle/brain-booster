@@ -10,8 +10,8 @@ import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.User;
-import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +28,11 @@ public class GameAnalyticsService {
 
     private final GameAttemptRepository gameAttemptRepository;
     private final GameQuestionResultRepository gameQuestionResultRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional(readOnly = true)
     public GameAnalyticsSummaryDTO getMySetSummary(Long setId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         List<GameAttempt> attempts = gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
@@ -97,7 +98,7 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<GameProgressPointDTO> getMySetProgress(Long setId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         return gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
@@ -111,7 +112,7 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<WeakFlashcardDTO> getMySetWeakFlashcards(Long setId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
@@ -142,7 +143,7 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(Long setId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(

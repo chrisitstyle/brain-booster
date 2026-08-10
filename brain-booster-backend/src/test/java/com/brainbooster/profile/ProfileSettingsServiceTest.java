@@ -6,21 +6,18 @@ import com.brainbooster.exception.NicknameAlreadyExistsException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.utils.TestEntities;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.util.NoSuchElementException;
@@ -35,12 +32,12 @@ class ProfileSettingsServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private UserDTOMapper userDTOMapper;
-
     @Mock
     private JwtService jwtService;
+    @Mock
+    private CurrentUserProvider currentUserProvider;
 
     @InjectMocks
     private ProfileSettingsService profileSettingsService;
@@ -53,12 +50,7 @@ class ProfileSettingsServiceTest {
         user = TestEntities.createUser();
         userDTO = TestEntities.createUserDTO();
 
-        mockSecurityContext(user);
-    }
-
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
+        when(currentUserProvider.getCurrentUser()).thenReturn(user);
     }
 
     @Test
@@ -248,26 +240,6 @@ class ProfileSettingsServiceTest {
                 .existsByNickname(anyString());
 
         verifyNoInteractions(userDTOMapper, jwtService);
-    }
-
-    private void mockSecurityContext(User authenticatedUser) {
-        Authentication authentication = mock(Authentication.class);
-
-        lenient()
-                .when(authentication.isAuthenticated())
-                .thenReturn(true);
-
-        lenient()
-                .when(authentication.getPrincipal())
-                .thenReturn(authenticatedUser);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-
-        lenient()
-                .when(securityContext.getAuthentication())
-                .thenReturn(authentication);
-
-        SecurityContextHolder.setContext(securityContext);
     }
 }
 

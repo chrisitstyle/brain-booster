@@ -4,10 +4,10 @@ import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
-import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
+    private final CurrentUserProvider currentUserProvider;
 
 
     public UserDTO addUser(UserCreationDTO userCreationDTO) {
@@ -49,7 +50,7 @@ public class UserService {
     }
 
     public UserDTO getCurrentUser() {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
         return userRepository.findById(authenticatedUser.getUserId())
                 .map(userDTOMapper).orElseThrow(() ->
                         new NoSuchElementException("Authenticated user does not exist"));
@@ -95,7 +96,7 @@ public class UserService {
     @Transactional
     public UserDTO updateUser(UserUpdateDTO updatedUser, Long userId) {
 
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
 
@@ -116,7 +117,7 @@ public class UserService {
     @Transactional
     public void deleteUserById(Long userId) {
 
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
         boolean isOwner = Objects.equals(authUser.getUserId(), userId);
