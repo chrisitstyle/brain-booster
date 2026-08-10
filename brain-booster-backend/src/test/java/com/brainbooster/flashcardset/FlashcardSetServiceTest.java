@@ -9,27 +9,20 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -39,24 +32,20 @@ class FlashcardSetServiceTest {
 
     @Mock
     private FlashcardSetRepository flashcardSetRepository;
-
     @Mock
     private FlashcardRepository flashcardRepository;
-
     @Mock
     private UserStarredFlashcardRepository starredFlashcardRepository;
-
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private FlashcardSetDTOMapper flashcardSetDTOMapper;
-
     @Mock
     private FlashcardDTOMapper flashcardDTOMapper;
-
     @Mock
     private OwnerOrAdminPolicy ownerOrAdminPolicy;
+    @Mock
+    private CurrentUserProvider currentUserProvider;
 
     @InjectMocks
     private FlashcardSetService flashcardSetService;
@@ -70,30 +59,11 @@ class FlashcardSetServiceTest {
         flashcardSetDTO = TestEntities.createFlashcardSetDTO();
     }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private void setupSecurityContext(User user) {
-        Authentication auth = mock(Authentication.class);
-
-        lenient().when(auth.isAuthenticated()).thenReturn(true);
-        lenient().when(auth.getPrincipal()).thenReturn(user);
-
-        SecurityContext securityContext = mock(SecurityContext.class);
-
-        lenient().when(securityContext.getAuthentication()).thenReturn(auth);
-
-        SecurityContextHolder.setContext(securityContext);
-    }
-
     @Test
     void addFlashcardSetCreationDTO_ReturnsFlashcardSetDTO() {
         // given
         Long userId = 1L;
-        FlashcardSetCreationDTO inputDTO =
-                TestEntities.createFlashcardSetCreationDTO();
+        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
         User mockUser = TestEntities.createUser();
 
         when(userRepository.findById(userId))
@@ -120,6 +90,7 @@ class FlashcardSetServiceTest {
 
         verify(userRepository).findById(userId);
         verify(flashcardSetRepository).save(any(FlashcardSet.class));
+        verify(flashcardRepository).saveAll(anyList());
         verify(flashcardSetDTOMapper).apply(any(FlashcardSet.class));
     }
 
@@ -127,8 +98,7 @@ class FlashcardSetServiceTest {
     void addFlashcardSet_ThrowsNoSuchElementException_WhenUserNotFound() {
         // given
         Long userId = 999L;
-        FlashcardSetCreationDTO inputDTO =
-                TestEntities.createFlashcardSetCreationDTO();
+        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
 
         when(userRepository.findById(userId))
                 .thenReturn(Optional.empty());
@@ -191,7 +161,7 @@ class FlashcardSetServiceTest {
         when(flashcardSetRepository.findByIdWithUser(1L))
                 .thenReturn(Optional.empty());
 
-        // when + then
+        // when, then
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
                 () -> flashcardSetService.getFlashcardSetById(1L)
@@ -225,6 +195,7 @@ class FlashcardSetServiceTest {
                 false
         );
 
+        when(currentUserProvider.getCurrentUserOrNull()).thenReturn(null);
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
         when(flashcardRepository.findAllByFlashcardSet_SetId(1L))
                 .thenReturn(mockFlashcards);
@@ -256,7 +227,7 @@ class FlashcardSetServiceTest {
     void getAllFlashcardsInSet_ReturnFlashcardsDTOsWithUserStarredStatus_WhenUserIsAuthenticated() {
         // given
         User authUser = TestEntities.createUser();
-        setupSecurityContext(authUser);
+        when(currentUserProvider.getCurrentUserOrNull()).thenReturn(authUser);
 
         List<Flashcard> mockFlashcards = List.of(
                 new Flashcard(1L, flashcardSet, "Question 1", "Answer 1"),
@@ -332,7 +303,8 @@ class FlashcardSetServiceTest {
     @Test
     void updateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
         // given
-        setupSecurityContext(TestEntities.createUser());
+        User authUser = TestEntities.createUser();
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSetUpdateDTO updateDTO = TestEntities.createFlashcardSetUpdateDTO();
 
@@ -354,9 +326,10 @@ class FlashcardSetServiceTest {
                 .isEqualTo(flashcardSetDTO);
 
         verify(ownerOrAdminPolicy).verify(
-                any(User.class),
-                eq(flashcardSet.getUser().getUserId()),
-                eq("You are not allowed to edit this flashcard set!"));
+                authUser,
+                flashcardSet.getUser().getUserId(),
+                "You are not allowed to edit this flashcard set!"
+        );
         verify(flashcardSetRepository, times(1)).save(flashcardSet);
     }
 
@@ -381,7 +354,8 @@ class FlashcardSetServiceTest {
     @Test
     void deleteFlashcardSetById_ShouldDeleteFlashcardSet_WhenFlashcardSetExists() {
         // given
-        setupSecurityContext(TestEntities.createUser());
+        User authUser = TestEntities.createUser();
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         when(flashcardSetRepository.findById(1L))
                 .thenReturn(Optional.of(flashcardSet));
@@ -391,9 +365,9 @@ class FlashcardSetServiceTest {
 
         // then
         verify(ownerOrAdminPolicy).verify(
-                any(User.class),
-                eq(flashcardSet.getUser().getUserId()),
-                eq("You are not allowed to delete this flashcard set!"));
+                authUser,
+                flashcardSet.getUser().getUserId(),
+                "You are not allowed to delete this flashcard set!");
         verify(flashcardSetRepository, times(1)).delete(flashcardSet);
     }
 

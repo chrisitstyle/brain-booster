@@ -7,13 +7,13 @@ import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import com.brainbooster.gameresult.mapper.GameAttemptMapper;
 import com.brainbooster.gameresult.mapper.GameQuestionResultMapper;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -36,6 +36,8 @@ public class GameAttemptService {
     private final GameAttemptMapper gameAttemptMapper;
     private final GameQuestionResultRepository gameQuestionResultRepository;
     private final GameQuestionResultMapper gameQuestionResultMapper;
+    private final CurrentUserProvider currentUserProvider;
+    private final OwnerOrAdminPolicy ownerOrAdminPolicy;
 
     @Transactional(readOnly = true)
     public Page<GameAttemptSummaryDTO> getMyGameAttempts(Long setId, String mode, LocalDate from, LocalDate to,
@@ -51,7 +53,7 @@ public class GameAttemptService {
 
     @Transactional(readOnly = true)
     public GameAttemptDTO getGameAttemptById(Long attemptId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
@@ -63,7 +65,7 @@ public class GameAttemptService {
 
     private Page<GameAttemptSummaryDTO> getMyGameAttemptsWithFilters(Long setId, String mode, LocalDate from,
                                                                      LocalDate to, Pageable pageable) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameMode parsedMode = parseGameMode(mode);
         Instant fromDateTime = toStartOfDay(from);
@@ -81,7 +83,7 @@ public class GameAttemptService {
 
     @Transactional(readOnly = true)
     public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(Long attemptId) {
-        User authenticatedUser = SecurityUtils.getAuthenticatedUser();
+        User authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
@@ -121,10 +123,10 @@ public class GameAttemptService {
     }
 
     private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
-        boolean isOwner = gameAttempt.getUser().getUserId().equals(authenticatedUser.getUserId());
-
-        if (!isOwner && !SecurityUtils.isAdmin(authenticatedUser)) {
-            throw new AccessDeniedException(GAME_ATTEMPT_ACCESS_DENIED_MESSAGE);
-        }
+        ownerOrAdminPolicy.verify(
+                authenticatedUser,
+                gameAttempt.getUser().getUserId(),
+                GAME_ATTEMPT_ACCESS_DENIED_MESSAGE
+        );
     }
 }

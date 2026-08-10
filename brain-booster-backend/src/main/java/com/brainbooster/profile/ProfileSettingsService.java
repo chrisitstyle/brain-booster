@@ -6,11 +6,11 @@ import com.brainbooster.exception.NicknameAlreadyExistsException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.user.dto.UserDTO;
-import com.brainbooster.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +25,7 @@ public class ProfileSettingsService {
     private final UserRepository userRepository;
     private final UserDTOMapper userDTOMapper;
     private final JwtService jwtService;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     public UserDTO updateNickname(UserNicknameUpdateDTO request) {
@@ -79,7 +80,7 @@ public class ProfileSettingsService {
     }
 
     private User getAuthenticatedUser() {
-        User principal = SecurityUtils.getAuthenticatedUser();
+        User principal = currentUserProvider.getCurrentUser();
 
         return userRepository.findById(principal.getUserId())
                 .orElseThrow(() ->
