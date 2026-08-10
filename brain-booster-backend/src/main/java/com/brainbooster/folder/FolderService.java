@@ -6,9 +6,9 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import com.brainbooster.utils.SecurityUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +34,11 @@ public class FolderService {
     private final FolderDTOMapper folderDTOMapper;
     private final EntityManager entityManager;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     public FolderDTO createFolder(FolderCreationDTO dto) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         Folder folder = Folder.builder()
                 .user(authUser)
@@ -60,7 +61,7 @@ public class FolderService {
     }
 
     public List<FolderDTO> getMyFolders() {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         return folderRepository.findAllByUserId(authUser.getUserId())
                 .stream()
@@ -152,7 +153,7 @@ public class FolderService {
     }
 
     private void verifyFolderAccess(Folder folder, String errorMessage) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         ownerOrAdminPolicy.verify(
                 authUser,
@@ -161,7 +162,7 @@ public class FolderService {
     }
 
     private void verifySetCanBeAdded(FlashcardSet flashcardSet) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
         ownerOrAdminPolicy.verify(
                 authUser,
                 flashcardSet.getUser().getUserId(),

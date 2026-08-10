@@ -10,10 +10,10 @@ import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
-import com.brainbooster.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,10 +41,11 @@ public class FlashcardSetService {
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final FlashcardDTOMapper flashcardDTOMapper;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
-            Long authenticatedUserId) {
+                                           Long authenticatedUserId) {
         User setOwner = userRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NoSuchElementException(
                         buildUserNotFoundMessage(authenticatedUserId)));
@@ -88,7 +89,7 @@ public class FlashcardSetService {
             throw new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId));
         }
 
-        User authUser = SecurityUtils.getAuthenticatedUserOrNull();
+        User authUser = currentUserProvider.getCurrentUserOrNull();
 
         Set<Long> starredFlashcardIds = authUser == null
                 ? Set.of()
@@ -135,7 +136,7 @@ public class FlashcardSetService {
      * Helper method to verify if the authenticated user has rights to modify/delete the set.
      */
     private void verifySetAccess(FlashcardSet flashcardSet, String errorMessage) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
         ownerOrAdminPolicy.verify(
                 authUser,
                 flashcardSet.getUser().getUserId(),

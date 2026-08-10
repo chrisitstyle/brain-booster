@@ -9,18 +9,14 @@ import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,33 +28,38 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class FlashcardServiceTest {
 
     private final FlashcardRepository flashcardRepository = mock(FlashcardRepository.class);
+
     private final FlashcardSetRepository flashcardSetRepository = mock(FlashcardSetRepository.class);
+
     private final UserStarredFlashcardRepository starredFlashcardRepository =
             mock(UserStarredFlashcardRepository.class);
+
     private final UserRepository userRepository = mock(UserRepository.class);
+
     private final FlashcardDTOMapper flashcardDTOMapper = mock(FlashcardDTOMapper.class);
+
     private final OwnerOrAdminPolicy ownerOrAdminPolicy = new OwnerOrAdminPolicy();
+
+    private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
+
     private final FlashcardService flashcardService = new FlashcardService(
             flashcardRepository,
             flashcardSetRepository,
             starredFlashcardRepository,
             userRepository,
             flashcardDTOMapper,
-            ownerOrAdminPolicy);
-
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
+            ownerOrAdminPolicy,
+            currentUserProvider);
 
     @Test
     void addFlashcard_ShouldCreateFlashcard_WhenUserIsSetOwner() {
         // given
-        User authUser = setAuthenticatedUser(createUser());
+        User authUser = createUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(authUser)
@@ -76,8 +77,12 @@ class FlashcardServiceTest {
 
         when(flashcardSetRepository.findById(creationDTO.setId()))
                 .thenReturn(Optional.of(flashcardSet));
-        when(flashcardRepository.save(any(Flashcard.class))).thenReturn(savedFlashcard);
-        when(flashcardDTOMapper.apply(savedFlashcard)).thenReturn(expectedDTO);
+
+        when(flashcardRepository.save(any(Flashcard.class)))
+                .thenReturn(savedFlashcard);
+
+        when(flashcardDTOMapper.apply(savedFlashcard))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.addFlashcard(creationDTO);
@@ -85,8 +90,7 @@ class FlashcardServiceTest {
         // then
         assertThat(result).isEqualTo(expectedDTO);
 
-        ArgumentCaptor<Flashcard> flashcardCaptor =
-                ArgumentCaptor.forClass(Flashcard.class);
+        ArgumentCaptor<Flashcard> flashcardCaptor = ArgumentCaptor.forClass(Flashcard.class);
 
         verify(flashcardRepository).save(flashcardCaptor.capture());
 
@@ -101,7 +105,9 @@ class FlashcardServiceTest {
     void addFlashcard_ShouldCreateFlashcard_WhenUserIsAdmin() {
         // given
         User setOwner = createUser();
-        User admin = setAuthenticatedUser(createAdminUser());
+        User admin = createAdminUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(admin);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -119,8 +125,12 @@ class FlashcardServiceTest {
 
         when(flashcardSetRepository.findById(creationDTO.setId()))
                 .thenReturn(Optional.of(flashcardSet));
-        when(flashcardRepository.save(any(Flashcard.class))).thenReturn(savedFlashcard);
-        when(flashcardDTOMapper.apply(savedFlashcard)).thenReturn(expectedDTO);
+
+        when(flashcardRepository.save(any(Flashcard.class)))
+                .thenReturn(savedFlashcard);
+
+        when(flashcardDTOMapper.apply(savedFlashcard))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.addFlashcard(creationDTO);
@@ -135,8 +145,6 @@ class FlashcardServiceTest {
     @Test
     void addFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardSetDoesNotExist() {
         // given
-        setAuthenticatedUser(createUser());
-
         FlashcardCreationDTO creationDTO = createFlashcardCreationDTO();
 
         when(flashcardSetRepository.findById(creationDTO.setId()))
@@ -154,7 +162,9 @@ class FlashcardServiceTest {
     void addFlashcard_ShouldThrowAccessDeniedException_WhenUserIsNotSetOwner() {
         // given
         User setOwner = createUser(1L, Role.USER);
-        setAuthenticatedUser(createUser(2L, Role.USER));
+        User authUser = createUser(2L, Role.USER);
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -194,9 +204,14 @@ class FlashcardServiceTest {
                 false
         );
 
-        when(flashcardRepository.findAll()).thenReturn(List.of(flashcard1, flashcard2));
-        when(flashcardDTOMapper.apply(flashcard1)).thenReturn(flashcardDTO1);
-        when(flashcardDTOMapper.apply(flashcard2)).thenReturn(flashcardDTO2);
+        when(flashcardRepository.findAll())
+                .thenReturn(List.of(flashcard1, flashcard2));
+
+        when(flashcardDTOMapper.apply(flashcard1))
+                .thenReturn(flashcardDTO1);
+
+        when(flashcardDTOMapper.apply(flashcard2))
+                .thenReturn(flashcardDTO2);
 
         // when
         List<FlashcardDTO> result = flashcardService.getAllFlashcards();
@@ -211,8 +226,11 @@ class FlashcardServiceTest {
         Flashcard flashcard = createFlashcard();
         FlashcardDTO expectedDTO = createFlashcardDTO();
 
-        when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-        when(flashcardDTOMapper.apply(flashcard)).thenReturn(expectedDTO);
+        when(flashcardRepository.findById(1L))
+                .thenReturn(Optional.of(flashcard));
+
+        when(flashcardDTOMapper.apply(flashcard))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.getFlashcardById(1L);
@@ -224,9 +242,10 @@ class FlashcardServiceTest {
     @Test
     void getFlashcardById_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
         // given
-        when(flashcardRepository.findById(999L)).thenReturn(Optional.empty());
+        when(flashcardRepository.findById(999L))
+                .thenReturn(Optional.empty());
 
-        // when + then
+        // when, then
         assertThatThrownBy(() -> flashcardService.getFlashcardById(999L))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("Flashcard with id 999 not found");
@@ -235,7 +254,9 @@ class FlashcardServiceTest {
     @Test
     void updateFlashcard_ShouldUpdateFlashcard_WhenUserIsSetOwner() {
         // given
-        User authUser = setAuthenticatedUser(createUser());
+        User authUser = createUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(authUser)
@@ -250,8 +271,12 @@ class FlashcardServiceTest {
 
         when(flashcardRepository.findByIdWithSetAndUser(1L))
                 .thenReturn(Optional.of(existingFlashcard));
-        when(flashcardRepository.save(existingFlashcard)).thenReturn(existingFlashcard);
-        when(flashcardDTOMapper.apply(existingFlashcard)).thenReturn(expectedDTO);
+
+        when(flashcardRepository.save(existingFlashcard))
+                .thenReturn(existingFlashcard);
+
+        when(flashcardDTOMapper.apply(existingFlashcard))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.updateFlashcard(updateDTO, 1L);
@@ -268,7 +293,9 @@ class FlashcardServiceTest {
     void updateFlashcard_ShouldUpdateFlashcard_WhenUserIsAdmin() {
         // given
         User setOwner = createUser();
-        setAuthenticatedUser(createAdminUser());
+        User admin = createAdminUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(admin);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -283,8 +310,12 @@ class FlashcardServiceTest {
 
         when(flashcardRepository.findByIdWithSetAndUser(1L))
                 .thenReturn(Optional.of(existingFlashcard));
-        when(flashcardRepository.save(existingFlashcard)).thenReturn(existingFlashcard);
-        when(flashcardDTOMapper.apply(existingFlashcard)).thenReturn(expectedDTO);
+
+        when(flashcardRepository.save(existingFlashcard))
+                .thenReturn(existingFlashcard);
+
+        when(flashcardDTOMapper.apply(existingFlashcard))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.updateFlashcard(updateDTO, 1L);
@@ -300,8 +331,6 @@ class FlashcardServiceTest {
     @Test
     void updateFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
         // given
-        setAuthenticatedUser(createUser());
-
         FlashcardUpdateDTO updateDTO = createFlashcardUpdateDTO();
 
         when(flashcardRepository.findByIdWithSetAndUser(999L))
@@ -319,7 +348,9 @@ class FlashcardServiceTest {
     void updateFlashcard_ShouldThrowAccessDeniedException_WhenUserIsNotSetOwner() {
         // given
         User setOwner = createUser(1L, Role.USER);
-        setAuthenticatedUser(createUser(2L, Role.USER));
+        User authUser = createUser(2L, Role.USER);
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -345,15 +376,22 @@ class FlashcardServiceTest {
     @Test
     void starFlashcard_ShouldCreateStarredRelationAndReturnStarredFlashcard() {
         // given
-        User authUser = setAuthenticatedUser(createUser());
+        User authUser = createUser();
         Flashcard flashcard = createFlashcard();
         FlashcardDTO expectedDTO = createFlashcardDTO(true);
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-        when(starredFlashcardRepository.existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
+
+        when(starredFlashcardRepository
+                .existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
                 .thenReturn(false);
-        when(userRepository.getReferenceById(1L)).thenReturn(authUser);
-        when(flashcardDTOMapper.toDto(flashcard, true)).thenReturn(expectedDTO);
+
+        when(userRepository.getReferenceById(1L))
+                .thenReturn(authUser);
+
+        when(flashcardDTOMapper.toDto(flashcard, true))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.starFlashcard(1L);
@@ -369,9 +407,9 @@ class FlashcardServiceTest {
 
         UserStarredFlashcard savedStarredFlashcard = starredCaptor.getValue();
 
-        assertThat(savedStarredFlashcard.getId()).isEqualTo(
-                new UserStarredFlashcardId(1L, 1L)
-        );
+        assertThat(savedStarredFlashcard.getId())
+                .isEqualTo(new UserStarredFlashcardId(1L, 1L));
+
         assertThat(savedStarredFlashcard.getUser()).isEqualTo(authUser);
         assertThat(savedStarredFlashcard.getFlashcard()).isEqualTo(flashcard);
     }
@@ -379,15 +417,19 @@ class FlashcardServiceTest {
     @Test
     void starFlashcard_ShouldNotCreateDuplicateRelation_WhenFlashcardIsAlreadyStarred() {
         // given
-        setAuthenticatedUser(createUser());
-
+        User authUser = createUser();
         Flashcard flashcard = createFlashcard();
         FlashcardDTO expectedDTO = createFlashcardDTO(true);
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-        when(starredFlashcardRepository.existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
+
+        when(starredFlashcardRepository
+                .existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
                 .thenReturn(true);
-        when(flashcardDTOMapper.toDto(flashcard, true)).thenReturn(expectedDTO);
+
+        when(flashcardDTOMapper.toDto(flashcard, true))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.starFlashcard(1L);
@@ -403,8 +445,9 @@ class FlashcardServiceTest {
     @Test
     void starFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
         // given
-        setAuthenticatedUser(createUser());
+        User authUser = createUser();
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(flashcardRepository.findById(999L)).thenReturn(Optional.empty());
 
         // when + then
@@ -414,19 +457,22 @@ class FlashcardServiceTest {
 
         verify(starredFlashcardRepository, never())
                 .existsByUser_UserIdAndFlashcard_FlashcardId(anyLong(), anyLong());
+
         verify(starredFlashcardRepository, never()).save(any());
     }
 
     @Test
     void unstarFlashcard_ShouldDeleteStarredRelationAndReturnUnstarredFlashcard() {
         // given
-        setAuthenticatedUser(createUser());
-
+        User authUser = createUser();
         Flashcard flashcard = createFlashcard();
         FlashcardDTO expectedDTO = createFlashcardDTO(false);
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-        when(flashcardDTOMapper.toDto(flashcard, false)).thenReturn(expectedDTO);
+
+        when(flashcardDTOMapper.toDto(flashcard, false))
+                .thenReturn(expectedDTO);
 
         // when
         FlashcardDTO result = flashcardService.unstarFlashcard(1L);
@@ -442,8 +488,9 @@ class FlashcardServiceTest {
     @Test
     void unstarFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
         // given
-        setAuthenticatedUser(createUser());
+        User authUser = createUser();
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(flashcardRepository.findById(999L)).thenReturn(Optional.empty());
 
         // when + then
@@ -458,7 +505,9 @@ class FlashcardServiceTest {
     @Test
     void deleteFlashcardById_ShouldDeleteFlashcard_WhenUserIsSetOwner() {
         // given
-        User authUser = setAuthenticatedUser(createUser());
+        User authUser = createUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(authUser)
@@ -482,7 +531,9 @@ class FlashcardServiceTest {
     void deleteFlashcardById_ShouldDeleteFlashcard_WhenUserIsAdmin() {
         // given
         User setOwner = createUser();
-        setAuthenticatedUser(createAdminUser());
+        User admin = createAdminUser();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(admin);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -505,8 +556,6 @@ class FlashcardServiceTest {
     @Test
     void deleteFlashcardById_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
         // given
-        setAuthenticatedUser(createUser());
-
         when(flashcardRepository.findByIdWithSetAndUser(999L))
                 .thenReturn(Optional.empty());
 
@@ -522,7 +571,9 @@ class FlashcardServiceTest {
     void deleteFlashcardById_ShouldThrowAccessDeniedException_WhenUserIsNotSetOwner() {
         // given
         User setOwner = createUser(1L, Role.USER);
-        setAuthenticatedUser(createUser(2L, Role.USER));
+        User authUser = createUser(2L, Role.USER);
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSet flashcardSet = flashcardSetBuilder()
                 .user(setOwner)
@@ -541,18 +592,5 @@ class FlashcardServiceTest {
                 .hasMessage("You are not allowed to delete this flashcard!");
 
         verify(flashcardRepository, never()).delete(any());
-    }
-
-    private User setAuthenticatedUser(User user) {
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        user,
-                        null,
-                        user.getAuthorities()
-                );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        return user;
     }
 }

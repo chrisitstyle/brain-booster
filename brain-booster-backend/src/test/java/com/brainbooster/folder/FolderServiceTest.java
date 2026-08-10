@@ -6,9 +6,9 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import com.brainbooster.utils.SecurityUtils;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
@@ -42,6 +41,8 @@ class FolderServiceTest {
     private EntityManager entityManager;
     @Mock
     private OwnerOrAdminPolicy ownerOrAdminPolicy;
+    @Mock
+    private CurrentUserProvider currentUserProvider;
 
     @InjectMocks
     private FolderService folderService;
@@ -54,24 +55,22 @@ class FolderServiceTest {
         Folder savedFolder = createFolder();
         FolderDTO expectedDTO = createEmptyFolderDTO();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.save(any(Folder.class))).thenReturn(savedFolder);
-            when(folderDTOMapper.apply(savedFolder)).thenReturn(expectedDTO);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.save(any(Folder.class))).thenReturn(savedFolder);
+        when(folderDTOMapper.apply(savedFolder)).thenReturn(expectedDTO);
 
-            FolderDTO result = folderService.createFolder(creationDTO);
+        FolderDTO result = folderService.createFolder(creationDTO);
 
-            assertThat(result).isEqualTo(expectedDTO);
+        assertThat(result).isEqualTo(expectedDTO);
 
-            ArgumentCaptor<Folder> folderCaptor = ArgumentCaptor.forClass(Folder.class);
-            verify(folderRepository).save(folderCaptor.capture());
+        ArgumentCaptor<Folder> folderCaptor = ArgumentCaptor.forClass(Folder.class);
+        verify(folderRepository).save(folderCaptor.capture());
 
-            Folder capturedFolder = folderCaptor.getValue();
-            assertThat(capturedFolder.getUser()).isEqualTo(authUser);
-            assertThat(capturedFolder.getName()).isEqualTo("test_folder_name");
-            assertThat(capturedFolder.getDescription()).isEqualTo("test_folder_description");
-            assertThat(capturedFolder.getCreatedAt()).isNotNull();
-        }
+        Folder capturedFolder = folderCaptor.getValue();
+        assertThat(capturedFolder.getUser()).isEqualTo(authUser);
+        assertThat(capturedFolder.getName()).isEqualTo("test_folder_name");
+        assertThat(capturedFolder.getDescription()).isEqualTo("test_folder_description");
+        assertThat(capturedFolder.getCreatedAt()).isNotNull();
     }
 
     @Test
@@ -96,16 +95,14 @@ class FolderServiceTest {
         Folder folder = createFolder();
         FolderDTO dto = createEmptyFolderDTO();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findAllByUserId(1L)).thenReturn(List.of(folder));
-            when(folderDTOMapper.apply(folder)).thenReturn(dto);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findAllByUserId(1L)).thenReturn(List.of(folder));
+        when(folderDTOMapper.apply(folder)).thenReturn(dto);
 
-            List<FolderDTO> result = folderService.getMyFolders();
+        List<FolderDTO> result = folderService.getMyFolders();
 
-            assertThat(result).containsExactly(dto);
-            verify(folderRepository).findAllByUserId(1L);
-        }
+        assertThat(result).containsExactly(dto);
+        verify(folderRepository).findAllByUserId(1L);
     }
 
     @Test
@@ -122,7 +119,6 @@ class FolderServiceTest {
         assertThat(result).containsExactly(dto);
         verify(folderRepository).findAllByUserNickname("johndoe");
     }
-
 
     @Test
     @DisplayName("getFolderById should throw when folder does not exist")
@@ -149,17 +145,16 @@ class FolderServiceTest {
                 List.of()
         );
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-            when(folderDTOMapper.apply(folder)).thenReturn(expectedDTO);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
+        when(folderDTOMapper.apply(folder)).thenReturn(expectedDTO);
 
-            FolderDTO result = folderService.updateFolder(1L, updateDTO);
+        FolderDTO result = folderService.updateFolder(1L, updateDTO);
 
-            assertThat(result).isEqualTo(expectedDTO);
-            assertThat(folder.getName()).isEqualTo("Updated Folder");
-            assertThat(folder.getDescription()).isEqualTo("Updated folder description");
-        }
+        assertThat(result).isEqualTo(expectedDTO);
+        assertThat(folder.getName()).isEqualTo("Updated Folder");
+        assertThat(folder.getDescription()).isEqualTo("Updated folder description");
+
         verify(ownerOrAdminPolicy).verify(
                 authUser,
                 folder.getUser().getUserId(),
@@ -173,18 +168,17 @@ class FolderServiceTest {
         User authUser = createUser();
         Folder folder = createFolder();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithUser(1L)).thenReturn(Optional.of(folder));
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithUser(1L)).thenReturn(Optional.of(folder));
 
-            folderService.deleteFolder(1L);
+        folderService.deleteFolder(1L);
 
-            verify(ownerOrAdminPolicy).verify(
-                    authUser,
-                    folder.getUser().getUserId(),
-                    "You are not allowed to delete this folder!");
-            verify(folderRepository).delete(folder);
-        }
+        verify(ownerOrAdminPolicy).verify(
+                authUser,
+                folder.getUser().getUserId(),
+                "You are not allowed to delete this folder!"
+        );
+        verify(folderRepository).delete(folder);
     }
 
     @Test
@@ -198,30 +192,31 @@ class FolderServiceTest {
         Folder refreshedFolder = createFolderWithFlashcardSet();
         FolderDTO expectedDTO = createFolderDTO();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L))
-                    .thenReturn(Optional.of(folder))
-                    .thenReturn(Optional.of(refreshedFolder));
-            when(flashcardSetRepository.findByIdWithUser(1L)).thenReturn(Optional.of(flashcardSet));
-            when(folderDTOMapper.apply(refreshedFolder)).thenReturn(expectedDTO);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithSetsAndUser(1L))
+                .thenReturn(Optional.of(folder))
+                .thenReturn(Optional.of(refreshedFolder));
+        when(flashcardSetRepository.findByIdWithUser(1L))
+                .thenReturn(Optional.of(flashcardSet));
+        when(folderDTOMapper.apply(refreshedFolder)).thenReturn(expectedDTO);
 
-            FolderDTO result = folderService.addSetToFolder(1L, 1L);
+        FolderDTO result = folderService.addSetToFolder(1L, 1L);
 
-            assertThat(result).isEqualTo(expectedDTO);
-            assertThat(folder.getFlashcardSets()).contains(flashcardSet);
-            verify(entityManager).flush();
-            verify(entityManager).clear();
-            verify(ownerOrAdminPolicy).verify(
-                    authUser,
-                    folder.getUser().getUserId(),
-                    "You are not allowed to edit this folder!");
+        assertThat(result).isEqualTo(expectedDTO);
+        assertThat(folder.getFlashcardSets()).contains(flashcardSet);
 
-            verify(ownerOrAdminPolicy).verify(
-                    authUser,
-                    flashcardSet.getUser().getUserId(),
-                    "You cannot add this set to your folder!");
-        }
+        verify(entityManager).flush();
+        verify(entityManager).clear();
+
+        verify(ownerOrAdminPolicy).verify(
+                authUser,
+                folder.getUser().getUserId(),
+                "You are not allowed to edit this folder!");
+
+        verify(ownerOrAdminPolicy).verify(
+                authUser,
+                flashcardSet.getUser().getUserId(),
+                "You cannot add this set to your folder!");
     }
 
     @Test
@@ -230,15 +225,13 @@ class FolderServiceTest {
         User authUser = createUser();
         Folder folder = createFolderWithFlashcardSet();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-            when(flashcardSetRepository.existsById(1L)).thenReturn(true);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
+        when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
-            folderService.removeSetFromFolder(1L, 1L);
+        folderService.removeSetFromFolder(1L, 1L);
 
-            assertThat(folder.getFlashcardSets()).isEmpty();
-        }
+        assertThat(folder.getFlashcardSets()).isEmpty();
 
         verify(ownerOrAdminPolicy).verify(
                 authUser,
@@ -252,17 +245,15 @@ class FolderServiceTest {
         User authUser = createUser();
         Folder folder = createFolder();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-            when(flashcardSetRepository.existsById(999L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
+        when(flashcardSetRepository.existsById(999L)).thenReturn(false);
 
-            assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 999L))
-                    .isInstanceOf(NoSuchElementException.class)
-                    .hasMessage("FlashcardSet with id: 999 not found");
+        assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 999L))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessage("FlashcardSet with id: 999 not found");
 
-            verify(flashcardSetRepository).existsById(999L);
-        }
+        verify(flashcardSetRepository).existsById(999L);
     }
 
     @Test
@@ -271,15 +262,12 @@ class FolderServiceTest {
         User authUser = createUser();
         Folder folder = createFolder();
 
-        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils.when(SecurityUtils::getAuthenticatedUser).thenReturn(authUser);
-            when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
-            when(flashcardSetRepository.existsById(1L)).thenReturn(true);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
+        when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
-            assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 1L))
-                    .isInstanceOf(NoSuchElementException.class)
-                    .hasMessage("FlashcardSet with id: 1 is not in folder with id: 1");
-        }
+        assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 1L))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessage("FlashcardSet with id: 1 is not in folder with id: 1");
     }
 }
-

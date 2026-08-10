@@ -9,14 +9,12 @@ import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
-import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
-import com.brainbooster.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,6 +34,7 @@ public class FlashcardService {
     private final UserRepository userRepository;
     private final FlashcardDTOMapper flashcardDTOMapper;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     public FlashcardDTO addFlashcard(FlashcardCreationDTO flashcardCreationDTO) {
@@ -85,7 +84,7 @@ public class FlashcardService {
 
     @Transactional
     public FlashcardDTO starFlashcard(Long flashcardId) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
                 .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
@@ -110,7 +109,7 @@ public class FlashcardService {
 
     @Transactional
     public FlashcardDTO unstarFlashcard(Long flashcardId) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
                 .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
@@ -132,7 +131,7 @@ public class FlashcardService {
     }
 
     private void verifyFlashcardSetAccess(FlashcardSet flashcardSetFromDB, String errorMessage) {
-        User authUser = SecurityUtils.getAuthenticatedUser();
+        User authUser = currentUserProvider.getCurrentUser();
 
         ownerOrAdminPolicy.verify(
                 authUser,
