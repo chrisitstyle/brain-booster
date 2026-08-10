@@ -1,3 +1,4 @@
+import { apiRequest } from "@/api/apiClient";
 import type {
   GameAttempt,
   GameAttemptFilters,
@@ -5,33 +6,21 @@ import type {
   PageResponse,
 } from "@/types/games";
 
-import {
-  buildQueryString,
-  createAuthHeaders,
-  fetchJson,
-  getApiUrl,
-} from "./apiClient";
-
 export async function getMyGameAttempts(
   token: string,
   filters: GameAttemptFilters = {},
 ) {
-  const queryString = buildQueryString({
-    page: filters.page,
-    size: filters.size,
-    setId: filters.setId,
-    mode: filters.mode,
-    from: filters.from,
-    to: filters.to,
-  });
-
-  return fetchJson<PageResponse<GameAttempt>>(
-    getApiUrl(`/game-attempts/me${queryString}`),
-    {
-      method: "GET",
-      headers: createAuthHeaders(token),
+  return apiRequest<PageResponse<GameAttempt>>("/game-attempts/me", {
+    token,
+    query: {
+      page: filters.page,
+      size: filters.size,
+      setId: filters.setId,
+      mode: filters.mode,
+      from: filters.from,
+      to: filters.to,
     },
-  );
+  });
 }
 
 export async function getMyGameAttemptsBySetId(
@@ -39,40 +28,32 @@ export async function getMyGameAttemptsBySetId(
   token: string,
   filters: Omit<GameAttemptFilters, "setId"> = {},
 ) {
-  const queryString = buildQueryString({
-    page: filters.page,
-    size: filters.size,
-    mode: filters.mode,
-    from: filters.from,
-    to: filters.to,
-  });
-
-  return fetchJson<PageResponse<GameAttempt>>(
-    getApiUrl(`/game-attempts/me/sets/${setId}${queryString}`),
+  return apiRequest<PageResponse<GameAttempt>>(
+    `/game-attempts/me/sets/${setId}`,
     {
-      method: "GET",
-      headers: createAuthHeaders(token),
+      token,
+      query: {
+        page: filters.page,
+        size: filters.size,
+        mode: filters.mode,
+        from: filters.from,
+        to: filters.to,
+      },
     },
   );
 }
 
 export async function getGameAttemptById(attemptId: number, token: string) {
-  return fetchJson<GameAttempt>(getApiUrl(`/game-attempts/${attemptId}`), {
-    method: "GET",
-    headers: createAuthHeaders(token),
-  });
+  return apiRequest<GameAttempt>(`/game-attempts/${attemptId}`, { token });
 }
 
 export async function getGameAttemptQuestionResults(
   attemptId: number,
   token: string,
 ) {
-  return fetchJson<GameQuestionResult[]>(
-    getApiUrl(`/game-attempts/${attemptId}/question-results`),
-    {
-      method: "GET",
-      headers: createAuthHeaders(token),
-    },
+  return apiRequest<GameQuestionResult[]>(
+    `/game-attempts/${attemptId}/question-results`,
+    { token },
   );
 }
 
