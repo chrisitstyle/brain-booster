@@ -36,21 +36,18 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private UserDTOMapper userDTOMapper;
-
     @Mock
     private FlashcardSetRepository flashcardSetRepository;
-
     @Mock
     private FlashcardSetDTOMapper flashcardSetDTOMapper;
-
     @Mock
     private PasswordEncoder passwordEncoder;
-
     @Mock
     private CurrentUserProvider currentUserProvider;
+    @Mock
+    private UserAccountCreator userAccountCreator;
 
     @InjectMocks
     private UserService userService;
@@ -73,27 +70,39 @@ class UserServiceTest {
         // given
         UserCreationDTO creationDTO = TestEntities.createUserCreationDTO();
 
-        when(userRepository.existsByEmail(creationDTO.email())).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("secured_password");
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userAccountCreator.create(creationDTO.nickname(), creationDTO.email(),
+                creationDTO.password(),
+                creationDTO.role())).thenReturn(user);
+
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
         // when
-        UserDTO savedUserDTO = userService.addUser(creationDTO);
+        UserDTO result = userService.addUser(creationDTO);
 
         // then
-        Assertions.assertThat(savedUserDTO).isNotNull();
-        Assertions.assertThat(savedUserDTO.userId()).isEqualTo(1L);
-        Assertions.assertThat(savedUserDTO.nickname()).isEqualTo("johndoe");
-        Assertions.assertThat(savedUserDTO.email()).isEqualTo("johndoe@example.com");
+        Assertions.assertThat(result).isEqualTo(userDTO);
+
+        verify(userAccountCreator).create(
+                creationDTO.nickname(),
+                creationDTO.email(),
+                creationDTO.password(),
+                creationDTO.role());
+
+        verify(userDTOMapper).apply(user);
     }
 
     @Test
-    void addUser_ShouldThrowEmailAlreadyExists_WhenUserEmailAlreadyExists() {
+    void addUser_ShouldPropagateEmailAlreadyExistsException() {
         // given
         UserCreationDTO creationDTO = TestEntities.createUserCreationDTO();
 
-        when(userRepository.existsByEmail(creationDTO.email())).thenReturn(true);
+        when(userAccountCreator.create(
+                creationDTO.nickname(),
+                creationDTO.email(),
+                creationDTO.password(),
+                creationDTO.role()
+        )).thenThrow(new EmailAlreadyExistsException(
+                        "User with this email already exists"));
 
         // when, then
         EmailAlreadyExistsException exception = assertThrows(
@@ -101,10 +110,16 @@ class UserServiceTest {
                 () -> userService.addUser(creationDTO)
         );
 
-        Assertions.assertThat(exception.getMessage())
-                .isEqualTo("User with this email already exists!");
+        Assertions.assertThat(exception.getMessage()).isEqualTo("User with this email already exists");
 
-        verify(userRepository, never()).save(any(User.class));
+        verify(userAccountCreator).create(
+                creationDTO.nickname(),
+                creationDTO.email(),
+                creationDTO.password(),
+                creationDTO.role()
+        );
+
+        verifyNoInteractions(userDTOMapper);
     }
 
     @Test

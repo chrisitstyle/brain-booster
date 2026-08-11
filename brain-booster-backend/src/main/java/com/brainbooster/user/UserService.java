@@ -1,6 +1,5 @@
 package com.brainbooster.user;
 
-import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
@@ -15,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -29,24 +27,17 @@ public class UserService {
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final CurrentUserProvider currentUserProvider;
+    private final UserAccountCreator userAccountCreator;
 
 
     public UserDTO addUser(UserCreationDTO userCreationDTO) {
+        User createdUser = userAccountCreator.create(
+                userCreationDTO.nickname(),
+                userCreationDTO.email(),
+                userCreationDTO.password(),
+                userCreationDTO.role());
 
-        if (userRepository.existsByEmail(userCreationDTO.email())) {
-            throw new EmailAlreadyExistsException("User with this email already exists!");
-        }
-
-        User user = User.builder()
-                .nickname(userCreationDTO.nickname())
-                .email(userCreationDTO.email())
-                .password(passwordEncoder.encode(userCreationDTO.password()))
-                .role(userCreationDTO.role())
-                .createdAt(Instant.now())
-                .build();
-
-        User savedUser = userRepository.save(user);
-        return userDTOMapper.apply(savedUser);
+        return userDTOMapper.apply(createdUser);
     }
 
     public UserDTO getCurrentUser() {
