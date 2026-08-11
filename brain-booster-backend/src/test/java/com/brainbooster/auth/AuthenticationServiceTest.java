@@ -4,11 +4,11 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserAccountCreator;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,7 +17,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -31,7 +30,7 @@ class AuthenticationServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private UserAccountCreator userAccountCreator;
     @Mock
     private JwtService jwtService;
     @Mock
@@ -41,39 +40,49 @@ class AuthenticationServiceTest {
     private AuthenticationService authenticationService;
 
     @Test
-    void register_ShouldSaveUserAndReturnMessage_WhenEmailUnique() {
+    void register_ShouldCreateRegularUserAndReturnMessage() {
         // given
-        RegisterRequest request = new RegisterRequest("johndoe", "johndoe@example.com",
-                "password123");
-
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(request.getPassword())).thenReturn("encoded_password");
+        RegisterRequest request = new RegisterRequest(
+                "johndoe",
+                "johndoe@example.com",
+                "password123"
+        );
 
         // when
         String result = authenticationService.register(request);
 
         // then
-        assertThat(result).isEqualTo("Account has been created");
+        assertThat(result)
+                .isEqualTo("Account has been created");
 
-        // verify user object construction before saving
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
+        verify(userAccountCreator).create(
+                request.getNickname(),
+                request.getEmail(),
+                request.getPassword(),
+                Role.USER
+        );
 
-        User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getEmail()).isEqualTo(request.getEmail());
-        assertThat(savedUser.getNickname()).isEqualTo(request.getNickname());
-        assertThat(savedUser.getPassword()).isEqualTo("encoded_password");
-        assertThat(savedUser.getRole()).isEqualTo(Role.USER);
-        assertThat(savedUser.getCreatedAt()).isNotNull();
+        verifyNoInteractions(userRepository);
     }
 
     @Test
-    void register_ShouldThrowException_WhenEmailAlreadyExists() {
+    void register_ShouldPropagateException_WhenEmailAlreadyExists() {
         // given
-        RegisterRequest request = new RegisterRequest("johndoe", "exist@example.com",
+        RegisterRequest request = new RegisterRequest(
+                "johndoe",
+                "exist@example.com",
                 "password");
 
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(new User()));
+        when(userAccountCreator.create(
+                request.getNickname(),
+                request.getEmail(),
+                request.getPassword(),
+                Role.USER
+        )).thenThrow(
+                new EmailAlreadyExistsException(
+                        "User with this email already exists"
+                )
+        );
 
         // when
         Throwable thrown = catchThrowable(() -> authenticationService.register(request));
@@ -83,23 +92,39 @@ class AuthenticationServiceTest {
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessage("User with this email already exists");
 
-        verify(userRepository, never()).save(any());
+        verify(userAccountCreator).create(
+                request.getNickname(),
+                request.getEmail(),
+                request.getPassword(),
+                Role.USER
+        );
+
+        verifyNoInteractions(userRepository);
     }
 
     @Test
     void authenticate_ShouldReturnToken_WhenCredentialsAreCorrect() {
         // given
-        AuthenticationRequest request = new AuthenticationRequest("johndoe@example.com",
+        AuthenticationRequest request = new AuthenticationRequest(
+                "johndoe@example.com",
                 "password123");
+
         User user = TestEntities.createUser();
         String expectedToken = "jwt_token_example";
 
-        Authentication authResult = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+        Authentication authResult = new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword());
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(authResult);
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(jwtService.generateToken(user)).thenReturn(expectedToken);
+        when(authenticationManager.authenticate(
+                any(UsernamePasswordAuthenticationToken.class)
+        )).thenReturn(authResult);
+
+        when(userRepository.findByEmail(request.getEmail()))
+                .thenReturn(Optional.of(user));
+
+        when(jwtService.generateToken(user))
+                .thenReturn(expectedToken);
 
         // when
         AuthenticationResponse response = authenticationService.authenticate(request);
@@ -108,40 +133,64 @@ class AuthenticationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getToken()).isEqualTo(expectedToken);
 
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(authenticationManager).authenticate(
+                any(UsernamePasswordAuthenticationToken.class)
+        );
+
+        verify(userRepository).findByEmail(request.getEmail());
+
+        verify(jwtService).generateToken(user);
     }
 
     @Test
     void authenticate_ShouldThrowBadCredentials_WhenManagerFails() {
         // given
-        AuthenticationRequest request = new AuthenticationRequest("wrong@example.com", "wrongpass");
+        AuthenticationRequest request = new AuthenticationRequest(
+                "wrong@example.com",
+                "wrongpass"
+        );
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
+        when(authenticationManager.authenticate(
+                any(UsernamePasswordAuthenticationToken.class)
+        )).thenThrow(
+                new BadCredentialsException("Bad credentials")
+        );
 
         // when
         Throwable thrown = catchThrowable(() -> authenticationService.authenticate(request));
 
         // then
-        assertThat(thrown).isInstanceOf(BadCredentialsException.class);
+        assertThat(thrown)
+                .isInstanceOf(BadCredentialsException.class);
+
+        verify(userRepository, never()).findByEmail(anyString());
         verify(jwtService, never()).generateToken(any());
     }
 
     @Test
     void authenticate_ShouldThrowUsernameNotFound_WhenUserNotFoundInRepo() {
         // given
-        // edge case - AuthManager succeeds (e.g., custom provider) but user missing from db
-        AuthenticationRequest request = new AuthenticationRequest("dummy@example.com",
+        AuthenticationRequest request = new AuthenticationRequest(
+                "dummy@example.com",
                 "password");
 
-        Authentication dummyAuth = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-        when(authenticationManager.authenticate(any())).thenReturn(dummyAuth);
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
+        Authentication dummyAuth = new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword());
+
+        when(authenticationManager.authenticate(any()))
+                .thenReturn(dummyAuth);
+
+        when(userRepository.findByEmail(request.getEmail()))
+                .thenReturn(Optional.empty());
 
         // when
         Throwable thrown = catchThrowable(() -> authenticationService.authenticate(request));
 
         // then
         assertThat(thrown).isInstanceOf(UsernameNotFoundException.class);
+
+        verify(userRepository).findByEmail(request.getEmail());
+        verify(jwtService, never()).generateToken(any());
     }
 }
