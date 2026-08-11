@@ -952,8 +952,7 @@ public class TestEntities {
                 .name("test_folder_name")
                 .description("test_folder_description")
                 .createdAt(TEST_INSTANT_DATE)
-                .flashcardSets(new HashSet<>())
-                .setCount(0L);
+                .flashcardSets(new HashSet<>());
     }
 
     /**
@@ -971,11 +970,9 @@ public class TestEntities {
      * @return a Folder entity with one flashcard set.
      */
     public static Folder createFolderWithFlashcardSet() {
-        Folder folder = folderBuilder()
-                .setCount(1L)
-                .build();
+        Folder folder = folderBuilder().build();
 
-        folder.getFlashcardSets().add(createFlashcardSet());
+        folder.addFlashcardSet(createFlashcardSet());
 
         return folder;
     }

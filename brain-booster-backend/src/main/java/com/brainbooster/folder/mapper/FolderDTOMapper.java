@@ -21,14 +21,18 @@ public class FolderDTOMapper implements Function<Folder, FolderDTO> {
                 folder.getUser().getNickname(),
                 folder.getName(),
                 folder.getDescription(),
-                folder.getSetCount(),
-                mapFlashcardSets(folder.getFlashcardSets())
-        );
+                folder.getFlashcardSetCount(),
+                mapFlashcardSets(folder.getFlashcardSets()));
     }
 
-    private List<FlashcardSetInFolderDTO> mapFlashcardSets(Set<FlashcardSet> flashcardSets) {
+    private List<FlashcardSetInFolderDTO> mapFlashcardSets(
+            Set<FlashcardSet> flashcardSets
+    ) {
         return flashcardSets.stream()
-                .sorted(Comparator.comparing(FlashcardSet::getCreatedAt).reversed())
+                .sorted(
+                        Comparator.comparing(FlashcardSet::getCreatedAt)
+                                .reversed()
+                )
                 .map(this::mapFlashcardSet)
                 .toList();
     }
@@ -40,5 +44,4 @@ public class FolderDTOMapper implements Function<Folder, FolderDTO> {
                 flashcardSet.getTermCount()
         );
     }
-
 }

@@ -37,7 +37,7 @@ class FolderRepositoryTest extends AbstractRepositoryTest {
         assertThat(Hibernate.isInitialized(firstFolder.getFlashcardSets())).isTrue();
         assertThat(firstFolder.getUser().getNickname()).isEqualTo("johndoe");
         assertThat(firstFolder.getFlashcardSets()).hasSize(2);
-        assertThat(firstFolder.getSetCount()).isEqualTo(2L);
+        assertThat(firstFolder.getFlashcardSetCount()).isEqualTo(2L);
     }
 
     @Test
@@ -75,7 +75,7 @@ class FolderRepositoryTest extends AbstractRepositoryTest {
         assertThat(folder.getName()).isEqualTo("Johndoe Folder One");
         assertThat(folder.getUser().getNickname()).isEqualTo("johndoe");
         assertThat(folder.getFlashcardSets()).hasSize(2);
-        assertThat(folder.getSetCount()).isEqualTo(2L);
+        assertThat(folder.getFlashcardSetCount()).isEqualTo(2L);
         assertThat(Hibernate.isInitialized(folder.getUser())).isTrue();
         assertThat(Hibernate.isInitialized(folder.getFlashcardSets())).isTrue();
     }

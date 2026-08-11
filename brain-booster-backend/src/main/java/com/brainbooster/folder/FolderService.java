@@ -9,7 +9,6 @@ import com.brainbooster.folder.mapper.FolderDTOMapper;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,12 +26,11 @@ public class FolderService {
     private static final String FLASHCARD_SET_WITH_ID_MSG_PREFIX = "FlashcardSet with id: ";
     private static final String EDIT_FOLDER_ACCESS_DENIED_MSG = "You are not allowed to edit this folder!";
     private static final String DELETE_FOLDER_ACCESS_DENIED_MSG = "You are not allowed to delete this folder!";
-    private static final String ADD_SET_TO_FOLDER_ACCESS_DENIED_MSG = "You cannot add this set to your folder!";
+    private static final String ADD_FLASHCARD_SET_TO_FOLDER_ACCESS_DENIED_MSG = "You cannot add this set to your folder!";
 
     private final FolderRepository folderRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FolderDTOMapper folderDTOMapper;
-    private final EntityManager entityManager;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
     private final CurrentUserProvider currentUserProvider;
 
@@ -78,7 +76,8 @@ public class FolderService {
     }
 
     public FolderDTO getFolderById(Long folderId) {
-        Folder folder = folderRepository.findByIdWithSetsAndUser(folderId)
+        Folder folder = folderRepository
+                .findByIdWithSetsAndUser(folderId)
                 .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
 
         return folderDTOMapper.apply(folder);
@@ -86,7 +85,8 @@ public class FolderService {
 
     @Transactional
     public FolderDTO updateFolder(Long folderId, FolderUpdateDTO dto) {
-        Folder folder = folderRepository.findByIdWithSetsAndUser(folderId)
+        Folder folder = folderRepository
+                .findByIdWithSetsAndUser(folderId)
                 .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
@@ -107,49 +107,45 @@ public class FolderService {
     }
 
     @Transactional
-    public FolderDTO addSetToFolder(Long folderId, Long setId) {
-        Folder folder = folderRepository.findByIdWithSetsAndUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+    public FolderDTO addFlashcardSetToFolder(
+            Long folderId,
+            Long flashcardSetId
+    ) {
+        Folder folder = folderRepository.findByIdWithSetsAndUser(folderId).orElseThrow(
+                        () -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
 
-        FlashcardSet flashcardSet = flashcardSetRepository.findByIdWithUser(setId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
+        FlashcardSet flashcardSet = flashcardSetRepository
+                .findByIdWithUser(flashcardSetId)
+                .orElseThrow(() -> new NoSuchElementException(
+                                buildFlashcardSetNotFoundMessage(flashcardSetId)));
 
-        verifySetCanBeAdded(flashcardSet);
+        verifyFlashcardSetCanBeAdded(flashcardSet);
 
-        folder.getFlashcardSets().add(flashcardSet);
+        folder.addFlashcardSet(flashcardSet);
 
-        return reloadFolderDTO(folderId);
+        return folderDTOMapper.apply(folder);
     }
 
     @Transactional
-    public void removeSetFromFolder(Long folderId, Long setId) {
+    public void removeFlashcardSetFromFolder(Long folderId, Long flashcardSetId) {
         Folder folder = folderRepository.findByIdWithSetsAndUser(folderId)
                 .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
 
-        if (!flashcardSetRepository.existsById(setId)) {
-            throw new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId));
+        if (!flashcardSetRepository.existsById(flashcardSetId)) {
+            throw new NoSuchElementException(
+                    buildFlashcardSetNotFoundMessage(flashcardSetId));
         }
 
-        boolean removed = folder.getFlashcardSets()
-                .removeIf(flashcardSet -> flashcardSet.getSetId().equals(setId));
+        boolean removed = folder.removeFlashcardSet(flashcardSetId);
 
         if (!removed) {
-            throw new NoSuchElementException(buildFlashcardSetNotInFolderMessage(setId, folderId));
+            throw new NoSuchElementException(
+                    buildFlashcardSetNotInFolderMessage(flashcardSetId, folderId));
         }
-    }
-
-    private FolderDTO reloadFolderDTO(Long folderId) {
-        entityManager.flush();
-        entityManager.clear();
-
-        Folder refreshedFolder = folderRepository.findByIdWithSetsAndUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
-
-        return folderDTOMapper.apply(refreshedFolder);
     }
 
     private void verifyFolderAccess(Folder folder, String errorMessage) {
@@ -161,12 +157,12 @@ public class FolderService {
                 errorMessage);
     }
 
-    private void verifySetCanBeAdded(FlashcardSet flashcardSet) {
+    private void verifyFlashcardSetCanBeAdded(FlashcardSet flashcardSet) {
         User authUser = currentUserProvider.getCurrentUser();
         ownerOrAdminPolicy.verify(
                 authUser,
                 flashcardSet.getUser().getUserId(),
-                ADD_SET_TO_FOLDER_ACCESS_DENIED_MSG
+                ADD_FLASHCARD_SET_TO_FOLDER_ACCESS_DENIED_MSG
         );
     }
 
@@ -174,11 +170,11 @@ public class FolderService {
         return FOLDER_WITH_ID_MSG_PREFIX + folderId + NOT_FOUND_MSG_SUFFIX;
     }
 
-    private String buildFlashcardSetNotFoundMessage(Long setId) {
-        return FLASHCARD_SET_WITH_ID_MSG_PREFIX + setId + NOT_FOUND_MSG_SUFFIX;
+    private String buildFlashcardSetNotFoundMessage(Long flashcardSetId) {
+        return FLASHCARD_SET_WITH_ID_MSG_PREFIX + flashcardSetId + NOT_FOUND_MSG_SUFFIX;
     }
 
-    private String buildFlashcardSetNotInFolderMessage(Long setId, Long folderId) {
-        return FLASHCARD_SET_WITH_ID_MSG_PREFIX + setId + " is not in folder with id: " + folderId;
+    private String buildFlashcardSetNotInFolderMessage(Long flashcardSetId, Long folderId) {
+        return FLASHCARD_SET_WITH_ID_MSG_PREFIX + flashcardSetId + " is not in folder with id: " + folderId;
     }
 }

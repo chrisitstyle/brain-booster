@@ -244,7 +244,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
                         .user(owner).build());
 
         // when
-        FolderDTO result = folderService.addSetToFolder(savedFolder.getFolderId(), savedSet.getSetId());
+        FolderDTO result = folderService.addFlashcardSetToFolder(savedFolder.getFolderId(), savedSet.getSetId());
 
         // then
         assertThat(result.flashcardSets()).hasSize(1);
@@ -275,7 +275,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
         Long setId = foreignSet.getSetId();
 
         // when, then
-        assertThatThrownBy(() -> folderService.addSetToFolder(folderId, setId))
+        assertThatThrownBy(() -> folderService.addFlashcardSetToFolder(folderId, setId))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("You cannot add this set to your folder!");
     }
@@ -305,7 +305,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
         Long setId = set.getSetId();
 
         // when
-        folderService.removeSetFromFolder(folderId, setId);
+        folderService.removeFlashcardSetFromFolder(folderId, setId);
 
         // then
         Folder refreshedFolder = folderRepository.findByIdWithSetsAndUser(folderId).orElseThrow();
@@ -335,7 +335,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
         Long setId = standaloneSet.getSetId();
 
         // when, then
-        assertThatThrownBy(() -> folderService.removeSetFromFolder(folderId, setId))
+        assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(folderId, setId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("is not in folder with id:");
     }

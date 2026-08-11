@@ -121,7 +121,7 @@ public class FolderController {
             @Parameter(description = "ID of the existing flashcard set", example = "10")
             @PathVariable Long setId
     ) {
-        return folderService.addSetToFolder(folderId, setId);
+        return folderService.addFlashcardSetToFolder(folderId, setId);
     }
 
     @Operation(
@@ -140,6 +140,6 @@ public class FolderController {
             @Parameter(description = "ID of the flashcard set", example = "10")
             @PathVariable Long setId
     ) {
-        folderService.removeSetFromFolder(folderId, setId);
+        folderService.removeFlashcardSetFromFolder(folderId, setId);
     }
 }
