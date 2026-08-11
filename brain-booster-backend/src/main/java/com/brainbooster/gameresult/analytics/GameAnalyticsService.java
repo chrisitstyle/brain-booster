@@ -1,7 +1,5 @@
 package com.brainbooster.gameresult.analytics;
 
-import com.brainbooster.flashcard.Flashcard;
-import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.WeakFlashcardDTO;
 import com.brainbooster.gameresult.analytics.dto.GameAnalyticsSummaryDTO;
 import com.brainbooster.gameresult.analytics.dto.GameProgressPointDTO;
@@ -17,10 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,14 +24,16 @@ public class GameAnalyticsService {
     private final GameAttemptRepository gameAttemptRepository;
     private final GameQuestionResultRepository gameQuestionResultRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final WeakFlashcardAnalyzer weakFlashcardAnalyzer;
+    private final QuestionTypeAnalyzer questionTypeAnalyzer;
 
     @Transactional(readOnly = true)
     public GameAnalyticsSummaryDTO getMySetSummary(Long setId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         List<GameAttempt> attempts = gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        authenticatedUser.getUserId(),
+                        currentUser.getUserId(),
                         setId
                 );
 
@@ -82,237 +79,91 @@ public class GameAnalyticsService {
                 .max(Instant::compareTo)
                 .orElse(null);
 
-        double accuracyPercentage = totalQuestions > 0
-                ? ((double) totalScore / totalQuestions) * 100
-                : 0.0;
-
         return new GameAnalyticsSummaryDTO(
                 totalAttempts,
-                roundTwoDecimals(averageScore),
+                roundToTwoDecimals(averageScore),
                 bestScore,
-                roundTwoDecimals(averageDuration),
+                roundToTwoDecimals(averageDuration),
                 lastAttemptAt,
-                roundTwoDecimals(accuracyPercentage)
+                calculateAccuracyPercentage(
+                        totalScore,
+                        totalQuestions
+                )
         );
     }
 
     @Transactional(readOnly = true)
     public List<GameProgressPointDTO> getMySetProgress(Long setId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         return gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        authenticatedUser.getUserId(),
+                        currentUser.getUserId(),
                         setId
                 )
                 .stream()
-                .map(this::toProgressPoint)
+                .map(this::mapToProgressPoint)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<WeakFlashcardDTO> getMySetWeakFlashcards(Long setId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        currentUser.getUserId(),
                         setId
                 );
 
-        Map<Long, WeakFlashcardStats> statsByFlashcardId = new java.util.HashMap<>();
-
-        for (GameQuestionResult questionResult : questionResults) {
-            Long flashcardId = questionResult.getFlashcard().getFlashcardId();
-
-            statsByFlashcardId
-                    .computeIfAbsent(
-                            flashcardId,
-                            ignored -> new WeakFlashcardStats(questionResult.getFlashcard())
-                    )
-                    .add(questionResult);
-        }
-
-        return statsByFlashcardId.values()
-                .stream()
-                .map(WeakFlashcardStats::toDto)
-                .filter(dto -> dto.incorrectAnswers() > 0 || dto.totalMistakes() > 0)
-                .sorted(this::compareWeakFlashcards)
-                .toList();
+        return weakFlashcardAnalyzer.analyze(questionResults);
     }
 
     @Transactional(readOnly = true)
-    public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(Long setId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+    public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(
+            Long setId
+    ) {
+        User currentUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        currentUser.getUserId(),
                         setId
                 );
 
-        Map<GameQuestionType, QuestionTypeStats> statsByQuestionType =
-                new EnumMap<>(GameQuestionType.class);
-
-        for (GameQuestionResult questionResult : questionResults) {
-            statsByQuestionType
-                    .computeIfAbsent(
-                            questionResult.getQuestionType(),
-                            QuestionTypeStats::new
-                    )
-                    .add(questionResult);
-        }
-
-        return statsByQuestionType.values()
-                .stream()
-                .map(QuestionTypeStats::toDto)
-                .sorted(Comparator.comparing(dto -> dto.questionType().ordinal()))
-                .toList();
+        return questionTypeAnalyzer.analyze(questionResults);
     }
 
-    private GameProgressPointDTO toProgressPoint(GameAttempt attempt) {
-        double percentage = attempt.getTotalQuestions() > 0
-                ? ((double) attempt.getScore() / attempt.getTotalQuestions()) * 100
-                : 0.0;
-
+    private GameProgressPointDTO mapToProgressPoint(GameAttempt attempt) {
         return new GameProgressPointDTO(
                 attempt.getAttemptId(),
                 attempt.getCompletedAt(),
                 attempt.getScore(),
                 attempt.getTotalQuestions(),
-                roundTwoDecimals(percentage),
+                calculateAccuracyPercentage(
+                        attempt.getScore(),
+                        attempt.getTotalQuestions()
+                ),
                 attempt.getDurationSeconds(),
                 attempt.getMode()
         );
     }
 
-    private int compareWeakFlashcards(
-            WeakFlashcardDTO first,
-            WeakFlashcardDTO second
+    private static double calculateAccuracyPercentage(
+            int correctAnswers,
+            int totalQuestions
     ) {
-        int incorrectCompare = Long.compare(
-                second.incorrectAnswers(),
-                first.incorrectAnswers()
-        );
-
-        if (incorrectCompare != 0) {
-            return incorrectCompare;
+        if (totalQuestions == 0) {
+            return 0.0;
         }
 
-        int mistakesCompare = Integer.compare(
-                second.totalMistakes(),
-                first.totalMistakes()
-        );
+        double accuracyPercentage =
+                ((double) correctAnswers / totalQuestions) * 100;
 
-        if (mistakesCompare != 0) {
-            return mistakesCompare;
-        }
-
-        if (first.lastAnsweredAt() == null && second.lastAnsweredAt() == null) {
-            return 0;
-        }
-
-        if (first.lastAnsweredAt() == null) {
-            return 1;
-        }
-
-        if (second.lastAnsweredAt() == null) {
-            return -1;
-        }
-
-        return second.lastAnsweredAt().compareTo(first.lastAnsweredAt());
+        return roundToTwoDecimals(accuracyPercentage);
     }
 
-    private static double roundTwoDecimals(double value) {
+    private static double roundToTwoDecimals(double value) {
         return Math.round(value * 100.0) / 100.0;
-    }
-
-    private static class WeakFlashcardStats {
-
-        private final Flashcard flashcard;
-        private long totalAnswers;
-        private long correctAnswers;
-        private long incorrectAnswers;
-        private int totalMistakes;
-        private Instant lastAnsweredAt;
-
-        private WeakFlashcardStats(Flashcard flashcard) {
-            this.flashcard = flashcard;
-        }
-
-        private void add(GameQuestionResult questionResult) {
-            totalAnswers++;
-
-            if (Boolean.TRUE.equals(questionResult.getWasCorrect())) {
-                correctAnswers++;
-            } else {
-                incorrectAnswers++;
-            }
-
-            totalMistakes += questionResult.getMistakesCount() == null
-                    ? 0
-                    : questionResult.getMistakesCount();
-
-            if (
-                    lastAnsweredAt == null ||
-                            questionResult.getAnsweredAt().isAfter(lastAnsweredAt)
-            ) {
-                lastAnsweredAt = questionResult.getAnsweredAt();
-            }
-        }
-
-        private WeakFlashcardDTO toDto() {
-            double accuracyPercentage = totalAnswers > 0
-                    ? ((double) correctAnswers / totalAnswers) * 100
-                    : 0.0;
-
-            return new WeakFlashcardDTO(
-                    flashcard.getFlashcardId(),
-                    flashcard.getTerm(),
-                    flashcard.getDefinition(),
-                    totalAnswers,
-                    correctAnswers,
-                    incorrectAnswers,
-                    totalMistakes,
-                    roundTwoDecimals(accuracyPercentage),
-                    lastAnsweredAt
-            );
-        }
-    }
-
-    private static class QuestionTypeStats {
-
-        private final GameQuestionType questionType;
-        private long totalAnswers;
-        private long correctAnswers;
-        private long incorrectAnswers;
-
-        private QuestionTypeStats(GameQuestionType questionType) {
-            this.questionType = questionType;
-        }
-
-        private void add(GameQuestionResult questionResult) {
-            totalAnswers++;
-
-            if (Boolean.TRUE.equals(questionResult.getWasCorrect())) {
-                correctAnswers++;
-            } else {
-                incorrectAnswers++;
-            }
-        }
-
-        private QuestionTypeAnalyticsDTO toDto() {
-            double accuracyPercentage = totalAnswers > 0
-                    ? ((double) correctAnswers / totalAnswers) * 100
-                    : 0.0;
-
-            return new QuestionTypeAnalyticsDTO(
-                    questionType,
-                    totalAnswers,
-                    correctAnswers,
-                    incorrectAnswers,
-                    roundTwoDecimals(accuracyPercentage)
-            );
-        }
     }
 }

@@ -1,6 +1,5 @@
 package com.brainbooster.gameresult.analytics;
 
-import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.WeakFlashcardDTO;
 import com.brainbooster.gameresult.analytics.dto.GameAnalyticsSummaryDTO;
@@ -34,6 +33,10 @@ class GameAnalyticsServiceTest {
     private GameQuestionResultRepository gameQuestionResultRepository;
     @Mock
     private CurrentUserProvider currentUserProvider;
+    @Mock
+    private WeakFlashcardAnalyzer weakFlashcardAnalyzer;
+    @Mock
+    private QuestionTypeAnalyzer questionTypeAnalyzer;
 
     @InjectMocks
     private GameAnalyticsService gameAnalyticsService;
@@ -53,8 +56,7 @@ class GameAnalyticsServiceTest {
         )).thenReturn(List.of());
 
         // when
-        GameAnalyticsSummaryDTO result =
-                gameAnalyticsService.getMySetSummary(setId);
+        GameAnalyticsSummaryDTO result = gameAnalyticsService.getMySetSummary(setId);
 
         // then
         GameAnalyticsSummaryDTO expected = new GameAnalyticsSummaryDTO(
@@ -118,8 +120,7 @@ class GameAnalyticsServiceTest {
                 9,
                 90.0,
                 secondCompletedAt,
-                80.0
-        );
+                80.0);
 
         assertThat(result)
                 .usingRecursiveComparison()
@@ -132,8 +133,7 @@ class GameAnalyticsServiceTest {
         User authenticatedUser = TestEntities.createUser();
         Long setId = 1L;
 
-        Instant completedAt =
-                Instant.parse("2026-08-01T10:00:00Z");
+        Instant completedAt = Instant.parse("2026-08-01T10:00:00Z");
 
         GameAttempt attempt = mock(GameAttempt.class);
 
@@ -152,8 +152,7 @@ class GameAnalyticsServiceTest {
         )).thenReturn(List.of(attempt));
 
         // when
-        List<GameProgressPointDTO> result =
-                gameAnalyticsService.getMySetProgress(setId);
+        List<GameProgressPointDTO> result = gameAnalyticsService.getMySetProgress(setId);
 
         // then
         GameProgressPointDTO expected = new GameProgressPointDTO(
@@ -163,8 +162,7 @@ class GameAnalyticsServiceTest {
                 10,
                 80.0,
                 75,
-                null
-        );
+                null);
 
         assertThat(result)
                 .usingRecursiveFieldByFieldElementComparator()
@@ -173,81 +171,21 @@ class GameAnalyticsServiceTest {
         verify(gameAttemptRepository)
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
                         authenticatedUser.getUserId(),
-                        setId
-                );
+                        setId);
     }
 
     @Test
-    void getMySetWeakFlashcards_ShouldReturnWeakFlashcards() {
+    void getMySetWeakFlashcards_ShouldDelegateAnalysis() {
         // given
         User authenticatedUser = TestEntities.createUser();
         Long setId = 1L;
 
-        Instant firstAnsweredAt = Instant.parse("2026-08-01T10:00:00Z");
+        GameQuestionResult firstResult = mock(GameQuestionResult.class);
 
-        Instant secondAnsweredAt = Instant.parse("2026-08-02T10:00:00Z");
+        GameQuestionResult secondResult = mock(GameQuestionResult.class);
 
-        Instant thirdAnsweredAt = Instant.parse("2026-08-03T10:00:00Z");
+        List<GameQuestionResult> questionResults = List.of(firstResult, secondResult);
 
-        Flashcard weakFlashcard = mock(Flashcard.class);
-        Flashcard strongFlashcard = mock(Flashcard.class);
-
-        when(weakFlashcard.getFlashcardId()).thenReturn(1L);
-        when(weakFlashcard.getTerm()).thenReturn("Weak term");
-        when(weakFlashcard.getDefinition()).thenReturn("Weak definition");
-
-        when(strongFlashcard.getFlashcardId()).thenReturn(2L);
-
-        GameQuestionResult incorrectResult = mock(GameQuestionResult.class);
-
-        GameQuestionResult correctResult = mock(GameQuestionResult.class);
-
-        GameQuestionResult strongCorrectResult = mock(GameQuestionResult.class);
-
-        when(incorrectResult.getFlashcard())
-                .thenReturn(weakFlashcard);
-        when(incorrectResult.getWasCorrect())
-                .thenReturn(false);
-        when(incorrectResult.getMistakesCount())
-                .thenReturn(2);
-        when(incorrectResult.getAnsweredAt())
-                .thenReturn(secondAnsweredAt);
-
-        when(correctResult.getFlashcard())
-                .thenReturn(weakFlashcard);
-        when(correctResult.getWasCorrect())
-                .thenReturn(true);
-        when(correctResult.getMistakesCount())
-                .thenReturn(0);
-        when(correctResult.getAnsweredAt())
-                .thenReturn(firstAnsweredAt);
-
-        when(strongCorrectResult.getFlashcard())
-                .thenReturn(strongFlashcard);
-        when(strongCorrectResult.getWasCorrect())
-                .thenReturn(true);
-        when(strongCorrectResult.getMistakesCount())
-                .thenReturn(0);
-        when(strongCorrectResult.getAnsweredAt())
-                .thenReturn(thirdAnsweredAt);
-
-        when(currentUserProvider.getCurrentUser())
-                .thenReturn(authenticatedUser);
-
-        when(gameQuestionResultRepository
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
-                        setId
-                ))
-                .thenReturn(List.of(
-                        strongCorrectResult,
-                        incorrectResult,
-                        correctResult));
-
-        // when
-        List<WeakFlashcardDTO> result = gameAnalyticsService.getMySetWeakFlashcards(setId);
-
-        // then
         WeakFlashcardDTO expected = new WeakFlashcardDTO(
                 1L,
                 "Weak term",
@@ -257,44 +195,8 @@ class GameAnalyticsServiceTest {
                 1L,
                 2,
                 50.0,
-                secondAnsweredAt
+                Instant.parse("2026-08-02T10:00:00Z")
         );
-
-        assertThat(result)
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsExactly(expected);
-
-        verify(gameQuestionResultRepository)
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
-                        setId);
-    }
-
-    @Test
-    void getMySetQuestionTypeAnalytics_ShouldReturnAggregatedAnalytics() {
-        // given
-        User authenticatedUser = TestEntities.createUser();
-        Long setId = 1L;
-
-        GameQuestionType questionType = GameQuestionType.values()[0];
-        GameQuestionResult firstCorrectResult = mock(GameQuestionResult.class);
-        GameQuestionResult secondCorrectResult = mock(GameQuestionResult.class);
-        GameQuestionResult incorrectResult = mock(GameQuestionResult.class);
-
-        when(firstCorrectResult.getQuestionType())
-                .thenReturn(questionType);
-        when(firstCorrectResult.getWasCorrect())
-                .thenReturn(true);
-
-        when(secondCorrectResult.getQuestionType())
-                .thenReturn(questionType);
-        when(secondCorrectResult.getWasCorrect())
-                .thenReturn(true);
-
-        when(incorrectResult.getQuestionType())
-                .thenReturn(questionType);
-        when(incorrectResult.getWasCorrect())
-                .thenReturn(false);
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
@@ -304,28 +206,16 @@ class GameAnalyticsServiceTest {
                         authenticatedUser.getUserId(),
                         setId
                 ))
-                .thenReturn(List.of(
-                        firstCorrectResult,
-                        secondCorrectResult,
-                        incorrectResult
-                ));
+                .thenReturn(questionResults);
+
+        when(weakFlashcardAnalyzer.analyze(questionResults))
+                .thenReturn(List.of(expected));
 
         // when
-        List<QuestionTypeAnalyticsDTO> result =
-                gameAnalyticsService.getMySetQuestionTypeAnalytics(setId);
+        List<WeakFlashcardDTO> result = gameAnalyticsService.getMySetWeakFlashcards(setId);
 
         // then
-        QuestionTypeAnalyticsDTO expected =
-                new QuestionTypeAnalyticsDTO(
-                        questionType,
-                        3L,
-                        2L,
-                        1L,
-                        66.67
-                );
-
         assertThat(result)
-                .usingRecursiveFieldByFieldElementComparator()
                 .containsExactly(expected);
 
         verify(gameQuestionResultRepository)
@@ -333,5 +223,59 @@ class GameAnalyticsServiceTest {
                         authenticatedUser.getUserId(),
                         setId
                 );
+
+        verify(weakFlashcardAnalyzer)
+                .analyze(questionResults);
+    }
+
+    @Test
+    void getMySetQuestionTypeAnalytics_ShouldDelegateAnalysis() {
+        // given
+        User authenticatedUser = TestEntities.createUser();
+        Long setId = 1L;
+
+        GameQuestionResult firstResult = mock(GameQuestionResult.class);
+
+        GameQuestionResult secondResult = mock(GameQuestionResult.class);
+
+        List<GameQuestionResult> questionResults = List.of(firstResult, secondResult);
+
+        QuestionTypeAnalyticsDTO expected =
+                new QuestionTypeAnalyticsDTO(
+                        GameQuestionType.values()[0],
+                        3L,
+                        2L,
+                        1L,
+                        66.67
+                );
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
+
+        when(gameQuestionResultRepository
+                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+                        authenticatedUser.getUserId(),
+                        setId
+                ))
+                .thenReturn(questionResults);
+
+        when(questionTypeAnalyzer.analyze(questionResults))
+                .thenReturn(List.of(expected));
+
+        // when
+        List<QuestionTypeAnalyticsDTO> result = gameAnalyticsService.getMySetQuestionTypeAnalytics(setId);
+
+        // then
+        assertThat(result)
+                .containsExactly(expected);
+
+        verify(gameQuestionResultRepository)
+                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+                        authenticatedUser.getUserId(),
+                        setId
+                );
+
+        verify(questionTypeAnalyzer)
+                .analyze(questionResults);
     }
 }
