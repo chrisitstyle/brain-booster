@@ -9,7 +9,6 @@ import com.brainbooster.folder.mapper.FolderDTOMapper;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,8 +36,6 @@ class FolderServiceTest {
     private FlashcardSetRepository flashcardSetRepository;
     @Mock
     private FolderDTOMapper folderDTOMapper;
-    @Mock
-    private EntityManager entityManager;
     @Mock
     private OwnerOrAdminPolicy ownerOrAdminPolicy;
     @Mock
@@ -182,31 +179,26 @@ class FolderServiceTest {
     }
 
     @Test
-    @DisplayName("addSetToFolder should add set and reload folder DTO")
-    void addSetToFolder_shouldAddSetAndReturnReloadedDTO() {
+    @DisplayName("addFlashcardSetToFolder should add flashcard set and return updated folder DTO")
+    void addFlashcardSetToFolder_shouldAddFlashcardSetAndReturnUpdatedDTO() {
         User authUser = createUser();
         Folder folder = createFolder();
         folder.setFlashcardSets(new HashSet<>());
 
         FlashcardSet flashcardSet = createFlashcardSet();
-        Folder refreshedFolder = createFolderWithFlashcardSet();
         FolderDTO expectedDTO = createFolderDTO();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
         when(folderRepository.findByIdWithSetsAndUser(1L))
-                .thenReturn(Optional.of(folder))
-                .thenReturn(Optional.of(refreshedFolder));
+                .thenReturn(Optional.of(folder));
         when(flashcardSetRepository.findByIdWithUser(1L))
                 .thenReturn(Optional.of(flashcardSet));
-        when(folderDTOMapper.apply(refreshedFolder)).thenReturn(expectedDTO);
+        when(folderDTOMapper.apply(folder)).thenReturn(expectedDTO);
 
-        FolderDTO result = folderService.addSetToFolder(1L, 1L);
+        FolderDTO result = folderService.addFlashcardSetToFolder(1L, 1L);
 
         assertThat(result).isEqualTo(expectedDTO);
         assertThat(folder.getFlashcardSets()).contains(flashcardSet);
-
-        verify(entityManager).flush();
-        verify(entityManager).clear();
 
         verify(ownerOrAdminPolicy).verify(
                 authUser,
@@ -220,8 +212,8 @@ class FolderServiceTest {
     }
 
     @Test
-    @DisplayName("removeSetFromFolder should remove set from folder")
-    void removeSetFromFolder_shouldRemoveSet() {
+    @DisplayName("removeFlashcardSetFromFolder should remove FlashcardSet from folder")
+    void removeFlashcardSetFromFolder_shouldRemoveFlashcardSet() {
         User authUser = createUser();
         Folder folder = createFolderWithFlashcardSet();
 
@@ -229,7 +221,7 @@ class FolderServiceTest {
         when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
-        folderService.removeSetFromFolder(1L, 1L);
+        folderService.removeFlashcardSetFromFolder(1L, 1L);
 
         assertThat(folder.getFlashcardSets()).isEmpty();
 
@@ -240,8 +232,8 @@ class FolderServiceTest {
     }
 
     @Test
-    @DisplayName("removeSetFromFolder should throw when set does not exist")
-    void removeSetFromFolder_whenSetDoesNotExist_shouldThrow() {
+    @DisplayName("removeFlashcardSetFromFolder should throw when FlashcardSet does not exist")
+    void removeFlashcardSetFromFolder_whenFlashcardSetDoesNotExist_shouldThrow() {
         User authUser = createUser();
         Folder folder = createFolder();
 
@@ -249,7 +241,7 @@ class FolderServiceTest {
         when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
         when(flashcardSetRepository.existsById(999L)).thenReturn(false);
 
-        assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 999L))
+        assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(1L, 999L))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("FlashcardSet with id: 999 not found");
 
@@ -257,8 +249,8 @@ class FolderServiceTest {
     }
 
     @Test
-    @DisplayName("removeSetFromFolder should throw when set is not in folder")
-    void removeSetFromFolder_whenSetIsNotInFolder_shouldThrow() {
+    @DisplayName("removeFlashcardSetFromFolder should throw when flashcardset is not in folder")
+    void removeFlashcardSetFromFolder_whenFlashcardSetIsNotInFolder_shouldThrow() {
         User authUser = createUser();
         Folder folder = createFolder();
 
@@ -266,7 +258,7 @@ class FolderServiceTest {
         when(folderRepository.findByIdWithSetsAndUser(1L)).thenReturn(Optional.of(folder));
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
-        assertThatThrownBy(() -> folderService.removeSetFromFolder(1L, 1L))
+        assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(1L, 1L))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("FlashcardSet with id: 1 is not in folder with id: 1");
     }

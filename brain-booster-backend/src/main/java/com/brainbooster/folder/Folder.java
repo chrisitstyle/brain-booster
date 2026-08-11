@@ -4,7 +4,6 @@ import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Formula;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -46,6 +45,16 @@ public class Folder {
     )
     private Set<FlashcardSet> flashcardSets = new HashSet<>();
 
-    @Formula("(select count(*) from folder_flashcard_set ffs where ffs.folder_id = folder_id)")
-    private Long setCount;
+    public void addFlashcardSet(FlashcardSet flashcardSet) {
+        flashcardSets.add(flashcardSet);
+    }
+
+    public boolean removeFlashcardSet(Long flashcardSetId) {
+        return flashcardSets.removeIf(
+                flashcardSet -> flashcardSet.getSetId().equals(flashcardSetId));
+    }
+
+    public long getFlashcardSetCount() {
+        return flashcardSets.size();
+    }
 }

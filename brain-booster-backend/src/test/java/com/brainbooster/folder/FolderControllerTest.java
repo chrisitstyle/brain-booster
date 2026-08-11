@@ -137,14 +137,14 @@ class FolderControllerTest {
 
     @Test
     void addSetToFolder_shouldReturnFolderWithSet() throws Exception {
-        when(folderService.addSetToFolder(1L, 1L)).thenReturn(createFolderDTO());
+        when(folderService.addFlashcardSetToFolder(1L, 1L)).thenReturn(createFolderDTO());
 
         mockMvc.perform(post("/folders/{folderId}/sets/{setId}", 1L, 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.flashcardSets[0].flashcardSetId").value(1))
                 .andExpect(jsonPath("$.flashcardSets[0].title").value("test_flashcardset_name"));
 
-        verify(folderService).addSetToFolder(1L, 1L);
+        verify(folderService).addFlashcardSetToFolder(1L, 1L);
     }
 
     @Test
@@ -152,7 +152,7 @@ class FolderControllerTest {
         mockMvc.perform(delete("/folders/{folderId}/sets/{setId}", 1L, 1L))
                 .andExpect(status().isNoContent());
 
-        verify(folderService).removeSetFromFolder(1L, 1L);
+        verify(folderService).removeFlashcardSetFromFolder(1L, 1L);
     }
 }
 
