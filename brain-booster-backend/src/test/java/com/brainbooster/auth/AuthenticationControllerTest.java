@@ -116,19 +116,35 @@ class AuthenticationControllerTest {
     @Test
     void authenticate_ShouldReturnUnauthorized_WhenBadCredentials() throws Exception {
         // given
-        AuthenticationRequest request = new AuthenticationRequest("badcredentials@test.com", "wrongpass");
+        AuthenticationRequest request = new AuthenticationRequest(
+                        "badcredentials@test.com",
+                        "wrongpass");
 
         when(authenticationService.authenticate(any(AuthenticationRequest.class)))
                 .thenThrow(new BadCredentialsException("Invalid username or password"));
 
         // when
-        MvcResult result = mockMvc.perform(post("/auth/authenticate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        MvcResult result = mockMvc.perform(
+                        post("/auth/authenticate")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
                 .andReturn();
 
         // then
-        assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        assertThat(result.getResponse().getContentAsString()).isEqualTo("Invalid username or password");
+        assertThat(result.getResponse().getStatus())
+                .isEqualTo(HttpStatus.UNAUTHORIZED.value());
+
+        ErrorDTO errorResponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                ErrorDTO.class);
+
+        assertThat(errorResponse.message())
+                .isEqualTo("Invalid username or password");
+
+        assertThat(errorResponse.status())
+                .isEqualTo("UNAUTHORIZED");
+
+        assertThat(errorResponse.timestamp()).isNotNull();
     }
 }
