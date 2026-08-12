@@ -1,5 +1,6 @@
 package com.brainbooster.integration.folder;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.folder.Folder;
@@ -23,7 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,6 +39,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
     private FlashcardSetRepository flashcardSetRepository;
     @Autowired
     private UserRepository userRepository;
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
@@ -48,9 +49,9 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
         UserPrincipal principal = UserPrincipal.from(user);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        principal.getAuthorities());
+                principal,
+                null,
+                principal.getAuthorities());
 
         SecurityContextHolder.getContext()
                 .setAuthentication(authentication);
@@ -131,11 +132,11 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("getFolderById - Should throw NoSuchElementException when folder does not exist")
-    void getFolderById_ShouldThrowNoSuchElementException() {
+    @DisplayName("getFolderById - Should throw ResourceNotFoundException when folder does not exist")
+    void getFolderById_ShouldThrowResourceNotFoundException() {
         // when, then
         assertThatThrownBy(() -> folderService.getFolderById(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Folder with id: 999 not found");
     }
 
@@ -320,8 +321,8 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("removeSetFromFolder - Should throw NoSuchElementException when set is not inside the folder")
-    void removeSetFromFolder_ShouldThrowNoSuchElementException_WhenNotInFolder() {
+    @DisplayName("removeSetFromFolder - Should throw ResourceNotFoundException when set is not inside the folder")
+    void removeSetFromFolder_ShouldThrowResourceNotFoundException_WhenNotInFolder() {
         // given
         User owner = userRepository.findById(2L).orElseThrow();
         mockAuthenticatedUser(owner);
@@ -343,7 +344,7 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
 
         // when, then
         assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(folderId, setId))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("is not in folder with id:");
     }
 }

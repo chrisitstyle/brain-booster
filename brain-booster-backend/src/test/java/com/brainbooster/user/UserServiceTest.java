@@ -1,6 +1,7 @@
 package com.brainbooster.user;
 
 import com.brainbooster.exception.EmailAlreadyExistsException;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
@@ -23,7 +24,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,7 +103,7 @@ class UserServiceTest {
                 creationDTO.password(),
                 creationDTO.role()
         )).thenThrow(new EmailAlreadyExistsException(
-                        "User with this email already exists"));
+                "User with this email already exists"));
 
         // when, then
         EmailAlreadyExistsException exception = assertThrows(
@@ -159,8 +159,8 @@ class UserServiceTest {
                 .thenReturn(Optional.empty());
 
         // when, then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> userService.getCurrentUser()
         );
 
@@ -187,8 +187,8 @@ class UserServiceTest {
     void getUserById_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> userService.getUserById(1L)
         );
 
@@ -214,8 +214,8 @@ class UserServiceTest {
     void getAllFlashcardSetsByUserId_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
         when(userRepository.existsById(1L)).thenReturn(false);
 
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> userService.getAllFlashcardSetsByUserId(1L)
         );
 
@@ -246,8 +246,8 @@ class UserServiceTest {
 
         when(userRepository.existsByNickname(nickname)).thenReturn(false);
 
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> userService.getAllFlashcardSetsByUserNickname(nickname)
         );
 
@@ -341,8 +341,8 @@ class UserServiceTest {
         when(userRepository.existsById(1L)).thenReturn(false);
 
         // when, then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> userService.deleteUserById(1L)
         );
 

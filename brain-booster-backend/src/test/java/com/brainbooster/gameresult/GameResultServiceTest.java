@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.gameresult.attempt.GameAttemptRecorder;
@@ -23,7 +24,6 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -284,7 +284,7 @@ class GameResultServiceTest {
         assertThatThrownBy(
                 () -> gameResultService.saveGameResult(request)
         )
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage(
                         "FlashcardSet with id: 99 not found"
                 );
@@ -545,7 +545,7 @@ class GameResultServiceTest {
         assertThatThrownBy(
                 () -> gameResultService.getGameResultById(99L)
         )
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage(
                         "GameResult with id: 99 not found"
                 );

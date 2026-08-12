@@ -5,6 +5,7 @@ import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.folder.FolderService;
 import com.brainbooster.folder.dto.FolderDTO;
@@ -311,7 +312,7 @@ class UserControllerTest {
         // given
         long nonExistentId = 99L;
         when(userService.getUserById(nonExistentId))
-                .thenThrow(new java.util.NoSuchElementException("User with this id does not exist"));
+                .thenThrow(new ResourceNotFoundException("User with this id does not exist"));
 
         // when
         MvcResult result = mockMvc.perform(get("/users/" + nonExistentId)

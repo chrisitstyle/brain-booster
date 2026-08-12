@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.gameresult.attempt.GameAttemptRecorder;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +49,7 @@ public class GameResultService {
         validateScore(request.score(), request.totalQuestions());
 
         FlashcardSet flashcardSet = flashcardSetRepository.findById(request.setId())
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         buildFlashcardSetNotFoundMessage(request.setId())
                 ));
 
@@ -158,7 +158,7 @@ public class GameResultService {
 
     private GameResult findGameResultById(Long resultId) {
         return gameResultRepository.findById(resultId)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         buildGameResultNotFoundMessage(resultId)
                 ));
     }

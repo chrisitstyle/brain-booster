@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 /**
@@ -48,8 +47,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
     }
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ErrorDTO> handleNotFound(NoSuchElementException ex) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorDTO> handleNotFound(ResourceNotFoundException ex) {
         return createErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 

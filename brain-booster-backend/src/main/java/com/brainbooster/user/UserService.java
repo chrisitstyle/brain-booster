@@ -1,5 +1,6 @@
 package com.brainbooster.user;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Service
@@ -45,7 +45,7 @@ public class UserService {
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
         return userRepository.findById(authenticatedUser.userId())
                 .map(userDTOMapper).orElseThrow(() ->
-                        new NoSuchElementException("Authenticated user does not exist"));
+                        new ResourceNotFoundException("Authenticated user does not exist"));
     }
 
     public List<UserDTO> getAllUsers() {
@@ -58,13 +58,13 @@ public class UserService {
     public UserDTO getUserById(Long userId) {
         return userRepository.findById(userId).
                 map(userDTOMapper)
-                .orElseThrow(() -> new NoSuchElementException("User with this id does not exist"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with this id does not exist"));
     }
 
     public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(Long userId) {
 
         if (!userRepository.existsById(userId)) {
-            throw new NoSuchElementException("User with id: " + userId + " not found");
+            throw new ResourceNotFoundException("User with id: " + userId + " not found");
         }
 
         return flashcardSetRepository.findByUserId(userId)
@@ -76,7 +76,7 @@ public class UserService {
     public List<FlashcardSetDTO> getAllFlashcardSetsByUserNickname(String nickname) {
 
         if (!userRepository.existsByNickname(nickname)) {
-            throw new NoSuchElementException("User with nickname: " + nickname + " not found");
+            throw new ResourceNotFoundException("User with nickname: " + nickname + " not found");
         }
 
         return flashcardSetRepository.findAllByUserNickname(nickname)
@@ -97,7 +97,7 @@ public class UserService {
         }
 
         User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("User with id: " + userId + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " not found"));
 
         updateUserFields(existingUser, updatedUser);
 
@@ -121,7 +121,7 @@ public class UserService {
         }
 
         if (!userRepository.existsById(userId)) {
-            throw new NoSuchElementException("User with id: " + userId + " not found");
+            throw new ResourceNotFoundException("User with id: " + userId + " not found");
         }
 
         userRepository.deleteById(userId);
