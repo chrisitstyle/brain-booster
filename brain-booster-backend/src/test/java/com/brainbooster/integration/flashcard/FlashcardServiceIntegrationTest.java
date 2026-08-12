@@ -1,5 +1,6 @@
 package com.brainbooster.integration.flashcard;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.FlashcardService;
@@ -24,7 +25,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,9 +52,9 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
         UserPrincipal principal = UserPrincipal.from(user);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        principal.getAuthorities());
+                principal,
+                null,
+                principal.getAuthorities());
 
         SecurityContextHolder.getContext()
                 .setAuthentication(authentication);
@@ -115,8 +115,8 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("addFlashcard - Should throw NoSuchElementException when set does not exist")
-    void addFlashcard_ShouldThrowNoSuchElementException_WhenSetNotFound() {
+    @DisplayName("addFlashcard - Should throw ResourceNotFoundException when set does not exist")
+    void addFlashcard_ShouldThrowResourceNotFoundException_WhenSetNotFound() {
         // given
         FlashcardCreationDTO creationDTO = new FlashcardCreationDTO(
                 999L,
@@ -125,7 +125,7 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
 
         // when, then
         assertThatThrownBy(() -> flashcardService.addFlashcard(creationDTO))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("FlashcardSet with id 999 not found");
     }
 
@@ -187,11 +187,11 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("getFlashcardById - Should throw NoSuchElementException when flashcard not found")
-    void getFlashcardById_ShouldThrowNoSuchElementException() {
+    @DisplayName("getFlashcardById - Should throw ResourceNotFoundException when flashcard not found")
+    void getFlashcardById_ShouldThrowResourceNotFoundException() {
         // when, then
         assertThatThrownBy(() -> flashcardService.getFlashcardById(999L))
-                .isInstanceOf(NoSuchElementException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // -- UPDATE TESTS --

@@ -1,5 +1,6 @@
 package com.brainbooster.folder;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.folder.dto.FolderCreationDTO;
@@ -21,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -135,7 +135,7 @@ class FolderServiceTest {
         when(folderRepository.findByIdWithSetsAndUser(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> folderService.getFolderById(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Folder with id: 999 not found");
     }
 
@@ -254,7 +254,7 @@ class FolderServiceTest {
         when(flashcardSetRepository.existsById(999L)).thenReturn(false);
 
         assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(1L, 999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("FlashcardSet with id: 999 not found");
 
         verify(flashcardSetRepository).existsById(999L);
@@ -271,7 +271,7 @@ class FolderServiceTest {
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> folderService.removeFlashcardSetFromFolder(1L, 1L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("FlashcardSet with id: 1 is not in folder with id: 1");
     }
 }

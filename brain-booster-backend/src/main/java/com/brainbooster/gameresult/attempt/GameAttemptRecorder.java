@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -99,7 +99,7 @@ public class GameAttemptRecorder {
                 .filter(flashcardId -> !flashcardsById.containsKey(flashcardId))
                 .findFirst()
                 .ifPresent(flashcardId -> {
-                    throw new NoSuchElementException(
+                    throw new ResourceNotFoundException(
                             buildFlashcardNotFoundMessage(flashcardId));
                 });
 

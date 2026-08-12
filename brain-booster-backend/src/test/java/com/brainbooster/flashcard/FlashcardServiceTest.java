@@ -1,5 +1,6 @@
 package com.brainbooster.flashcard;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
@@ -20,7 +21,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -145,7 +145,7 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void addFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardSetDoesNotExist() {
+    void addFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardSetDoesNotExist() {
         // given
         FlashcardCreationDTO creationDTO = createFlashcardCreationDTO();
 
@@ -154,7 +154,7 @@ class FlashcardServiceTest {
 
         // when + then
         assertThatThrownBy(() -> flashcardService.addFlashcard(creationDTO))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("FlashcardSet with id 1 not found");
 
         verify(flashcardRepository, never()).save(any());
@@ -242,14 +242,14 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void getFlashcardById_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
+    void getFlashcardById_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
         // given
         when(flashcardRepository.findById(999L))
                 .thenReturn(Optional.empty());
 
         // when, then
         assertThatThrownBy(() -> flashcardService.getFlashcardById(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Flashcard with id 999 not found");
     }
 
@@ -332,7 +332,7 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void updateFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
+    void updateFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
         // given
         FlashcardUpdateDTO updateDTO = createFlashcardUpdateDTO();
 
@@ -341,7 +341,7 @@ class FlashcardServiceTest {
 
         // when + then
         assertThatThrownBy(() -> flashcardService.updateFlashcard(updateDTO, 999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Flashcard with id 999 not found");
 
         verify(flashcardRepository, never()).save(any());
@@ -447,7 +447,7 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void starFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
+    void starFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
         // given
         AuthenticatedUser authUser = createAuthenticatedUser();
 
@@ -456,7 +456,7 @@ class FlashcardServiceTest {
 
         // when + then
         assertThatThrownBy(() -> flashcardService.starFlashcard(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Flashcard with id 999 not found");
 
         verify(starredFlashcardRepository, never())
@@ -490,7 +490,7 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void unstarFlashcard_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
+    void unstarFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
         // given
         AuthenticatedUser authUser = createAuthenticatedUser();
 
@@ -499,7 +499,7 @@ class FlashcardServiceTest {
 
         // when + then
         assertThatThrownBy(() -> flashcardService.unstarFlashcard(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Flashcard with id 999 not found");
 
         verify(starredFlashcardRepository, never())
@@ -559,14 +559,14 @@ class FlashcardServiceTest {
     }
 
     @Test
-    void deleteFlashcardById_ShouldThrowNoSuchElementException_WhenFlashcardDoesNotExist() {
+    void deleteFlashcardById_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
         // given
         when(flashcardRepository.findByIdWithSetAndUser(999L))
                 .thenReturn(Optional.empty());
 
         // when + then
         assertThatThrownBy(() -> flashcardService.deleteFlashcardById(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Flashcard with id 999 not found");
 
         verify(flashcardRepository, never()).delete(any());

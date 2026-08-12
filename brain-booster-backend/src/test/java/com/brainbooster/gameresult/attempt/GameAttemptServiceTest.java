@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
 import com.brainbooster.gameresult.dto.GameAttemptSummaryDTO;
 import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
@@ -112,11 +113,11 @@ class GameAttemptServiceTest {
 
         // when
         Page<GameAttemptSummaryDTO> result = gameAttemptService.getMyGameAttempts(
-                        setId,
-                        null,
-                        from,
-                        to,
-                        pageable);
+                setId,
+                null,
+                from,
+                to,
+                pageable);
 
         // then
         assertThat(result.getContent())
@@ -171,12 +172,12 @@ class GameAttemptServiceTest {
 
         // when
         Page<GameAttemptSummaryDTO> result = gameAttemptService.getMyGameAttemptsBySetId(
-                        setId,
-                        null,
-                        null,
-                        null,
-                        pageable
-                );
+                setId,
+                null,
+                null,
+                null,
+                pageable
+        );
 
         // then
         assertThat(result.getContent())
@@ -338,17 +339,8 @@ class GameAttemptServiceTest {
         assertThatThrownBy(() ->
                 gameAttemptService.getGameAttemptById(999L)
         )
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(exception -> {
-                    ResponseStatusException responseException =
-                            (ResponseStatusException) exception;
-
-                    assertThat(responseException.getStatusCode())
-                            .isEqualTo(HttpStatus.NOT_FOUND);
-
-                    assertThat(responseException.getReason())
-                            .isEqualTo("Game attempt not found");
-                });
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Game attempt not found");
 
         verify(gameAttemptMapper, never())
                 .toDto(any(GameAttempt.class));
@@ -448,19 +440,11 @@ class GameAttemptServiceTest {
                 .thenReturn(Optional.empty());
 
         // when, then
-        assertThatThrownBy(() -> gameAttemptService.getQuestionResultsByAttemptId(999L)
+        assertThatThrownBy(() ->
+                gameAttemptService.getQuestionResultsByAttemptId(999L)
         )
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(exception -> {
-                    ResponseStatusException responseException =
-                            (ResponseStatusException) exception;
-
-                    assertThat(responseException.getStatusCode())
-                            .isEqualTo(HttpStatus.NOT_FOUND);
-
-                    assertThat(responseException.getReason())
-                            .isEqualTo("Game attempt not found");
-                });
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Game attempt not found");
 
         verify(gameQuestionResultRepository, never())
                 .findByAttempt_AttemptIdOrderByQuestionOrderAsc(anyLong());

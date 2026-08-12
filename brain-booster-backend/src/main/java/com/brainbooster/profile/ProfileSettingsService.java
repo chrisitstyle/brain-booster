@@ -3,6 +3,7 @@ package com.brainbooster.profile;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.NicknameAlreadyExistsException;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +87,6 @@ public class ProfileSettingsService {
 
         return userRepository.findById(authenticatedUser.userId())
                 .orElseThrow(() ->
-                        new NoSuchElementException("Authenticated user not found"));
+                        new ResourceNotFoundException("Authenticated user not found"));
     }
 }

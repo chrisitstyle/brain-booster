@@ -1,5 +1,6 @@
 package com.brainbooster.folder;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.folder.dto.FolderCreationDTO;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -84,7 +84,7 @@ public class FolderService {
     public FolderDTO getFolderById(Long folderId) {
         Folder folder = folderRepository
                 .findByIdWithSetsAndUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFolderNotFoundMessage(folderId)));
 
         return folderDTOMapper.apply(folder);
     }
@@ -93,7 +93,7 @@ public class FolderService {
     public FolderDTO updateFolder(Long folderId, FolderUpdateDTO dto) {
         Folder folder = folderRepository
                 .findByIdWithSetsAndUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
 
@@ -105,7 +105,7 @@ public class FolderService {
     @Transactional
     public void deleteFolder(Long folderId) {
         Folder folder = folderRepository.findByIdWithUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, DELETE_FOLDER_ACCESS_DENIED_MSG);
 
@@ -118,13 +118,13 @@ public class FolderService {
             Long flashcardSetId
     ) {
         Folder folder = folderRepository.findByIdWithSetsAndUser(folderId).orElseThrow(
-                        () -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+                        () -> new ResourceNotFoundException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
 
         FlashcardSet flashcardSet = flashcardSetRepository
                 .findByIdWithUser(flashcardSetId)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                                 buildFlashcardSetNotFoundMessage(flashcardSetId)));
 
         verifyFlashcardSetCanBeAdded(flashcardSet);
@@ -137,19 +137,19 @@ public class FolderService {
     @Transactional
     public void removeFlashcardSetFromFolder(Long folderId, Long flashcardSetId) {
         Folder folder = folderRepository.findByIdWithSetsAndUser(folderId)
-                .orElseThrow(() -> new NoSuchElementException(buildFolderNotFoundMessage(folderId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFolderNotFoundMessage(folderId)));
 
         verifyFolderAccess(folder, EDIT_FOLDER_ACCESS_DENIED_MSG);
 
         if (!flashcardSetRepository.existsById(flashcardSetId)) {
-            throw new NoSuchElementException(
+            throw new ResourceNotFoundException(
                     buildFlashcardSetNotFoundMessage(flashcardSetId));
         }
 
         boolean removed = folder.removeFlashcardSet(flashcardSetId);
 
         if (!removed) {
-            throw new NoSuchElementException(
+            throw new ResourceNotFoundException(
                     buildFlashcardSetNotInFolderMessage(flashcardSetId, folderId));
         }
     }

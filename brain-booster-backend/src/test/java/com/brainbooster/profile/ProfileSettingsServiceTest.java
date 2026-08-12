@@ -3,6 +3,7 @@ package com.brainbooster.profile;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.NicknameAlreadyExistsException;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
@@ -22,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -221,10 +221,9 @@ class ProfileSettingsServiceTest {
     }
 
     @Test
-    void updateNickname_ShouldThrowNoSuchElementEx_WhenAuthenticatedUserDoesNotExist() {
+    void updateNickname_ShouldThrowResourceNotFoundEx_WhenAuthenticatedUserDoesNotExist() {
         // given
-        UserNicknameUpdateDTO request =
-                new UserNicknameUpdateDTO("newNickname");
+        UserNicknameUpdateDTO request = new UserNicknameUpdateDTO("newNickname");
 
         when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.empty());
@@ -233,7 +232,7 @@ class ProfileSettingsServiceTest {
         assertThatThrownBy(
                 () -> profileSettingsService.updateNickname(request)
         )
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Authenticated user not found");
 
         verify(userRepository).findById(authenticatedUser.userId());

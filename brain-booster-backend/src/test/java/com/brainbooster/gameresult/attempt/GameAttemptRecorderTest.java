@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
@@ -17,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -107,14 +107,14 @@ class GameAttemptRecorderTest {
                 createFlashcardSet(11L, user);
 
         Flashcard flashcard = createFlashcard(
-                        25L,
-                        flashcardSet,
-                        "cat",
-                        "kot");
+                25L,
+                flashcardSet,
+                "cat",
+                "kot");
 
         SaveGameResultRequest request = createMultipleChoiceGameResultRequestWithQuestionResult(
-                        11L,
-                        25L);
+                11L,
+                25L);
 
         var expectedQuestionResult =
                 request.questionResults().getFirst();
@@ -205,8 +205,8 @@ class GameAttemptRecorderTest {
         FlashcardSet flashcardSet = createFlashcardSet(11L, user);
 
         SaveGameResultRequest request = createWrittenGameResultRequestWithWrongQuestionResult(
-                        11L,
-                        99L);
+                11L,
+                99L);
 
         Instant completedAt = Instant.parse("2026-08-11T10:00:00Z");
 
@@ -214,12 +214,12 @@ class GameAttemptRecorderTest {
                 .thenReturn(List.of());
 
         assertThatThrownBy(() -> gameAttemptRecorder.recordAttempt(
-                        user,
-                        flashcardSet,
-                        request,
-                        completedAt)
+                user,
+                flashcardSet,
+                request,
+                completedAt)
         )
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage(
                         "Flashcard with id: 99 not found"
                 );
@@ -237,14 +237,14 @@ class GameAttemptRecorderTest {
         FlashcardSet otherSet = createFlashcardSet(99L, user);
 
         Flashcard flashcard = createFlashcard(
-                        25L,
-                        otherSet,
-                        "cat",
-                        "kot");
+                25L,
+                otherSet,
+                "cat",
+                "kot");
 
         SaveGameResultRequest request = createMultipleChoiceGameResultRequestWithQuestionResult(
-                        11L,
-                        25L);
+                11L,
+                25L);
 
         Instant completedAt = Instant.parse("2026-08-11T10:00:00Z");
 
@@ -252,10 +252,10 @@ class GameAttemptRecorderTest {
                 .thenReturn(List.of(flashcard));
 
         assertThatThrownBy(() -> gameAttemptRecorder.recordAttempt(
-                        user,
-                        selectedSet,
-                        request,
-                        completedAt)
+                user,
+                selectedSet,
+                request,
+                completedAt)
         )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(

@@ -3,6 +3,7 @@ package com.brainbooster.flashcard;
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.ErrorDTO;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
@@ -21,7 +22,6 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,7 +126,7 @@ class FlashcardControllerTest {
     @Test
     void getFlashcardById_shouldReturnNotFound_whenFlashcardDoesNotExist() throws Exception {
         // given
-        when(flashcardService.getFlashcardById(1L)).thenThrow(new NoSuchElementException("Not found"));
+        when(flashcardService.getFlashcardById(1L)).thenThrow(new ResourceNotFoundException("Not found"));
 
         // when
         MvcResult result = mockMvc.perform(get("/flashcards/1"))
@@ -233,7 +233,7 @@ class FlashcardControllerTest {
     void starFlashcard_ShouldReturnNotFound_WhenFlashcardDoesNotExist() throws Exception {
         // given
         when(flashcardService.starFlashcard(999L))
-                .thenThrow(new NoSuchElementException("Flashcard with id 999 not found"));
+                .thenThrow(new ResourceNotFoundException("Flashcard with id 999 not found"));
 
         // when
         MvcResult result = mockMvc.perform(post("/flashcards/999/starred"))

@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.gameresult.GameMode;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
 import com.brainbooster.gameresult.dto.GameAttemptSummaryDTO;
@@ -56,7 +57,7 @@ public class GameAttemptService {
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new ResourceNotFoundException(GAME_ATTEMPT_NOT_FOUND_MESSAGE));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
 
@@ -86,7 +87,7 @@ public class GameAttemptService {
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new ResourceNotFoundException(GAME_ATTEMPT_NOT_FOUND_MESSAGE));
 
         verifyOwnerOrAdmin(gameAttempt, authenticatedUser);
 

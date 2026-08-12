@@ -1,5 +1,6 @@
 package com.brainbooster.flashcard;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +41,7 @@ public class FlashcardService {
     @Transactional
     public FlashcardDTO addFlashcard(FlashcardCreationDTO flashcardCreationDTO) {
         FlashcardSet flashcardSetFromDB = flashcardSetRepository.findById(flashcardCreationDTO.setId())
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX + flashcardCreationDTO.setId() + NOT_FOUND_MESSAGE_SUFFIX
                 ));
 
@@ -66,13 +67,13 @@ public class FlashcardService {
     public FlashcardDTO getFlashcardById(Long flashcardId) {
         return flashcardRepository.findById(flashcardId)
                 .map(flashcardDTOMapper)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
     }
 
     @Transactional
     public FlashcardDTO updateFlashcard(FlashcardUpdateDTO updatedFlashcard, Long flashcardId) {
         Flashcard existingFlashcardFromDB = flashcardRepository.findByIdWithSetAndUser(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
 
         verifyFlashcardSetAccess(existingFlashcardFromDB.getFlashcardSet(), "You are not allowed to edit this flashcard!");
 
@@ -88,7 +89,7 @@ public class FlashcardService {
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
 
         boolean alreadyStarred = starredFlashcardRepository
                 .existsByUser_UserIdAndFlashcard_FlashcardId(authenticatedUser.userId(), flashcardId);
@@ -113,7 +114,7 @@ public class FlashcardService {
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
 
         starredFlashcardRepository.deleteByUser_UserIdAndFlashcard_FlashcardId(
                 authenticatedUser.userId(),
@@ -125,7 +126,7 @@ public class FlashcardService {
 
     public void deleteFlashcardById(Long flashcardId) {
         Flashcard existingFlashcard = flashcardRepository.findByIdWithSetAndUser(flashcardId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
 
         verifyFlashcardSetAccess(existingFlashcard.getFlashcardSet(), "You are not allowed to delete this flashcard!");
         flashcardRepository.delete(existingFlashcard);

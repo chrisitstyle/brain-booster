@@ -3,12 +3,12 @@ package com.brainbooster.flashcardset;
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.config.SecurityConfiguration;
 import com.brainbooster.exception.ErrorDTO;
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.security.UserPrincipal;
-import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
 import com.brainbooster.utils.TestSecurityConfiguration;
@@ -31,7 +31,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -85,10 +84,10 @@ class FlashcardSetControllerTest {
         assertThat(principal.userId()).isEqualTo(1L);
 
         Authentication userAuthentication = UsernamePasswordAuthenticationToken.authenticated(
-                        principal,
-                        null,
-                        principal.getAuthorities()
-                );
+                principal,
+                null,
+                principal.getAuthorities()
+        );
 
         when(flashcardSetService.addFlashcardSet(
                 any(FlashcardSetCreationDTO.class),
@@ -305,7 +304,7 @@ class FlashcardSetControllerTest {
         long nonExistentId = 999L;
 
         when(flashcardSetService.getFlashcardSetById(nonExistentId))
-                .thenThrow(new NoSuchElementException(
+                .thenThrow(new ResourceNotFoundException(
                         "FlashcardSet with id: "
                                 + nonExistentId
                                 + " not found"
@@ -348,7 +347,7 @@ class FlashcardSetControllerTest {
 
         when(flashcardSetService.getAllFlashcardsInSet(nonExistentId))
                 .thenThrow(
-                        new NoSuchElementException("FlashcardSet not found")
+                        new ResourceNotFoundException("FlashcardSet not found")
                 );
 
         // when
@@ -392,7 +391,7 @@ class FlashcardSetControllerTest {
                 any(FlashcardSetUpdateDTO.class),
                 eq(nonExistentId)
         )).thenThrow(
-                new NoSuchElementException("FlashcardSet not found")
+                new ResourceNotFoundException("FlashcardSet not found")
         );
 
         // when
@@ -429,7 +428,7 @@ class FlashcardSetControllerTest {
         // given
         long nonExistentId = 123L;
 
-        doThrow(new NoSuchElementException("FlashcardSet not found"))
+        doThrow(new ResourceNotFoundException("FlashcardSet not found"))
                 .when(flashcardSetService)
                 .deleteFlashcardSetById(nonExistentId);
 

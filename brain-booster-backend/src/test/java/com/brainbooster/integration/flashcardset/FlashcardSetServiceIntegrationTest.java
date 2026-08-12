@@ -1,5 +1,6 @@
 package com.brainbooster.integration.flashcardset;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardContentDTO;
@@ -26,7 +27,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -117,8 +117,8 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("addFlashcardSet - Should throw NoSuchElementException when user does not exist")
-    void addFlashcardSet_ShouldThrowNoSuchElementException_WhenUserNotFound() {
+    @DisplayName("addFlashcardSet - Should throw ResourceNotFoundException when user does not exist")
+    void addFlashcardSet_ShouldThrowResourceNotFoundException_WhenUserNotFound() {
         // given
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "My Set",
@@ -128,7 +128,7 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
 
         // when, then
         assertThatThrownBy(() -> flashcardSetService.addFlashcardSet(creationDTO, 999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User with id: 999 not found");
     }
 
@@ -179,11 +179,11 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("getFlashcardSetById - Should throw NoSuchElementException when set not found")
-    void getFlashcardSetById_ShouldThrowNoSuchElementException() {
+    @DisplayName("getFlashcardSetById - Should throw ResourceNotFoundException when set not found")
+    void getFlashcardSetById_ShouldThrowResourceNotFoundException() {
         // when, then
         assertThatThrownBy(() -> flashcardSetService.getFlashcardSetById(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("FlashcardSet with id: 999 not found");
     }
 
@@ -269,11 +269,11 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("getAllFlashcardsInSet - Should throw NoSuchElementException when set does not exist")
-    void getAllFlashcardsInSet_ShouldThrowNoSuchElementException() {
+    @DisplayName("getAllFlashcardsInSet - Should throw ResourceNotFoundException when set does not exist")
+    void getAllFlashcardsInSet_ShouldThrowResourceNotFoundException() {
         // when, then
         assertThatThrownBy(() -> flashcardSetService.getAllFlashcardsInSet(999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("FlashcardSet with id: 999 not found");
     }
 
@@ -334,8 +334,8 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("updateFlashcardSet - Should throw NoSuchElementException when set not found")
-    void updateFlashcardSet_ShouldThrowNoSuchElementException() {
+    @DisplayName("updateFlashcardSet - Should throw ResourceNotFoundException when set not found")
+    void updateFlashcardSet_ShouldThrowResourceNotFoundException() {
         // given
         FlashcardSetUpdateDTO updateDTO = new FlashcardSetUpdateDTO(
                 "New Name",
@@ -343,7 +343,7 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
 
         // when, then
         assertThatThrownBy(() -> flashcardSetService.updateFlashcardSet(updateDTO, 999L))
-                .isInstanceOf(NoSuchElementException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("FlashcardSet with id: 999 not found");
     }
 

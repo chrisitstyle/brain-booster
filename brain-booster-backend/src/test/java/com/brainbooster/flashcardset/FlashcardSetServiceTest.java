@@ -1,5 +1,6 @@
 package com.brainbooster.flashcardset;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
@@ -23,7 +24,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -96,7 +100,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void addFlashcardSet_ThrowsNoSuchElementException_WhenUserNotFound() {
+    void addFlashcardSet_ThrowsResourceNotFoundException_WhenUserNotFound() {
         // given
         Long userId = 999L;
         FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
@@ -105,8 +109,8 @@ class FlashcardSetServiceTest {
                 .thenReturn(Optional.empty());
 
         // when + then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> flashcardSetService.addFlashcardSet(inputDTO, userId)
         );
 
@@ -157,14 +161,14 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void getFlashcardSetById_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
+    void getFlashcardSetById_ThrowsResourceNotFound_WhenFlashcardSetDoesNotExist() {
         // given
         when(flashcardSetRepository.findByIdWithUser(1L))
                 .thenReturn(Optional.empty());
 
         // when, then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> flashcardSetService.getFlashcardSetById(1L)
         );
 
@@ -287,13 +291,13 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void getAllFlashcardsInSet_ThrowsNoSuchElement_WhenFlashcardSetNotExists() {
+    void getAllFlashcardsInSet_ThrowsResourceNotFound_WhenFlashcardSetNotExists() {
         // given
         when(flashcardSetRepository.existsById(1L)).thenReturn(false);
 
         // when + then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> flashcardSetService.getAllFlashcardsInSet(1L)
         );
 
@@ -337,7 +341,7 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void updateFlashcardSet_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
+    void updateFlashcardSet_ThrowsResourceNotFound_WhenFlashcardSetDoesNotExist() {
         // given
         FlashcardSetUpdateDTO updateDTO = TestEntities.createFlashcardSetUpdateDTO();
 
@@ -345,8 +349,8 @@ class FlashcardSetServiceTest {
                 .thenReturn(Optional.empty());
 
         // when + then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> flashcardSetService.updateFlashcardSet(updateDTO, 1L)
         );
 
@@ -375,14 +379,14 @@ class FlashcardSetServiceTest {
     }
 
     @Test
-    void deleteFlashcardSetById_ThrowsNoSuchElement_WhenFlashcardSetDoesNotExist() {
+    void deleteFlashcardSetById_ThrowsResourceNotFound_WhenFlashcardSetDoesNotExist() {
         // given
         when(flashcardSetRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
         // when + then
-        NoSuchElementException exception = assertThrows(
-                NoSuchElementException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> flashcardSetService.deleteFlashcardSetById(1L)
         );
 

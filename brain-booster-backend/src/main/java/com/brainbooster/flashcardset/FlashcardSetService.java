@@ -1,5 +1,6 @@
 package com.brainbooster.flashcardset;
 
+import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
@@ -20,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 @Service
@@ -48,7 +48,7 @@ public class FlashcardSetService {
     public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
                                            Long authenticatedUserId) {
         User setOwner = userRepository.findById(authenticatedUserId)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         buildUserNotFoundMessage(authenticatedUserId)));
 
         FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
@@ -81,13 +81,13 @@ public class FlashcardSetService {
     public FlashcardSetDTO getFlashcardSetById(Long setId) {
         return flashcardSetRepository.findByIdWithUser(setId)
                 .map(flashcardSetDTOMapper)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardSetNotFoundMessage(setId)));
     }
 
     public List<FlashcardDTO> getAllFlashcardsInSet(Long setId) {
 
         if (!flashcardSetRepository.existsById(setId)) {
-            throw new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId));
+            throw new ResourceNotFoundException(buildFlashcardSetNotFoundMessage(setId));
         }
 
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUserOrNull();
@@ -110,7 +110,7 @@ public class FlashcardSetService {
     @Transactional
     public FlashcardSetDTO updateFlashcardSet(FlashcardSetUpdateDTO updateDTO, Long setId) {
         FlashcardSet existingSet = flashcardSetRepository.findById(setId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardSetNotFoundMessage(setId)));
 
         // verify if the user is admin or owner of set
         verifySetAccess(existingSet, EDIT_FLASHCARD_SET_ACCESS_DENIED_MESSAGE);
@@ -125,7 +125,7 @@ public class FlashcardSetService {
     public void deleteFlashcardSetById(Long setId) {
 
         FlashcardSet existingSet = flashcardSetRepository.findById(setId)
-                .orElseThrow(() -> new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId)));
+                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardSetNotFoundMessage(setId)));
 
         verifySetAccess(existingSet, DELETE_FLASHCARD_SET_ACCESS_DENIED_MESSAGE);
 
