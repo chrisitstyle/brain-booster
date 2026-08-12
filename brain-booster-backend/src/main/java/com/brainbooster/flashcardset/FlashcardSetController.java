@@ -4,7 +4,7 @@ import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
-import com.brainbooster.user.User;
+import com.brainbooster.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,10 +38,10 @@ public class FlashcardSetController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FlashcardSetDTO addFlashcardSet(@Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO,
-                                           @AuthenticationPrincipal User authenticatedUser) {
+                                           @AuthenticationPrincipal UserPrincipal authenticatedUser) {
 
         return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO,
-                authenticatedUser.getUserId());
+                authenticatedUser.userId());
     }
 
     @Operation(

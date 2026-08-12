@@ -6,10 +6,12 @@ import com.brainbooster.gameresult.attempt.GameAttemptRecorder;
 import com.brainbooster.gameresult.dto.GameResultDTO;
 import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import com.brainbooster.gameresult.mapper.GameResultMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.AdminPolicy;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,10 +38,13 @@ public class GameResultService {
     private final CurrentUserProvider currentUserProvider;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
     private final AdminPolicy adminPolicy;
+    private final UserRepository userRepository;
 
     @Transactional
     public GameResultDTO saveGameResult(SaveGameResultRequest request) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
+
+        User userReference = userRepository.getReferenceById(authenticatedUser.userId());
 
         validateScore(request.score(), request.totalQuestions());
 
@@ -52,11 +57,11 @@ public class GameResultService {
 
         GameResult gameResult = gameResultRepository
                 .findByUser_UserIdAndSet_SetIdAndMode(
-                        authUser.getUserId(),
+                        authenticatedUser.userId(),
                         request.setId(),
                         request.mode())
                 .orElseGet(() -> GameResult.builder()
-                        .user(authUser)
+                        .user(userReference)
                         .set(flashcardSet)
                         .mode(request.mode())
                         .build());
@@ -69,7 +74,7 @@ public class GameResultService {
         GameResult savedGameResult = gameResultRepository.save(gameResult);
 
         gameAttemptRecorder.recordAttempt(
-                authUser,
+                userReference,
                 flashcardSet,
                 request,
                 completedAt);
@@ -79,14 +84,14 @@ public class GameResultService {
 
     @Transactional(readOnly = true)
     public List<GameResultDTO> getMyGameResults(Long setId) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         List<GameResult> gameResults = setId == null
                 ? gameResultRepository.findByUser_UserIdOrderByCompletedAtDesc(
-                authUser.getUserId()
+               authenticatedUser.userId()
         )
                 : gameResultRepository.findByUser_UserIdAndSet_SetIdOrderByCompletedAtDesc(
-                authUser.getUserId(),
+                authenticatedUser.userId(),
                 setId);
 
         return gameResults.stream()
@@ -96,8 +101,8 @@ public class GameResultService {
 
     @Transactional(readOnly = true)
     public List<GameResultDTO> getAllGameResults(Long setId) {
-        User authUser = currentUserProvider.getCurrentUser();
-        adminPolicy.verify(authUser);
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
+        adminPolicy.verify(authenticatedUser);
 
         List<GameResult> gameResults = setId == null
                 ? gameResultRepository.findAllByOrderByCompletedAtDesc()
@@ -139,12 +144,12 @@ public class GameResultService {
             Long resultId,
             String accessDeniedMessage
     ) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
         GameResult gameResult = findGameResultById(resultId);
 
         verifyGameResultAccess(
                 gameResult,
-                authUser,
+                authenticatedUser,
                 accessDeniedMessage
         );
 
@@ -160,10 +165,10 @@ public class GameResultService {
 
     private void verifyGameResultAccess(
             GameResult gameResult,
-            User authUser,
+            AuthenticatedUser authenticatedUser,
             String accessDeniedMessage) {
         ownerOrAdminPolicy.verify(
-                authUser,
+                authenticatedUser,
                 gameResult.getUser().getUserId(),
                 accessDeniedMessage);
     }

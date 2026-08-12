@@ -3,6 +3,7 @@ package com.brainbooster.user;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
@@ -41,8 +42,8 @@ public class UserService {
     }
 
     public UserDTO getCurrentUser() {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
-        return userRepository.findById(authenticatedUser.getUserId())
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
+        return userRepository.findById(authenticatedUser.userId())
                 .map(userDTOMapper).orElseThrow(() ->
                         new NoSuchElementException("Authenticated user does not exist"));
     }
@@ -87,9 +88,9 @@ public class UserService {
     @Transactional
     public UserDTO updateUser(UserUpdateDTO updatedUser, Long userId) {
 
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
+        boolean isAdmin = Role.ADMIN.equals(authenticatedUser.role());
 
         if (!isAdmin) {
             throw new AccessDeniedException("You are not allowed to update other users");
@@ -108,10 +109,12 @@ public class UserService {
     @Transactional
     public void deleteUserById(Long userId) {
 
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        boolean isAdmin = authUser.getRole().equals(Role.ADMIN);
-        boolean isOwner = Objects.equals(authUser.getUserId(), userId);
+        boolean isAdmin = Role.ADMIN.equals(authenticatedUser.role());
+        boolean isOwner = Objects.equals(
+                authenticatedUser.userId(),
+                userId);
 
         if (isOwner || !isAdmin) {
             throw new AccessDeniedException("You cannot delete yourself or other users");

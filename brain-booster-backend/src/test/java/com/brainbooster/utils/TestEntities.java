@@ -23,6 +23,8 @@ import com.brainbooster.gameresult.QuestionAnswerSide;
 import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.dto.*;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.security.AuthenticatedUser;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserCreationDTO;
@@ -147,6 +149,61 @@ public class TestEntities {
                 "test_password",
                 Role.USER
         );
+    }
+
+    /**
+     * Creates an authenticated user identity with default test data.
+     * <p>
+     * Defaults: userId=1L, role=USER.
+     *
+     * @return an {@link AuthenticatedUser} with default test data.
+     */
+    public static AuthenticatedUser createAuthenticatedUser() {
+        return new AuthenticatedUser(
+                1L,
+                Role.USER
+        );
+    }
+
+    /**
+     * Creates an authenticated user identity with custom user ID and role.
+     *
+     * @param userId ID of the authenticated user.
+     * @param role   role of the authenticated user.
+     * @return an {@link AuthenticatedUser} with the provided ID and role.
+     */
+    public static AuthenticatedUser createAuthenticatedUser(
+            Long userId,
+            Role role
+    ) {
+        return new AuthenticatedUser(
+                userId,
+                role
+        );
+    }
+
+    /**
+     * Creates an authenticated admin identity with default test data.
+     * <p>
+     * Defaults: userId=2L, role=ADMIN.
+     *
+     * @return an {@link AuthenticatedUser} representing an admin.
+     */
+    public static AuthenticatedUser createAuthenticatedAdmin() {
+        return new AuthenticatedUser(
+                2L,
+                Role.ADMIN
+        );
+    }
+
+    /**
+     * Creates a {@link UserPrincipal} from the provided {@link User} entity.
+     *
+     * @param user source user entity.
+     * @return a security principal containing the user's authentication data.
+     */
+    public static UserPrincipal createUserPrincipal(User user) {
+        return UserPrincipal.from(user);
     }
 
     // FLASHCARD METHODS

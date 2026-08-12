@@ -12,6 +12,7 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.integration.AbstractIntegrationTest;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
@@ -49,9 +50,15 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void mockAuthenticatedUser(User user) {
+        UserPrincipal principal = UserPrincipal.from(user);
+
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                user, null, user.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        principal,
+                        null,
+                        principal.getAuthorities());
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
     }
 
     // -- CREATE TESTS --

@@ -1,6 +1,7 @@
 package com.brainbooster.config;
 
 
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanCreationException;
@@ -23,8 +24,9 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException(username));
+        return email -> userRepository.findByEmail(email)
+                .map(UserPrincipal::from)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
     }
 
     @Bean

@@ -7,9 +7,9 @@ import com.brainbooster.gameresult.dto.GameQuestionResultDTO;
 import com.brainbooster.gameresult.mapper.GameAttemptMapper;
 import com.brainbooster.gameresult.mapper.GameQuestionResultMapper;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
-import com.brainbooster.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,7 +53,7 @@ public class GameAttemptService {
 
     @Transactional(readOnly = true)
     public GameAttemptDTO getGameAttemptById(Long attemptId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findWithQuestionResultsByAttemptId(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
@@ -65,14 +65,14 @@ public class GameAttemptService {
 
     private Page<GameAttemptSummaryDTO> getMyGameAttemptsWithFilters(Long setId, String mode, LocalDate from,
                                                                      LocalDate to, Pageable pageable) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameMode parsedMode = parseGameMode(mode);
         Instant fromDateTime = toStartOfDay(from);
         Instant toDateTimeExclusive = toExclusiveEndDate(to);
 
         return gameAttemptRepository.findByUserIdWithFilters(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId,
                 parsedMode,
                 fromDateTime,
@@ -83,7 +83,7 @@ public class GameAttemptService {
 
     @Transactional(readOnly = true)
     public List<GameQuestionResultDTO> getQuestionResultsByAttemptId(Long attemptId) {
-        User authenticatedUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         GameAttempt gameAttempt = gameAttemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GAME_ATTEMPT_NOT_FOUND_MESSAGE));
@@ -122,7 +122,7 @@ public class GameAttemptService {
         return date.plusDays(1).atStartOfDay().toInstant(DATE_FILTER_ZONE_OFFSET);
     }
 
-    private void verifyOwnerOrAdmin(GameAttempt gameAttempt, User authenticatedUser) {
+    private void verifyOwnerOrAdmin(GameAttempt gameAttempt, AuthenticatedUser authenticatedUser) {
         ownerOrAdminPolicy.verify(
                 authenticatedUser,
                 gameAttempt.getUser().getUserId(),

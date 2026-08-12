@@ -2,10 +2,9 @@ package com.brainbooster.auth;
 
 import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.Role;
-import com.brainbooster.user.User;
 import com.brainbooster.user.UserAccountCreator;
-import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,12 +12,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -27,8 +24,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
     @Mock
     private UserAccountCreator userAccountCreator;
     @Mock
@@ -62,7 +57,6 @@ class AuthenticationServiceTest {
                 Role.USER
         );
 
-        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -98,8 +92,6 @@ class AuthenticationServiceTest {
                 request.getPassword(),
                 Role.USER
         );
-
-        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -109,21 +101,23 @@ class AuthenticationServiceTest {
                 "johndoe@example.com",
                 "password123");
 
-        User user = TestEntities.createUser();
+        UserPrincipal principal = TestEntities.createUserPrincipal(
+                TestEntities.createUser()
+        );
+
         String expectedToken = "jwt_token_example";
 
         Authentication authResult = new UsernamePasswordAuthenticationToken(
-                request.getEmail(),
-                request.getPassword());
+                principal,
+                null,
+                principal.getAuthorities()
+        );
 
         when(authenticationManager.authenticate(
                 any(UsernamePasswordAuthenticationToken.class)
         )).thenReturn(authResult);
 
-        when(userRepository.findByEmail(request.getEmail()))
-                .thenReturn(Optional.of(user));
-
-        when(jwtService.generateToken(user))
+        when(jwtService.generateToken(principal))
                 .thenReturn(expectedToken);
 
         // when
@@ -137,9 +131,8 @@ class AuthenticationServiceTest {
                 any(UsernamePasswordAuthenticationToken.class)
         );
 
-        verify(userRepository).findByEmail(request.getEmail());
 
-        verify(jwtService).generateToken(user);
+        verify(jwtService).generateToken(principal);
     }
 
     @Test
@@ -163,34 +156,34 @@ class AuthenticationServiceTest {
         assertThat(thrown)
                 .isInstanceOf(BadCredentialsException.class);
 
-        verify(userRepository, never()).findByEmail(anyString());
-        verify(jwtService, never()).generateToken(any());
+        verifyNoInteractions(jwtService);
     }
 
     @Test
-    void authenticate_ShouldThrowUsernameNotFound_WhenUserNotFoundInRepo() {
+    void authenticate_ShouldThrow_WhenAuthenticatedPrincipalIsInvalid() {
         // given
         AuthenticationRequest request = new AuthenticationRequest(
                 "dummy@example.com",
                 "password");
 
-        Authentication dummyAuth = new UsernamePasswordAuthenticationToken(
-                request.getEmail(),
-                request.getPassword());
+        Authentication authentication = mock(Authentication.class);
 
         when(authenticationManager.authenticate(any()))
-                .thenReturn(dummyAuth);
+                .thenReturn(authentication);
 
-        when(userRepository.findByEmail(request.getEmail()))
-                .thenReturn(Optional.empty());
+        when(authentication.getPrincipal())
+                .thenReturn("invalid-principal");
 
         // when
-        Throwable thrown = catchThrowable(() -> authenticationService.authenticate(request));
+        Throwable thrown = catchThrowable(
+                () -> authenticationService.authenticate(request)
+        );
 
         // then
-        assertThat(thrown).isInstanceOf(UsernameNotFoundException.class);
+        assertThat(thrown)
+                .isInstanceOf(AuthenticationServiceException.class)
+                .hasMessage("Invalid authenticated principal");
 
-        verify(userRepository).findByEmail(request.getEmail());
-        verify(jwtService, never()).generateToken(any());
+        verifyNoInteractions(jwtService);
     }
 }

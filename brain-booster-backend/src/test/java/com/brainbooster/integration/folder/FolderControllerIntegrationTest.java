@@ -8,6 +8,7 @@ import com.brainbooster.folder.FolderRepository;
 import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.integration.AbstractIntegrationTest;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +54,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
     void createFolder_ShouldPersistFolderInDb() throws Exception {
         // given
         User dbUser = userRepository.findById(2L).orElseThrow();
-        String realToken = jwtService.generateToken(dbUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(dbUser));
 
         FolderCreationDTO creationDTO = new FolderCreationDTO("My English Words", "Folder for C1 level");
 
@@ -75,7 +76,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
         User user1 = userRepository.findById(1L).orElseThrow(); // admin
         User user2 = userRepository.findById(2L).orElseThrow(); // regular user
 
-        String realTokenUser2 = jwtService.generateToken(user2);
+        String realTokenUser2 = jwtService.generateToken(UserPrincipal.from(user2));
 
         // create a folder for user 1 (should NOT be returned)
         Folder folder1 = Folder.builder()
@@ -110,7 +111,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
     void updateFolder_ShouldModifyFolderInDb() throws Exception {
         // given
         User dbUser = userRepository.findById(2L).orElseThrow();
-        String realToken = jwtService.generateToken(dbUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(dbUser));
 
         Folder folder = Folder.builder()
                 .name("Old Name")
@@ -137,7 +138,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
     void deleteFolder_ShouldRemoveFolderFromDb() throws Exception {
         // given
         User dbUser = userRepository.findById(2L).orElseThrow();
-        String realToken = jwtService.generateToken(dbUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(dbUser));
 
         Folder folder = Folder.builder()
                 .name("To Be Deleted")
@@ -163,7 +164,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
     void addSetToFolder_ShouldCreateRelation() throws Exception {
         // given
         User dbUser = userRepository.findById(2L).orElseThrow();
-        String realToken = jwtService.generateToken(dbUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(dbUser));
 
         Folder folder = Folder.builder()
                 .name("Main Folder")
@@ -193,7 +194,7 @@ class FolderControllerIntegrationTest extends AbstractIntegrationTest {
     void removeSetFromFolder_ShouldDeleteRelation() throws Exception {
         // given
         User dbUser = userRepository.findById(2L).orElseThrow();
-        String realToken = jwtService.generateToken(dbUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(dbUser));
 
         Folder folder = Folder.builder()
                 .name("Main Folder")

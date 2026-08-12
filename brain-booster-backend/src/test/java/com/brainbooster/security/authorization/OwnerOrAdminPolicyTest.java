@@ -1,7 +1,7 @@
 package com.brainbooster.security.authorization;
 
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.user.Role;
-import com.brainbooster.user.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -14,34 +14,29 @@ class OwnerOrAdminPolicyTest {
 
     @Test
     void verify_ShouldAllowAccess_WhenUserIsOwner() {
-        User user = User.builder()
-                .userId(1L)
-                .role(Role.USER)
-                .build();
+        AuthenticatedUser user = new AuthenticatedUser(
+                1L,
+                Role.USER);
 
-        assertThatCode(() ->
-                policy.verify(user, 1L, "Access denied")
+        assertThatCode(() -> policy.verify(user, 1L, "Access denied")
         ).doesNotThrowAnyException();
     }
 
     @Test
     void verify_ShouldAllowAccess_WhenUserIsAdmin() {
-        User admin = User.builder()
-                .userId(2L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser admin = new AuthenticatedUser(
+                2L,
+                Role.ADMIN);
 
-        assertThatCode(() ->
-                policy.verify(admin, 1L, "Access denied")
+        assertThatCode(() -> policy.verify(admin, 1L, "Access denied")
         ).doesNotThrowAnyException();
     }
 
     @Test
     void verify_ShouldThrowAccessDeniedException_WhenUserIsNeitherOwnerNorAdmin() {
-        User user = User.builder()
-                .userId(2L)
-                .role(Role.USER)
-                .build();
+        AuthenticatedUser user = new AuthenticatedUser(
+                2L,
+                Role.USER);
 
         assertThatThrownBy(() -> policy.verify(user, 1L, "Access denied")
         )
