@@ -5,6 +5,7 @@ import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
@@ -125,8 +126,13 @@ class UserServiceTest {
     @Test
     void getCurrentUser_ShouldReturnUserDTO_WhenAuthenticatedUserExists() {
         // given
-        when(currentUserProvider.getCurrentUser()).thenReturn(user);
-        when(userRepository.findById(user.getUserId())).thenReturn(Optional.of(user));
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
+
+        when(userRepository.findById(authenticatedUser.userId()))
+                .thenReturn(Optional.of(user));
         when(userDTOMapper.apply(user)).thenReturn(userDTO);
 
         // when
@@ -137,15 +143,20 @@ class UserServiceTest {
                 .isNotNull()
                 .isEqualTo(userDTO);
 
-        verify(userRepository).findById(user.getUserId());
+        verify(userRepository).findById(authenticatedUser.userId());
         verify(userDTOMapper).apply(user);
     }
 
     @Test
     void getCurrentUser_ShouldThrowNoSuchElement_WhenAuthenticatedUserDoesNotExist() {
         // given
-        when(currentUserProvider.getCurrentUser()).thenReturn(user);
-        when(userRepository.findById(user.getUserId())).thenReturn(Optional.empty());
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
+
+        when(userRepository.findById(authenticatedUser.userId()))
+                .thenReturn(Optional.empty());
 
         // when, then
         NoSuchElementException exception = assertThrows(
@@ -156,7 +167,7 @@ class UserServiceTest {
         Assertions.assertThat(exception.getMessage())
                 .isEqualTo("Authenticated user does not exist");
 
-        verify(userRepository).findById(user.getUserId());
+        verify(userRepository).findById(authenticatedUser.userId());
         verify(userDTOMapper, never()).apply(any(User.class));
     }
 
@@ -247,10 +258,7 @@ class UserServiceTest {
     @Test
     void updateUser_ShouldReturnUpdatedUser_WhenUserIsAdmin() {
         // given
-        User adminUser = TestEntities.userBuilder()
-                .userId(2L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser adminUser = TestEntities.createAuthenticatedUser(2L, Role.ADMIN);
 
         when(currentUserProvider.getCurrentUser()).thenReturn(adminUser);
 
@@ -287,7 +295,10 @@ class UserServiceTest {
     @Test
     void updateUser_ShouldThrowAccessDenied_WhenUserIsNotAdmin() {
         // given
-        when(currentUserProvider.getCurrentUser()).thenReturn(user);
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
 
         UserUpdateDTO updateDTO = new UserUpdateDTO(
                 "newNickname",
@@ -309,10 +320,7 @@ class UserServiceTest {
     @Test
     void deleteUserById_ShouldDeleteUser_WhenAdmin() {
         // given
-        User adminUser = TestEntities.userBuilder()
-                .userId(2L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser adminUser = TestEntities.createAuthenticatedUser(2L, Role.ADMIN);
 
         when(currentUserProvider.getCurrentUser()).thenReturn(adminUser);
         when(userRepository.existsById(1L)).thenReturn(true);
@@ -327,10 +335,7 @@ class UserServiceTest {
     @Test
     void deleteUserById_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
         // given
-        User adminUser = TestEntities.userBuilder()
-                .userId(2L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser adminUser = TestEntities.createAuthenticatedUser(2L, Role.ADMIN);
 
         when(currentUserProvider.getCurrentUser()).thenReturn(adminUser);
         when(userRepository.existsById(1L)).thenReturn(false);
@@ -350,9 +355,10 @@ class UserServiceTest {
     @Test
     void deleteUserById_ShouldThrowAccessDenied_WhenUserIsNotAdmin() {
         // given
-        User loggedUser = TestEntities.createUser();
+        AuthenticatedUser loggedUser = TestEntities.createAuthenticatedUser();
 
-        when(currentUserProvider.getCurrentUser()).thenReturn(loggedUser);
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(loggedUser);
 
         // when, then
         AccessDeniedException exception = assertThrows(
@@ -367,10 +373,7 @@ class UserServiceTest {
     @Test
     void deleteUserById_ShouldThrowAccessDenied_WhenAdminTriesToDeleteSelf() {
         // given
-        User adminUser = TestEntities.userBuilder()
-                .userId(1L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser adminUser = TestEntities.createAuthenticatedUser(1L, Role.ADMIN);
 
         when(currentUserProvider.getCurrentUser()).thenReturn(adminUser);
 

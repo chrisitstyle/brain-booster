@@ -6,7 +6,9 @@ import com.brainbooster.exception.NicknameAlreadyExistsException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.user.UserRepository;
@@ -44,20 +46,21 @@ class ProfileSettingsServiceTest {
 
     private User user;
     private UserDTO userDTO;
+    private AuthenticatedUser authenticatedUser;
 
     @BeforeEach
     void setUp() {
         user = TestEntities.createUser();
         userDTO = TestEntities.createUserDTO();
+        authenticatedUser = TestEntities.createAuthenticatedUser();
 
-        when(currentUserProvider.getCurrentUser()).thenReturn(user);
+        when(currentUserProvider.getCurrentUser()).thenReturn(authenticatedUser);
     }
 
     @Test
     void updateNickname_ShouldUpdateNickname_WhenNicknameIsAvailable() {
         // given
-        UserNicknameUpdateDTO request =
-                new UserNicknameUpdateDTO("  newNickname  ");
+        UserNicknameUpdateDTO request = new UserNicknameUpdateDTO("  newNickname  ");
 
         UserDTO updatedUserDTO = new UserDTO(
                 user.getUserId(),
@@ -67,7 +70,7 @@ class ProfileSettingsServiceTest {
                 Instant.parse("2026-01-19T23:00:00Z")
         );
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
         when(userRepository.existsByNickname("newNickname"))
@@ -92,10 +95,9 @@ class ProfileSettingsServiceTest {
     @Test
     void updateNickname_ShouldReturnCurrentUser_WhenNicknameHasNotChanged() {
         // given
-        UserNicknameUpdateDTO request =
-                new UserNicknameUpdateDTO("  johndoe  ");
+        UserNicknameUpdateDTO request = new UserNicknameUpdateDTO("  johndoe  ");
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
         when(userDTOMapper.apply(user))
@@ -120,7 +122,7 @@ class ProfileSettingsServiceTest {
         UserNicknameUpdateDTO request =
                 new UserNicknameUpdateDTO("takenNickname");
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
         when(userRepository.existsByNickname("takenNickname"))
@@ -142,21 +144,19 @@ class ProfileSettingsServiceTest {
     @Test
     void updateEmail_ShouldUpdateEmailAndGenerateToken_WhenEmailIsAvailable() {
         // given
-        UserEmailUpdateDTO request =
-                new UserEmailUpdateDTO("  NEW.EMAIL@Example.COM  ");
+        UserEmailUpdateDTO request = new UserEmailUpdateDTO("  NEW.EMAIL@Example.COM  ");
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
         when(userRepository.existsByEmail("new.email@example.com"))
                 .thenReturn(false);
 
-        when(jwtService.generateToken(user))
+        when(jwtService.generateToken(any(UserPrincipal.class)))
                 .thenReturn("new-jwt-token");
 
         // when
-        UserEmailUpdateResponseDTO result =
-                profileSettingsService.updateEmail(request);
+        UserEmailUpdateResponseDTO result = profileSettingsService.updateEmail(request);
 
         // then
         assertThat(result.email()).isEqualTo("new.email@example.com");
@@ -164,24 +164,26 @@ class ProfileSettingsServiceTest {
         assertThat(user.getEmail()).isEqualTo("new.email@example.com");
 
         verify(userRepository).existsByEmail("new.email@example.com");
-        verify(jwtService).generateToken(user);
+        verify(jwtService).generateToken(
+                argThat(principal ->
+                        principal.userId().equals(user.getUserId())
+                                && principal.email().equals("new.email@example.com")
+                                && principal.role().equals(user.getRole())));
     }
 
     @Test
     void updateEmail_ShouldGenerateTokenWithoutUpdatingEmail_WhenEmailHasNotChanged() {
         // given
-        UserEmailUpdateDTO request =
-                new UserEmailUpdateDTO("  JOHNDOE@EXAMPLE.COM  ");
-
-        when(userRepository.findById(user.getUserId()))
+        UserEmailUpdateDTO request = new UserEmailUpdateDTO("  JOHNDOE@EXAMPLE.COM  ");
+        UserPrincipal expectedPrincipal = UserPrincipal.from(user);
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
-        when(jwtService.generateToken(user))
+        when(jwtService.generateToken(expectedPrincipal))
                 .thenReturn("refreshed-jwt-token");
 
         // when
-        UserEmailUpdateResponseDTO result =
-                profileSettingsService.updateEmail(request);
+        UserEmailUpdateResponseDTO result = profileSettingsService.updateEmail(request);
 
         // then
         assertThat(result.email()).isEqualTo("johndoe@example.com");
@@ -191,16 +193,15 @@ class ProfileSettingsServiceTest {
         verify(userRepository, never())
                 .existsByEmail(anyString());
 
-        verify(jwtService).generateToken(user);
+        verify(jwtService).generateToken(expectedPrincipal);
     }
 
     @Test
     void updateEmail_ShouldThrowEmailAlreadyExists_WhenEmailIsTaken() {
         // given
-        UserEmailUpdateDTO request =
-                new UserEmailUpdateDTO("taken@example.com");
+        UserEmailUpdateDTO request = new UserEmailUpdateDTO("taken@example.com");
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.of(user));
 
         when(userRepository.existsByEmail("taken@example.com"))
@@ -225,7 +226,7 @@ class ProfileSettingsServiceTest {
         UserNicknameUpdateDTO request =
                 new UserNicknameUpdateDTO("newNickname");
 
-        when(userRepository.findById(user.getUserId()))
+        when(userRepository.findById(authenticatedUser.userId()))
                 .thenReturn(Optional.empty());
 
         // when, then
@@ -235,7 +236,7 @@ class ProfileSettingsServiceTest {
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("Authenticated user not found");
 
-        verify(userRepository).findById(user.getUserId());
+        verify(userRepository).findById(authenticatedUser.userId());
         verify(userRepository, never())
                 .existsByNickname(anyString());
 

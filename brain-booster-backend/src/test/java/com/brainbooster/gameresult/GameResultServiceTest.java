@@ -6,11 +6,13 @@ import com.brainbooster.gameresult.attempt.GameAttemptRecorder;
 import com.brainbooster.gameresult.dto.GameResultDTO;
 import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import com.brainbooster.gameresult.mapper.GameResultMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.AdminPolicy;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +45,8 @@ class GameResultServiceTest {
     private GameResultMapper gameResultMapper;
     @Mock
     private CurrentUserProvider currentUserProvider;
+    @Mock
+    private UserRepository userRepository;
 
     private final OwnerOrAdminPolicy ownerOrAdminPolicy = new OwnerOrAdminPolicy();
 
@@ -59,18 +63,24 @@ class GameResultServiceTest {
                 gameResultMapper,
                 currentUserProvider,
                 ownerOrAdminPolicy,
-                adminPolicy
+                adminPolicy,
+                userRepository
         );
     }
 
     @Test
     void shouldCreateGameResultWhenResultDoesNotExist() {
-        User authUser = createUser(2L, Role.USER);
+        User user = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
+
         FlashcardSet flashcardSet =
-                createFlashcardSet(11L, authUser);
+                createFlashcardSet(11L, user);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
+
+        when(userRepository.getReferenceById(2L))
+                .thenReturn(user);
 
         SaveGameResultRequest request = createSaveGameResultRequest(
                 11L,
@@ -109,8 +119,7 @@ class GameResultServiceTest {
 
         assertThat(result).isEqualTo(expectedDto);
 
-        ArgumentCaptor<GameResult> gameResultCaptor =
-                ArgumentCaptor.forClass(GameResult.class);
+        ArgumentCaptor<GameResult> gameResultCaptor = ArgumentCaptor.forClass(GameResult.class);
 
         verify(gameResultRepository)
                 .save(gameResultCaptor.capture());
@@ -118,7 +127,7 @@ class GameResultServiceTest {
         GameResult savedGameResult = gameResultCaptor.getValue();
 
         assertThat(savedGameResult.getUser())
-                .isEqualTo(authUser);
+                .isEqualTo(user);
 
         assertThat(savedGameResult.getSet())
                 .isEqualTo(flashcardSet);
@@ -139,7 +148,7 @@ class GameResultServiceTest {
                 .isNotNull();
 
         verify(gameAttemptRecorder).recordAttempt(
-                eq(authUser),
+                eq(user),
                 eq(flashcardSet),
                 eq(request),
                 any(Instant.class)
@@ -148,15 +157,19 @@ class GameResultServiceTest {
 
     @Test
     void shouldUpdateGameResultWhenResultAlreadyExists() {
-        User authUser = createUser(2L, Role.USER);
-        FlashcardSet flashcardSet =
-                createFlashcardSet(11L, authUser);
+        User user = createUser(2L, Role.USER);
+
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
+
+        when(userRepository.getReferenceById(2L))
+                .thenReturn(user);
 
         GameResult existingGameResult = createGameResult(
-                authUser,
+                user,
                 flashcardSet,
                 GameMode.WRITTEN
         );
@@ -194,8 +207,7 @@ class GameResultServiceTest {
         when(gameResultMapper.toDto(existingGameResult))
                 .thenReturn(expectedDto);
 
-        GameResultDTO result =
-                gameResultService.saveGameResult(request);
+        GameResultDTO result = gameResultService.saveGameResult(request);
 
         assertThat(result).isEqualTo(expectedDto);
 
@@ -215,7 +227,7 @@ class GameResultServiceTest {
                 .save(existingGameResult);
 
         verify(gameAttemptRecorder).recordAttempt(
-                eq(authUser),
+                eq(user),
                 eq(flashcardSet),
                 eq(request),
                 any(Instant.class)
@@ -224,10 +236,10 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowExceptionWhenScoreIsGreaterThanTotalQuestions() {
-        User authUser = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         SaveGameResultRequest request = createSaveGameResultRequest(
                 11L,
@@ -253,10 +265,10 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowExceptionWhenFlashcardSetDoesNotExist() {
-        User authUser = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         SaveGameResultRequest request = createSaveGameResultRequest(
                 99L,
@@ -286,11 +298,12 @@ class GameResultServiceTest {
 
     @Test
     void shouldReturnMyGameResultsWithoutSetFilter() {
-        User authUser = createUser(2L, Role.USER);
-        FlashcardSet flashcardSet = createFlashcardSet(11L, authUser);
+        User user = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
 
         GameResult gameResult = createGameResult(
-                authUser,
+                user,
                 flashcardSet,
                 GameMode.MULTIPLE_CHOICE
         );
@@ -299,7 +312,7 @@ class GameResultServiceTest {
                 createGameResultDTO(gameResult);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         when(gameResultRepository
                 .findByUser_UserIdOrderByCompletedAtDesc(2L))
@@ -308,8 +321,7 @@ class GameResultServiceTest {
         when(gameResultMapper.toDto(gameResult))
                 .thenReturn(dto);
 
-        List<GameResultDTO> results =
-                gameResultService.getMyGameResults(null);
+        List<GameResultDTO> results = gameResultService.getMyGameResults(null);
 
         assertThat(results)
                 .containsExactly(dto);
@@ -326,20 +338,20 @@ class GameResultServiceTest {
 
     @Test
     void shouldReturnMyGameResultsWithSetFilter() {
-        User authUser = createUser(2L, Role.USER);
-        FlashcardSet flashcardSet = createFlashcardSet(11L, authUser);
+        User user = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
 
         GameResult gameResult = createGameResult(
-                authUser,
+                user,
                 flashcardSet,
                 GameMode.WRITTEN
         );
 
-        GameResultDTO dto =
-                createGameResultDTO(gameResult);
+        GameResultDTO dto = createGameResultDTO(gameResult);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         when(gameResultRepository
                 .findByUser_UserIdAndSet_SetIdOrderByCompletedAtDesc(
@@ -351,8 +363,7 @@ class GameResultServiceTest {
         when(gameResultMapper.toDto(gameResult))
                 .thenReturn(dto);
 
-        List<GameResultDTO> results =
-                gameResultService.getMyGameResults(11L);
+        List<GameResultDTO> results = gameResultService.getMyGameResults(11L);
 
         assertThat(results)
                 .containsExactly(dto);
@@ -371,7 +382,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldReturnAllGameResultsForAdmin() {
-        User admin = createUser(1L, Role.ADMIN);
+        AuthenticatedUser admin = createAuthenticatedUser(1L, Role.ADMIN);
         User owner = createUser(2L, Role.USER);
 
         FlashcardSet flashcardSet = createFlashcardSet(11L, owner);
@@ -406,7 +417,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldReturnAllGameResultsForSetForAdmin() {
-        User admin = createUser(1L, Role.ADMIN);
+        AuthenticatedUser admin = createAuthenticatedUser(1L, Role.ADMIN);
         User owner = createUser(2L, Role.USER);
 
         FlashcardSet flashcardSet =
@@ -443,7 +454,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowAccessDeniedWhenNonAdminGetsAllGameResults() {
-        User user = createUser(2L, Role.USER);
+        AuthenticatedUser user = createAuthenticatedUser(2L, Role.USER);
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(user);
@@ -463,7 +474,7 @@ class GameResultServiceTest {
     @Test
     void shouldReturnGameResultByIdForOwner() {
         User owner = createUser(2L, Role.USER);
-
+        AuthenticatedUser authenticatedOwner = createAuthenticatedUser(2L, Role.USER);
         FlashcardSet flashcardSet =
                 createFlashcardSet(11L, owner);
 
@@ -476,7 +487,7 @@ class GameResultServiceTest {
         GameResultDTO dto = createGameResultDTO(gameResult);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(owner);
+                .thenReturn(authenticatedOwner);
 
         when(gameResultRepository.findById(1L))
                 .thenReturn(Optional.of(gameResult));
@@ -484,8 +495,7 @@ class GameResultServiceTest {
         when(gameResultMapper.toDto(gameResult))
                 .thenReturn(dto);
 
-        GameResultDTO result =
-                gameResultService.getGameResultById(1L);
+        GameResultDTO result = gameResultService.getGameResultById(1L);
 
         assertThat(result)
                 .isEqualTo(dto);
@@ -493,7 +503,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldReturnGameResultByIdForAdmin() {
-        User admin = createUser(1L, Role.ADMIN);
+        AuthenticatedUser admin = createAuthenticatedUser(1L, Role.ADMIN);
         User owner = createUser(2L, Role.USER);
 
         FlashcardSet flashcardSet = createFlashcardSet(11L, owner);
@@ -524,10 +534,10 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowExceptionWhenGameResultByIdDoesNotExist() {
-        User authUser = createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(2L, Role.USER);
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         when(gameResultRepository.findById(99L))
                 .thenReturn(Optional.empty());
@@ -546,11 +556,10 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowAccessDeniedWhenUserGetsSomeoneElseGameResult() {
-        User authUser = createUser(3L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(3L, Role.USER);
         User owner = createUser(2L, Role.USER);
 
-        FlashcardSet flashcardSet =
-                createFlashcardSet(11L, owner);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, owner);
 
         GameResult gameResult = createGameResult(
                 owner,
@@ -559,7 +568,7 @@ class GameResultServiceTest {
         );
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         when(gameResultRepository.findById(1L))
                 .thenReturn(Optional.of(gameResult));
@@ -580,8 +589,9 @@ class GameResultServiceTest {
     void shouldDeleteGameResultForOwner() {
         User owner = createUser(2L, Role.USER);
 
-        FlashcardSet flashcardSet =
-                createFlashcardSet(11L, owner);
+        AuthenticatedUser authenticatedOwner = createAuthenticatedUser(2L, Role.USER);
+
+        FlashcardSet flashcardSet = createFlashcardSet(11L, owner);
 
         GameResult gameResult = createGameResult(
                 owner,
@@ -590,7 +600,7 @@ class GameResultServiceTest {
         );
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(owner);
+                .thenReturn(authenticatedOwner);
 
         when(gameResultRepository.findById(1L))
                 .thenReturn(Optional.of(gameResult));
@@ -603,7 +613,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldDeleteGameResultForAdmin() {
-        User admin = createUser(1L, Role.ADMIN);
+        AuthenticatedUser admin = createAuthenticatedUser(1L, Role.ADMIN);
         User owner = createUser(2L, Role.USER);
 
         FlashcardSet flashcardSet =
@@ -629,7 +639,7 @@ class GameResultServiceTest {
 
     @Test
     void shouldThrowAccessDeniedWhenUserDeletesSomeoneElseGameResult() {
-        User authUser = createUser(3L, Role.USER);
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser(3L, Role.USER);
         User owner = createUser(2L, Role.USER);
 
         FlashcardSet flashcardSet = createFlashcardSet(11L, owner);
@@ -641,7 +651,7 @@ class GameResultServiceTest {
         );
 
         when(currentUserProvider.getCurrentUser())
-                .thenReturn(authUser);
+                .thenReturn(authenticatedUser);
 
         when(gameResultRepository.findById(1L))
                 .thenReturn(Optional.of(gameResult));

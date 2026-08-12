@@ -6,7 +6,9 @@ import com.brainbooster.exception.NicknameAlreadyExistsException;
 import com.brainbooster.profile.dto.UserEmailUpdateDTO;
 import com.brainbooster.profile.dto.UserEmailUpdateResponseDTO;
 import com.brainbooster.profile.dto.UserNicknameUpdateDTO;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserDTOMapper;
 import com.brainbooster.user.UserRepository;
@@ -61,7 +63,7 @@ public class ProfileSettingsService {
         if (newEmail.equalsIgnoreCase(user.getEmail())) {
             return new UserEmailUpdateResponseDTO(
                     user.getEmail(),
-                    jwtService.generateToken(user)
+                    jwtService.generateToken(UserPrincipal.from(user))
             );
         }
 
@@ -75,16 +77,16 @@ public class ProfileSettingsService {
 
         return new UserEmailUpdateResponseDTO(
                 user.getEmail(),
-                jwtService.generateToken(user)
+                jwtService.generateToken(UserPrincipal.from(user))
         );
     }
 
     private User getAuthenticatedUser() {
-        User principal = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        return userRepository.findById(principal.getUserId())
+
+        return userRepository.findById(authenticatedUser.userId())
                 .orElseThrow(() ->
-                        new NoSuchElementException("Authenticated user not found")
-                );
+                        new NoSuchElementException("Authenticated user not found"));
     }
 }

@@ -7,6 +7,7 @@ import com.brainbooster.gameresult.mapper.GameAttemptMapper;
 import com.brainbooster.gameresult.mapper.GameQuestionResultMapper;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
@@ -73,7 +74,7 @@ class GameAttemptServiceTest {
     @Test
     void getMyGameAttempts_ShouldReturnAuthenticatedUserAttemptsWithFilters() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         Long setId = 1L;
         LocalDate from = LocalDate.of(2026, 8, 1);
@@ -98,7 +99,7 @@ class GameAttemptServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttemptRepository.findByUserIdWithFilters(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId,
                 null,
                 expectedFrom,
@@ -125,7 +126,7 @@ class GameAttemptServiceTest {
                 .isEqualTo(1);
 
         verify(gameAttemptRepository).findByUserIdWithFilters(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId,
                 null,
                 expectedFrom,
@@ -139,7 +140,7 @@ class GameAttemptServiceTest {
     @Test
     void getMyGameAttemptsBySetId_ShouldReturnAuthenticatedUserAttempts() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -157,7 +158,7 @@ class GameAttemptServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttemptRepository.findByUserIdWithFilters(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId,
                 null,
                 null,
@@ -182,7 +183,7 @@ class GameAttemptServiceTest {
                 .containsExactly(summaryDTO);
 
         verify(gameAttemptRepository).findByUserIdWithFilters(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId,
                 null,
                 null,
@@ -194,7 +195,7 @@ class GameAttemptServiceTest {
     @Test
     void getMyGameAttempts_ShouldThrowBadRequest_WhenModeIsInvalid() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Pageable pageable = PageRequest.of(0, 20);
 
         when(currentUserProvider.getCurrentUser())
@@ -236,7 +237,8 @@ class GameAttemptServiceTest {
     @Test
     void getGameAttemptById_ShouldReturnGameAttempt_WhenUserIsOwner() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        User owner = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         GameAttempt gameAttempt = mock(GameAttempt.class);
         GameAttemptDTO expectedDTO = mock(GameAttemptDTO.class);
@@ -245,7 +247,7 @@ class GameAttemptServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttempt.getUser())
-                .thenReturn(authenticatedUser);
+                .thenReturn(owner);
 
         when(gameAttemptRepository.findWithQuestionResultsByAttemptId(1L))
                 .thenReturn(Optional.of(gameAttempt));
@@ -267,10 +269,7 @@ class GameAttemptServiceTest {
         // given
         User owner = TestEntities.createUser();
 
-        User admin = TestEntities.userBuilder()
-                .userId(2L)
-                .role(Role.ADMIN)
-                .build();
+        AuthenticatedUser admin = TestEntities.createAuthenticatedUser(2L, Role.ADMIN);
 
         GameAttempt gameAttempt = mock(GameAttempt.class);
         GameAttemptDTO expectedDTO = mock(GameAttemptDTO.class);
@@ -300,8 +299,7 @@ class GameAttemptServiceTest {
     void getGameAttemptById_ShouldThrowAccessDenied_WhenUserIsNotOwnerOrAdmin() {
         // given
         User owner = TestEntities.createUser(1L, Role.USER);
-        User authenticatedUser =
-                TestEntities.createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser(2L, Role.USER);
 
         GameAttempt gameAttempt = mock(GameAttempt.class);
 
@@ -328,7 +326,7 @@ class GameAttemptServiceTest {
     @Test
     void getGameAttemptById_ShouldThrowNotFound_WhenGameAttemptDoesNotExist() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
@@ -359,7 +357,8 @@ class GameAttemptServiceTest {
     @Test
     void getQuestionResultsByAttemptId_ShouldReturnMappedResults_WhenUserIsOwner() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        User owner = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         GameAttempt gameAttempt = mock(GameAttempt.class);
 
@@ -375,7 +374,7 @@ class GameAttemptServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttempt.getUser())
-                .thenReturn(authenticatedUser);
+                .thenReturn(owner);
 
         when(gameAttemptRepository.findById(1L))
                 .thenReturn(Optional.of(gameAttempt));
@@ -414,7 +413,7 @@ class GameAttemptServiceTest {
     void getQuestionResultsByAttemptId_ShouldThrowAccessDenied_WhenUserIsNotOwnerOrAdmin() {
         // given
         User owner = TestEntities.createUser(1L, Role.USER);
-        User authenticatedUser = TestEntities.createUser(2L, Role.USER);
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser(2L, Role.USER);
 
         GameAttempt gameAttempt = mock(GameAttempt.class);
 
@@ -440,7 +439,7 @@ class GameAttemptServiceTest {
     @Test
     void getQuestionResultsByAttemptId_ShouldThrowNotFound_WhenGameAttemptDoesNotExist() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);

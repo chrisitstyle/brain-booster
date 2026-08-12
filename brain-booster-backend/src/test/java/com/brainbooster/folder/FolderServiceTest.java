@@ -6,9 +6,11 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +42,8 @@ class FolderServiceTest {
     private OwnerOrAdminPolicy ownerOrAdminPolicy;
     @Mock
     private CurrentUserProvider currentUserProvider;
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private FolderService folderService;
@@ -47,12 +51,17 @@ class FolderServiceTest {
     @Test
     @DisplayName("createFolder should save folder for authenticated user")
     void createFolder_shouldSaveFolderAndReturnDTO() {
-        User authUser = createUser();
+        AuthenticatedUser authenticatedUser = createAuthenticatedUser();
+        User userReference = createUser();
         FolderCreationDTO creationDTO = createFolderCreationDTO();
         Folder savedFolder = createFolder();
         FolderDTO expectedDTO = createEmptyFolderDTO();
 
-        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
+
+        when(userRepository.getReferenceById(authenticatedUser.userId()))
+                .thenReturn(userReference);
         when(folderRepository.save(any(Folder.class))).thenReturn(savedFolder);
         when(folderDTOMapper.apply(savedFolder)).thenReturn(expectedDTO);
 
@@ -64,10 +73,13 @@ class FolderServiceTest {
         verify(folderRepository).save(folderCaptor.capture());
 
         Folder capturedFolder = folderCaptor.getValue();
-        assertThat(capturedFolder.getUser()).isEqualTo(authUser);
+        assertThat(capturedFolder.getUser()).isEqualTo(userReference);
         assertThat(capturedFolder.getName()).isEqualTo("test_folder_name");
         assertThat(capturedFolder.getDescription()).isEqualTo("test_folder_description");
         assertThat(capturedFolder.getCreatedAt()).isNotNull();
+
+        verify(userRepository)
+                .getReferenceById(authenticatedUser.userId());
     }
 
     @Test
@@ -88,7 +100,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("getMyFolders should use authenticated user's id")
     void getMyFolders_shouldReturnAuthenticatedUserFolders() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
         FolderDTO dto = createEmptyFolderDTO();
 
@@ -130,7 +142,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("updateFolder should update folder fields")
     void updateFolder_shouldUpdateFieldsAndReturnDTO() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
         FolderUpdateDTO updateDTO = createFolderUpdateDTO();
         FolderDTO expectedDTO = new FolderDTO(
@@ -162,7 +174,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("deleteFolder should delete folder when authenticated user is owner")
     void deleteFolder_whenOwner_shouldDeleteFolder() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
@@ -181,7 +193,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("addFlashcardSetToFolder should add flashcard set and return updated folder DTO")
     void addFlashcardSetToFolder_shouldAddFlashcardSetAndReturnUpdatedDTO() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
         folder.setFlashcardSets(new HashSet<>());
 
@@ -214,7 +226,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("removeFlashcardSetFromFolder should remove FlashcardSet from folder")
     void removeFlashcardSetFromFolder_shouldRemoveFlashcardSet() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolderWithFlashcardSet();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
@@ -234,7 +246,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("removeFlashcardSetFromFolder should throw when FlashcardSet does not exist")
     void removeFlashcardSetFromFolder_whenFlashcardSetDoesNotExist_shouldThrow() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
@@ -251,7 +263,7 @@ class FolderServiceTest {
     @Test
     @DisplayName("removeFlashcardSetFromFolder should throw when flashcardset is not in folder")
     void removeFlashcardSetFromFolder_whenFlashcardSetIsNotInFolder_shouldThrow() {
-        User authUser = createUser();
+        AuthenticatedUser authUser = createAuthenticatedUser();
         Folder folder = createFolder();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);

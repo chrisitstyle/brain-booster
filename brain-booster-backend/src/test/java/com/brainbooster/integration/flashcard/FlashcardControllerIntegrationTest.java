@@ -8,6 +8,7 @@ import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.integration.AbstractIntegrationTest;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
@@ -47,7 +48,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void addFlashcardShouldReturnFlashcardDTO() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet saveSetToDB = TestEntities.flashcardSetBuilder()
                 .setId(null)
@@ -76,7 +77,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void addFlashcard_ShouldReturn400_WhenInvalidData() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardCreationDTO invalidDto = new FlashcardCreationDTO(
                 1L,
@@ -113,7 +114,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         User regularUser = userRepository.findById(2L).orElseThrow();
         User anotherRegularUser = userRepository.findById(3L).orElseThrow();
-        String tokenForAnotherUser = jwtService.generateToken(anotherRegularUser);
+        String tokenForAnotherUser = jwtService.generateToken(UserPrincipal.from(anotherRegularUser));
 
         FlashcardSet regularUserSet = TestEntities.flashcardSetBuilder()
                 .setId(null)
@@ -209,7 +210,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void updateFlashcard_ShouldModifyCardInDB() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet setToDB = TestEntities
                 .flashcardSetBuilder()
@@ -247,7 +248,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void updateFlashcard_ShouldReturn400_WhenInvalidData() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet setToDB = TestEntities
                 .flashcardSetBuilder()
@@ -292,7 +293,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         User regularUser = userRepository.findById(2L).orElseThrow();
         User anotherRegularUser = userRepository.findById(3L).orElseThrow();
-        String tokenForAnotherUser = jwtService.generateToken(anotherRegularUser);
+        String tokenForAnotherUser = jwtService.generateToken(UserPrincipal.from(anotherRegularUser));
 
         FlashcardSet regularUserSet = flashcardSetRepository.save(
                 TestEntities
@@ -324,7 +325,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void updateFlashcard_ShouldReturn404_WhenNotFound() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
         FlashcardUpdateDTO flashcardUpdateDTO = new FlashcardUpdateDTO(
                 "New Term",
                 "New Def");
@@ -344,7 +345,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void deleteFlashcardById_ShouldRemoveFromDB() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet set = flashcardSetRepository.save(
                 TestEntities
@@ -382,7 +383,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         User owner = userRepository.findById(2L).orElseThrow();
         User anotherUser = userRepository.findById(3L).orElseThrow();
-        String anotherUserToken = jwtService.generateToken(anotherUser);
+        String anotherUserToken = jwtService.generateToken(UserPrincipal.from(anotherUser));
 
         FlashcardSet set = flashcardSetRepository.save(
                 TestEntities
@@ -410,7 +411,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void deleteFlashcardById_ShouldReturn404_WhenNotFound() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         // when, then
         mockMvc.perform(delete("/flashcards/99999")
@@ -426,7 +427,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void starFlashcard_ShouldMarkAsStarred() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet set = flashcardSetRepository.save(
                 TestEntities
@@ -454,7 +455,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void unstarFlashcard_ShouldRemoveStar() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         FlashcardSet set = flashcardSetRepository.save(
                 TestEntities
@@ -495,7 +496,7 @@ class FlashcardControllerIntegrationTest extends AbstractIntegrationTest {
     void starFlashcard_ShouldReturn404_WhenNotFound() throws Exception {
         // given
         User userFromDB = userRepository.findById(2L).orElseThrow();
-        String realUserToken = jwtService.generateToken(userFromDB);
+        String realUserToken = jwtService.generateToken(UserPrincipal.from(userFromDB));
 
         // when, then
         mockMvc.perform(post("/flashcards/99999/starred")

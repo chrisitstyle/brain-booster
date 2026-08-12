@@ -8,8 +8,8 @@ import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
-import com.brainbooster.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,13 +29,12 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public GameAnalyticsSummaryDTO getMySetSummary(Long setId) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
         List<GameAttempt> attempts = gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        currentUser.getUserId(),
-                        setId
-                );
+                        currentUser.userId(),
+                        setId);
 
         long totalAttempts = attempts.size();
 
@@ -94,11 +93,11 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<GameProgressPointDTO> getMySetProgress(Long setId) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
         return gameAttemptRepository
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        currentUser.getUserId(),
+                        currentUser.userId(),
                         setId
                 )
                 .stream()
@@ -108,11 +107,11 @@ public class GameAnalyticsService {
 
     @Transactional(readOnly = true)
     public List<WeakFlashcardDTO> getMySetWeakFlashcards(Long setId) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        currentUser.getUserId(),
+                        currentUser.userId(),
                         setId
                 );
 
@@ -123,11 +122,11 @@ public class GameAnalyticsService {
     public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(
             Long setId
     ) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
         List<GameQuestionResult> questionResults = gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        currentUser.getUserId(),
+                        currentUser.userId(),
                         setId
                 );
 

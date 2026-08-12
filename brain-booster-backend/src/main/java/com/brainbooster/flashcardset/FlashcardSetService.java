@@ -10,6 +10,7 @@ import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetCreationDTOMapper;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
@@ -89,12 +90,11 @@ public class FlashcardSetService {
             throw new NoSuchElementException(buildFlashcardSetNotFoundMessage(setId));
         }
 
-        User authUser = currentUserProvider.getCurrentUserOrNull();
-
-        Set<Long> starredFlashcardIds = authUser == null
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUserOrNull();
+        Set<Long> starredFlashcardIds = authenticatedUser == null
                 ? Set.of()
                 : starredFlashcardRepository.findStarredFlashcardIdsByUserIdAndSetId(
-                authUser.getUserId(),
+                authenticatedUser.userId(),
                 setId
         );
 
@@ -136,9 +136,9 @@ public class FlashcardSetService {
      * Helper method to verify if the authenticated user has rights to modify/delete the set.
      */
     private void verifySetAccess(FlashcardSet flashcardSet, String errorMessage) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
         ownerOrAdminPolicy.verify(
-                authUser,
+                authenticatedUser,
                 flashcardSet.getUser().getUserId(),
                 errorMessage);
     }

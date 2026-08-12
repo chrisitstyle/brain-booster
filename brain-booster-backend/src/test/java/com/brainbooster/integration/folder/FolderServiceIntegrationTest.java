@@ -9,6 +9,7 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.integration.AbstractIntegrationTest;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
@@ -44,9 +45,15 @@ class FolderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void mockAuthenticatedUser(User user) {
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserPrincipal principal = UserPrincipal.from(user);
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        principal.getAuthorities());
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
     }
 
     // -- CREATE TESTS --

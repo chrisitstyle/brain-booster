@@ -9,6 +9,7 @@ import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
 import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
@@ -84,19 +85,19 @@ public class FlashcardService {
 
     @Transactional
     public FlashcardDTO starFlashcard(Long flashcardId) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
                 .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         boolean alreadyStarred = starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(authUser.getUserId(), flashcardId);
+                .existsByUser_UserIdAndFlashcard_FlashcardId(authenticatedUser.userId(), flashcardId);
 
         if (!alreadyStarred) {
-            User userReference = userRepository.getReferenceById(authUser.getUserId());
+            User userReference = userRepository.getReferenceById(authenticatedUser.userId());
 
             UserStarredFlashcard starredFlashcard = UserStarredFlashcard.builder()
-                    .id(new UserStarredFlashcardId(authUser.getUserId(), flashcardId))
+                    .id(new UserStarredFlashcardId(authenticatedUser.userId(), flashcardId))
                     .user(userReference)
                     .flashcard(flashcard)
                     .build();
@@ -109,13 +110,13 @@ public class FlashcardService {
 
     @Transactional
     public FlashcardDTO unstarFlashcard(Long flashcardId) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         Flashcard flashcard = flashcardRepository.findById(flashcardId)
                 .orElseThrow(() -> new NoSuchElementException(buildFlashcardNotFoundMessage(flashcardId)));
 
         starredFlashcardRepository.deleteByUser_UserIdAndFlashcard_FlashcardId(
-                authUser.getUserId(),
+                authenticatedUser.userId(),
                 flashcardId
         );
 
@@ -131,10 +132,10 @@ public class FlashcardService {
     }
 
     private void verifyFlashcardSetAccess(FlashcardSet flashcardSetFromDB, String errorMessage) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         ownerOrAdminPolicy.verify(
-                authUser,
+                authenticatedUser,
                 flashcardSetFromDB.getUser().getUserId(),
                 errorMessage);
     }

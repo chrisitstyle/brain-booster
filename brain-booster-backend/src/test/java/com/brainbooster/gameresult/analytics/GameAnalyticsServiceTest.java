@@ -9,6 +9,7 @@ import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.TestEntities;
@@ -44,14 +45,14 @@ class GameAnalyticsServiceTest {
     @Test
     void getMySetSummary_ShouldReturnEmptySummary_WhenUserHasNoAttempts() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
 
         when(gameAttemptRepository.findByUserIdAndSetIdOrderByCompletedAtAsc(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId
         )).thenReturn(List.of());
 
@@ -74,7 +75,7 @@ class GameAnalyticsServiceTest {
 
         verify(gameAttemptRepository)
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId
                 );
     }
@@ -82,7 +83,7 @@ class GameAnalyticsServiceTest {
     @Test
     void getMySetSummary_ShouldCalculateSummary_WhenAttemptsExist() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
 
         Instant firstCompletedAt = Instant.parse("2026-08-01T10:00:00Z");
@@ -106,7 +107,7 @@ class GameAnalyticsServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttemptRepository.findByUserIdAndSetIdOrderByCompletedAtAsc(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId
         )).thenReturn(List.of(firstAttempt, secondAttempt));
 
@@ -130,7 +131,7 @@ class GameAnalyticsServiceTest {
     @Test
     void getMySetProgress_ShouldReturnProgressForAuthenticatedUser() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
 
         Instant completedAt = Instant.parse("2026-08-01T10:00:00Z");
@@ -147,7 +148,7 @@ class GameAnalyticsServiceTest {
                 .thenReturn(authenticatedUser);
 
         when(gameAttemptRepository.findByUserIdAndSetIdOrderByCompletedAtAsc(
-                authenticatedUser.getUserId(),
+                authenticatedUser.userId(),
                 setId
         )).thenReturn(List.of(attempt));
 
@@ -170,14 +171,14 @@ class GameAnalyticsServiceTest {
 
         verify(gameAttemptRepository)
                 .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId);
     }
 
     @Test
     void getMySetWeakFlashcards_ShouldDelegateAnalysis() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
 
         GameQuestionResult firstResult = mock(GameQuestionResult.class);
@@ -203,7 +204,7 @@ class GameAnalyticsServiceTest {
 
         when(gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId
                 ))
                 .thenReturn(questionResults);
@@ -220,7 +221,7 @@ class GameAnalyticsServiceTest {
 
         verify(gameQuestionResultRepository)
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId
                 );
 
@@ -231,7 +232,7 @@ class GameAnalyticsServiceTest {
     @Test
     void getMySetQuestionTypeAnalytics_ShouldDelegateAnalysis() {
         // given
-        User authenticatedUser = TestEntities.createUser();
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Long setId = 1L;
 
         GameQuestionResult firstResult = mock(GameQuestionResult.class);
@@ -254,7 +255,7 @@ class GameAnalyticsServiceTest {
 
         when(gameQuestionResultRepository
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId
                 ))
                 .thenReturn(questionResults);
@@ -271,7 +272,7 @@ class GameAnalyticsServiceTest {
 
         verify(gameQuestionResultRepository)
                 .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.getUserId(),
+                        authenticatedUser.userId(),
                         setId
                 );
 

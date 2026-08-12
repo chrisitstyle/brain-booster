@@ -1,6 +1,5 @@
 package com.brainbooster.security;
 
-import com.brainbooster.user.User;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,11 +17,11 @@ public class CurrentUserProvider {
     /**
      * Retrieves the currently authenticated user from the Spring Security context.
      *
-     * @return the currently authenticated {@link User}.
+     * @return the authenticated user identity.
      * @throws AccessDeniedException if the user is not authenticated, is anonymous,
-     *  or if the principal is not an instance of {@link User}.
+     *                               or the principal is not a valid {@link UserPrincipal}.
      */
-    public User getCurrentUser() {
+    public AuthenticatedUser getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (
@@ -33,11 +32,14 @@ public class CurrentUserProvider {
             throw new AccessDeniedException("User is not authenticated");
         }
 
-        if (!(authentication.getPrincipal() instanceof User authUser)) {
+        if (!(authentication.getPrincipal() instanceof UserPrincipal principal)) {
             throw new AccessDeniedException("Invalid user principal");
         }
 
-        return authUser;
+        return new AuthenticatedUser(
+                principal.userId(),
+                principal.role()
+        );
     }
 
     /**
@@ -47,10 +49,10 @@ public class CurrentUserProvider {
      * This method does not throw an exception for anonymous, unauthenticated,
      * or invalid principals.
      *
-     * @return the currently authenticated {@link User}, or {@code null}
+     * @return the authenticated user identity, or {@code null}
      * if no valid user is authenticated.
      */
-    public User getCurrentUserOrNull() {
+    public AuthenticatedUser getCurrentUserOrNull() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (
@@ -61,10 +63,12 @@ public class CurrentUserProvider {
             return null;
         }
 
-        if (!(authentication.getPrincipal() instanceof User authUser)) {
+        if (!(authentication.getPrincipal() instanceof UserPrincipal principal)) {
             return null;
         }
 
-        return authUser;
+        return new AuthenticatedUser(
+                principal.userId(),
+                principal.role());
     }
 }

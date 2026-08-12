@@ -9,6 +9,7 @@ import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
 import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
@@ -226,8 +227,10 @@ class FlashcardSetServiceTest {
     @Test
     void getAllFlashcardsInSet_ReturnFlashcardsDTOsWithUserStarredStatus_WhenUserIsAuthenticated() {
         // given
-        User authUser = TestEntities.createUser();
-        when(currentUserProvider.getCurrentUserOrNull()).thenReturn(authUser);
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        when(currentUserProvider.getCurrentUserOrNull())
+                .thenReturn(authenticatedUser);
 
         List<Flashcard> mockFlashcards = List.of(
                 new Flashcard(1L, flashcardSet, "Question 1", "Answer 1"),
@@ -253,7 +256,7 @@ class FlashcardSetServiceTest {
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
         when(starredFlashcardRepository.findStarredFlashcardIdsByUserIdAndSetId(
-                authUser.getUserId(),
+                authenticatedUser.userId(),
                 1L
         )).thenReturn(Set.of(2L));
 
@@ -280,7 +283,7 @@ class FlashcardSetServiceTest {
                 .containsExactly(false, true);
 
         verify(starredFlashcardRepository, times(1))
-                .findStarredFlashcardIdsByUserIdAndSetId(authUser.getUserId(), 1L);
+                .findStarredFlashcardIdsByUserIdAndSetId(authenticatedUser.userId(), 1L);
     }
 
     @Test
@@ -303,7 +306,7 @@ class FlashcardSetServiceTest {
     @Test
     void updateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
         // given
-        User authUser = TestEntities.createUser();
+        AuthenticatedUser authUser = TestEntities.createAuthenticatedUser();
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         FlashcardSetUpdateDTO updateDTO = TestEntities.createFlashcardSetUpdateDTO();
@@ -354,7 +357,7 @@ class FlashcardSetServiceTest {
     @Test
     void deleteFlashcardSetById_ShouldDeleteFlashcardSet_WhenFlashcardSetExists() {
         // given
-        User authUser = TestEntities.createUser();
+        AuthenticatedUser authUser = TestEntities.createAuthenticatedUser();
         when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
 
         when(flashcardSetRepository.findById(1L))

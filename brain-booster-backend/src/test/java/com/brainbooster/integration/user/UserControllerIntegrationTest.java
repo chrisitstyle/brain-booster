@@ -6,6 +6,7 @@ import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.folder.Folder;
 import com.brainbooster.folder.FolderRepository;
 import com.brainbooster.integration.AbstractIntegrationTest;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
@@ -65,7 +66,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.ADMIN)
                 .build();
 
-        String realToken = jwtService.generateToken(existingAdmin);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingAdmin));
 
         // when & then
         mockMvc.perform(post("/users")
@@ -91,7 +92,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.USER)
                 .build();
 
-        String realToken = jwtService.generateToken(existingUser);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingUser));
 
         // when & then
         mockMvc.perform(get("/users/me")
@@ -112,7 +113,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.ADMIN)
                 .build();
 
-        String realToken = jwtService.generateToken(existingAdmin);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingAdmin));
 
         // when & then
         mockMvc.perform(get("/users")
@@ -135,7 +136,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.ADMIN)
                 .build();
 
-        String realToken = jwtService.generateToken(existingAdmin);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingAdmin));
 
         // when & then
         mockMvc.perform(get("/users/2") // fetching user with id from db
@@ -159,7 +160,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.ADMIN)
                 .build();
 
-        String realToken = jwtService.generateToken(existingAdmin);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingAdmin));
 
         // when & then
         mockMvc.perform(put("/users/2")
@@ -185,7 +186,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .role(Role.ADMIN)
                 .build();
 
-        String realToken = jwtService.generateToken(existingAdmin);
+        String realToken = jwtService.generateToken(UserPrincipal.from(existingAdmin));
 
         // when & then
         mockMvc.perform(delete("/users/2")

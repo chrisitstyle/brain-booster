@@ -7,6 +7,7 @@ import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
+import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.User;
 import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
@@ -77,15 +78,16 @@ class FlashcardSetControllerTest {
         FlashcardSetCreationDTO creationDTO =
                 TestEntities.createFlashcardSetCreationDTO();
 
-        User authenticatedUser = TestEntities.createUser();
+        UserPrincipal principal = TestEntities.createUserPrincipal(
+                TestEntities.createUser()
+        );
 
-        assertThat(authenticatedUser.getUserId()).isEqualTo(1L);
+        assertThat(principal.userId()).isEqualTo(1L);
 
-        Authentication userAuthentication =
-                UsernamePasswordAuthenticationToken.authenticated(
-                        authenticatedUser,
+        Authentication userAuthentication = UsernamePasswordAuthenticationToken.authenticated(
+                        principal,
                         null,
-                        authenticatedUser.getAuthorities()
+                        principal.getAuthorities()
                 );
 
         when(flashcardSetService.addFlashcardSet(

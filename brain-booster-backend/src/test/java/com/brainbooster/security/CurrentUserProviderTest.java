@@ -1,6 +1,5 @@
 package com.brainbooster.security;
 
-import com.brainbooster.user.User;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CurrentUserProviderTest {
 
-    private final CurrentUserProvider currentUserProvider = new CurrentUserProvider();
+    private final CurrentUserProvider currentUserProvider =
+            new CurrentUserProvider();
 
     @AfterEach
     void tearDown() {
@@ -26,20 +26,28 @@ class CurrentUserProviderTest {
     @Test
     void getCurrentUser_ShouldReturnAuthenticatedUser() {
         // given
-        User user = TestEntities.createUser();
+        UserPrincipal principal = TestEntities.createUserPrincipal(
+                TestEntities.createUser()
+        );
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        user,
-                        null,
-                        user.getAuthorities());
+                principal,
+                null,
+                principal.getAuthorities()
+        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
         // when
-        User result = currentUserProvider.getCurrentUser();
+        AuthenticatedUser result = currentUserProvider.getCurrentUser();
 
         // then
-        assertThat(result).isEqualTo(user);
+        assertThat(result.userId())
+                .isEqualTo(principal.userId());
+
+        assertThat(result.role())
+                .isEqualTo(principal.role());
     }
 
     @Test
@@ -54,11 +62,13 @@ class CurrentUserProviderTest {
     void getCurrentUser_ShouldThrowAccessDeniedException_WhenUserIsAnonymous() {
         // given
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        "anonymousUser",
-                        null,
-                        List.of());
+                "anonymousUser",
+                null,
+                List.of()
+        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
         // when + then
         assertThatThrownBy(currentUserProvider::getCurrentUser)
@@ -70,11 +80,13 @@ class CurrentUserProviderTest {
     void getCurrentUser_ShouldThrowAccessDeniedException_WhenPrincipalIsInvalid() {
         // given
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        "invalidPrincipal",
-                        null,
-                        List.of());
+                "invalidPrincipal",
+                null,
+                List.of()
+        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
         // when + then
         assertThatThrownBy(currentUserProvider::getCurrentUser)
@@ -85,26 +97,37 @@ class CurrentUserProviderTest {
     @Test
     void getCurrentUserOrNull_ShouldReturnAuthenticatedUser() {
         // given
-        User user = TestEntities.createUser();
+        UserPrincipal principal = TestEntities.createUserPrincipal(
+                TestEntities.createUser()
+        );
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        user,
-                        null,
-                        user.getAuthorities());
+                principal,
+                null,
+                principal.getAuthorities()
+        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
         // when
-        User result = currentUserProvider.getCurrentUserOrNull();
+        AuthenticatedUser result =
+                currentUserProvider.getCurrentUserOrNull();
 
         // then
-        assertThat(result).isEqualTo(user);
+        assertThat(result).isNotNull();
+
+        assertThat(result.userId())
+                .isEqualTo(principal.userId());
+
+        assertThat(result.role())
+                .isEqualTo(principal.role());
     }
 
     @Test
     void getCurrentUserOrNull_ShouldReturnNull_WhenAuthenticationIsMissing() {
         // when
-        User result = currentUserProvider.getCurrentUserOrNull();
+        AuthenticatedUser result = currentUserProvider.getCurrentUserOrNull();
 
         // then
         assertThat(result).isNull();
@@ -114,14 +137,16 @@ class CurrentUserProviderTest {
     void getCurrentUserOrNull_ShouldReturnNull_WhenUserIsAnonymous() {
         // given
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        "anonymousUser",
-                        null,
-                        List.of());
+                "anonymousUser",
+                null,
+                List.of()
+        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
         // when
-        User result = currentUserProvider.getCurrentUserOrNull();
+        AuthenticatedUser result = currentUserProvider.getCurrentUserOrNull();
 
         // then
         assertThat(result).isNull();
@@ -130,17 +155,15 @@ class CurrentUserProviderTest {
     @Test
     void getCurrentUserOrNull_ShouldReturnNull_WhenPrincipalIsInvalid() {
         // given
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(
-                        "invalidPrincipal",
-                        null,
-                        List.of()
-                );
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                "invalidPrincipal",
+                null,
+                List.of());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // when
-        User result = currentUserProvider.getCurrentUserOrNull();
+        AuthenticatedUser result = currentUserProvider.getCurrentUserOrNull();
 
         // then
         assertThat(result).isNull();

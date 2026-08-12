@@ -6,9 +6,11 @@ import com.brainbooster.folder.dto.FolderCreationDTO;
 import com.brainbooster.folder.dto.FolderDTO;
 import com.brainbooster.folder.dto.FolderUpdateDTO;
 import com.brainbooster.folder.mapper.FolderDTOMapper;
+import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.User;
+import com.brainbooster.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,13 +35,17 @@ public class FolderService {
     private final FolderDTOMapper folderDTOMapper;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
     private final CurrentUserProvider currentUserProvider;
+    private final UserRepository userRepository;
 
     @Transactional
     public FolderDTO createFolder(FolderCreationDTO dto) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
+
+        User userReference = userRepository.getReferenceById(authenticatedUser.userId());
+
 
         Folder folder = Folder.builder()
-                .user(authUser)
+                .user(userReference)
                 .name(dto.name())
                 .description(dto.description())
                 .createdAt(Instant.now())
@@ -59,9 +65,9 @@ public class FolderService {
     }
 
     public List<FolderDTO> getMyFolders() {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        return folderRepository.findAllByUserId(authUser.getUserId())
+        return folderRepository.findAllByUserId(authenticatedUser.userId())
                 .stream()
                 .map(folderDTOMapper)
                 .toList();
@@ -149,18 +155,18 @@ public class FolderService {
     }
 
     private void verifyFolderAccess(Folder folder, String errorMessage) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
         ownerOrAdminPolicy.verify(
-                authUser,
+                authenticatedUser,
                 folder.getUser().getUserId(),
                 errorMessage);
     }
 
     private void verifyFlashcardSetCanBeAdded(FlashcardSet flashcardSet) {
-        User authUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
         ownerOrAdminPolicy.verify(
-                authUser,
+                authenticatedUser,
                 flashcardSet.getUser().getUserId(),
                 ADD_FLASHCARD_SET_TO_FOLDER_ACCESS_DENIED_MSG
         );
