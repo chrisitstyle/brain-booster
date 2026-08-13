@@ -91,6 +91,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - Gradle
 - Lombok
 - Testcontainers
+- ArchUnit
 
 ### Frontend
 
@@ -759,6 +760,7 @@ The backend ensures high reliability by using **Testcontainers** to run tests ag
 - **Performance Optimized** - uses a shared **Singleton Container pattern** to drastically reduce test execution time across the entire suite.
 - **Integration Tests** - validate all application layers at once, including Spring Security (JWT) filters, with automated database state resets between runs.
 - **Repository Tests** - lightweight, transactional slice tests ensuring that native queries, constraints, and Flyway migrations behave exactly as they would in production.
+- **Architecture Tests** - use **ArchUnit** to enforce important backend boundaries and prevent architectural regressions.
 
 ## 🗺 Roadmap
 
