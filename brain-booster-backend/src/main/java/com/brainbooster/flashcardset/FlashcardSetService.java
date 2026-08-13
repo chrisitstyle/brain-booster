@@ -46,11 +46,12 @@ public class FlashcardSetService {
     private final CurrentUserProvider currentUserProvider;
 
     @Transactional
-    public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO,
-                                           Long authenticatedUserId) {
-        User setOwner = userRepository.findById(authenticatedUserId)
+    public FlashcardSetDTO addFlashcardSet(FlashcardSetCreationDTO flashcardSetCreationDTO) {
+        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
+
+        User setOwner = userRepository.findById(authenticatedUser.userId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        buildUserNotFoundMessage(authenticatedUserId)));
+                        buildUserNotFoundMessage(authenticatedUser.userId())));
 
         FlashcardSet flashcardSet = FlashcardSetCreationDTOMapper.toEntity(flashcardSetCreationDTO);
 

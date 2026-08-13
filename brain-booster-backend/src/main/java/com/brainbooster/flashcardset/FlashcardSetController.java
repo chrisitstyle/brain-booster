@@ -4,7 +4,6 @@ import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
-import com.brainbooster.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,11 +35,10 @@ public class FlashcardSetController {
     @ApiResponse(responseCode = "403", description = "User does not have permission to access this resource")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FlashcardSetDTO addFlashcardSet(@Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO,
-                                           @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+    public FlashcardSetDTO addFlashcardSet(
+            @Valid @RequestBody FlashcardSetCreationDTO flashcardSetCreationDTO) {
 
-        return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO,
-                authenticatedUser.userId());
+        return flashcardSetService.addFlashcardSet(flashcardSetCreationDTO);
     }
 
     @Operation(

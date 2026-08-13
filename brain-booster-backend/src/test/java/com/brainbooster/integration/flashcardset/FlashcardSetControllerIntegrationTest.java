@@ -66,7 +66,8 @@ class FlashcardSetControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(creationDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.setName").value("My New Set"))
-                .andExpect(jsonPath("$.description").value("Set Description"));
+                .andExpect(jsonPath("$.description").value("Set Description"))
+                .andExpect(jsonPath("$.user.nickname").value(userFromDB.getNickname()));
     }
 
     @Test

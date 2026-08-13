@@ -8,7 +8,6 @@ import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
-import com.brainbooster.security.UserPrincipal;
 import com.brainbooster.user.dto.UserSummaryDTO;
 import com.brainbooster.utils.TestEntities;
 import com.brainbooster.utils.TestSecurityConfiguration;
@@ -20,8 +19,6 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -34,7 +31,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,30 +70,15 @@ class FlashcardSetControllerTest {
             throws Exception {
 
         // given
-        FlashcardSetCreationDTO creationDTO =
-                TestEntities.createFlashcardSetCreationDTO();
-
-        UserPrincipal principal = TestEntities.createUserPrincipal(
-                TestEntities.createUser()
-        );
-
-        assertThat(principal.userId()).isEqualTo(1L);
-
-        Authentication userAuthentication = UsernamePasswordAuthenticationToken.authenticated(
-                principal,
-                null,
-                principal.getAuthorities()
-        );
+        FlashcardSetCreationDTO creationDTO = TestEntities.createFlashcardSetCreationDTO();
 
         when(flashcardSetService.addFlashcardSet(
-                any(FlashcardSetCreationDTO.class),
-                eq(1L)
+                any(FlashcardSetCreationDTO.class)
         )).thenReturn(flashcardSetDTO);
 
         // when
         MvcResult result = mockMvc.perform(
                         MockMvcRequestBuilders.post("/flashcard-sets")
-                                .with(authentication(userAuthentication))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .accept(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(creationDTO))
@@ -109,9 +90,7 @@ class FlashcardSetControllerTest {
 
         // then
         verify(flashcardSetService).addFlashcardSet(
-                any(FlashcardSetCreationDTO.class),
-                eq(1L)
-        );
+                any(FlashcardSetCreationDTO.class));
 
         FlashcardSetDTO responseDTO = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
