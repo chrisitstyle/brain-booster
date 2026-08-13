@@ -59,6 +59,11 @@ public class GlobalExceptionHandler {
         return createErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidGameModeException.class)
+    public ResponseEntity<ErrorDTO> handleInvalidGameMode(InvalidGameModeException ex) {
+        return createErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorDTO> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
         return createErrorResponse(ex.getMessage(), HttpStatus.UNPROCESSABLE_CONTENT);
