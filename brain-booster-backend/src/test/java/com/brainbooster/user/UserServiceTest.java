@@ -4,6 +4,8 @@ import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.authorization.AdminPolicy;
+import com.brainbooster.security.authorization.UserDeletionPolicy;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
@@ -40,6 +42,10 @@ class UserServiceTest {
     private CurrentUserProvider currentUserProvider;
     @Mock
     private UserAccountCreator userAccountCreator;
+    @Mock
+    private AdminPolicy adminPolicy;
+    @Mock
+    private UserDeletionPolicy userDeletionPolicy;
 
     @InjectMocks
     private UserService userService;
@@ -218,6 +224,7 @@ class UserServiceTest {
         Assertions.assertThat(result.email()).isEqualTo("new@example.com");
 
         verify(userRepository).save(any(User.class));
+        verify(adminPolicy).verify(adminUser);
     }
 
     @Test
@@ -227,6 +234,10 @@ class UserServiceTest {
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
+
+        doThrow(new AccessDeniedException(
+                "You are not allowed to update other users"
+        )).when(adminPolicy).verify(authenticatedUser);
 
         UserUpdateDTO updateDTO = new UserUpdateDTO(
                 "newNickname",
@@ -258,6 +269,7 @@ class UserServiceTest {
 
         // then
         verify(userRepository).deleteById(1L);
+        verify(userDeletionPolicy).verify(adminUser, 1L);
     }
 
     @Test
@@ -277,6 +289,7 @@ class UserServiceTest {
         Assertions.assertThat(exception.getMessage())
                 .isEqualTo("User with id: 1 not found");
 
+        verify(userDeletionPolicy).verify(adminUser, 1L);
         verify(userRepository, never()).deleteById(anyLong());
     }
 
@@ -288,6 +301,11 @@ class UserServiceTest {
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(loggedUser);
 
+        doThrow(new AccessDeniedException(
+                "You cannot delete yourself or other users"
+        ))
+                .when(userDeletionPolicy)
+                .verify(loggedUser, 3L);
         // when, then
         AccessDeniedException exception = assertThrows(
                 AccessDeniedException.class,
@@ -305,6 +323,10 @@ class UserServiceTest {
 
         when(currentUserProvider.getCurrentUser()).thenReturn(adminUser);
 
+        doThrow(new AccessDeniedException(
+                "You cannot delete yourself or other users"))
+                .when(userDeletionPolicy)
+                .verify(adminUser, 1L);
         // when, then
         AccessDeniedException exception = assertThrows(
                 AccessDeniedException.class,
@@ -315,5 +337,7 @@ class UserServiceTest {
                 .isEqualTo("You cannot delete yourself or other users");
 
         verify(userRepository, never()).deleteById(anyLong());
+        verify(userDeletionPolicy).verify(adminUser, 1L);
+        verifyNoInteractions(userRepository);
     }
 }

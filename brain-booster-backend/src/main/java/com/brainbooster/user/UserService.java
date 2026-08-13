@@ -3,18 +3,18 @@ package com.brainbooster.user;
 import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
+import com.brainbooster.security.authorization.AdminPolicy;
+import com.brainbooster.security.authorization.UserDeletionPolicy;
 import com.brainbooster.user.dto.UserCreationDTO;
 import com.brainbooster.user.dto.UserDTO;
 import com.brainbooster.user.dto.UserUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +24,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final CurrentUserProvider currentUserProvider;
     private final UserAccountCreator userAccountCreator;
+    private final AdminPolicy adminPolicy;
+    private final UserDeletionPolicy userDeletionPolicy;
 
 
     public UserDTO addUser(UserCreationDTO userCreationDTO) {
@@ -61,11 +63,7 @@ public class UserService {
 
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        boolean isAdmin = Role.ADMIN.equals(authenticatedUser.role());
-
-        if (!isAdmin) {
-            throw new AccessDeniedException("You are not allowed to update other users");
-        }
+        adminPolicy.verify(authenticatedUser);
 
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id: " + userId + " not found"));
@@ -82,14 +80,7 @@ public class UserService {
 
         AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
 
-        boolean isAdmin = Role.ADMIN.equals(authenticatedUser.role());
-        boolean isOwner = Objects.equals(
-                authenticatedUser.userId(),
-                userId);
-
-        if (isOwner || !isAdmin) {
-            throw new AccessDeniedException("You cannot delete yourself or other users");
-        }
+        userDeletionPolicy.verify(authenticatedUser, userId);
 
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User with id: " + userId + " not found");
