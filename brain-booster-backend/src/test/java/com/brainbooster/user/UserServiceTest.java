@@ -2,10 +2,6 @@ package com.brainbooster.user;
 
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ResourceNotFoundException;
-import com.brainbooster.flashcardset.FlashcardSet;
-import com.brainbooster.flashcardset.FlashcardSetRepository;
-import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.dto.UserCreationDTO;
@@ -23,7 +19,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,10 +35,6 @@ class UserServiceTest {
     @Mock
     private UserDTOMapper userDTOMapper;
     @Mock
-    private FlashcardSetRepository flashcardSetRepository;
-    @Mock
-    private FlashcardSetDTOMapper flashcardSetDTOMapper;
-    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private CurrentUserProvider currentUserProvider;
@@ -55,15 +46,11 @@ class UserServiceTest {
 
     private User user;
     private UserDTO userDTO;
-    private FlashcardSet flashcardSet;
-    private FlashcardSetDTO flashcardSetDTO;
 
     @BeforeEach
     void setUp() {
         user = TestEntities.createUser();
         userDTO = TestEntities.createUserDTO();
-        flashcardSet = TestEntities.createFlashcardSet();
-        flashcardSetDTO = TestEntities.createFlashcardSetDTO();
     }
 
     @Test
@@ -194,65 +181,6 @@ class UserServiceTest {
 
         Assertions.assertThat(exception.getMessage())
                 .isEqualTo("User with this id does not exist");
-    }
-
-    @Test
-    void getAllFlashcardSetsByUserId_ShouldReturnFlashcardSetsDTO_WhenUserExists() {
-        when(userRepository.existsById(1L)).thenReturn(true);
-        when(flashcardSetRepository.findByUserId(1L)).thenReturn(List.of(flashcardSet));
-        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
-
-        List<FlashcardSetDTO> flashcardSetDTOList =
-                userService.getAllFlashcardSetsByUserId(1L);
-
-        Assertions.assertThat(flashcardSetDTOList)
-                .contains(flashcardSetDTO)
-                .hasSize(1);
-    }
-
-    @Test
-    void getAllFlashcardSetsByUserId_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
-        when(userRepository.existsById(1L)).thenReturn(false);
-
-        ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> userService.getAllFlashcardSetsByUserId(1L)
-        );
-
-        Assertions.assertThat(exception.getMessage())
-                .isEqualTo("User with id: 1 not found");
-    }
-
-    @Test
-    void getAllFlashcardSetsByUserNickname_ShouldReturnFlashcardSetsDTO_WhenUserExists() {
-        String nickname = "johndoe";
-
-        when(userRepository.existsByNickname(nickname)).thenReturn(true);
-        when(flashcardSetRepository.findAllByUserNickname(nickname))
-                .thenReturn(List.of(flashcardSet));
-        when(flashcardSetDTOMapper.apply(flashcardSet)).thenReturn(flashcardSetDTO);
-
-        List<FlashcardSetDTO> result =
-                userService.getAllFlashcardSetsByUserNickname(nickname);
-
-        Assertions.assertThat(result)
-                .contains(flashcardSetDTO)
-                .hasSize(1);
-    }
-
-    @Test
-    void getAllFlashcardSetsByUserNickname_ShouldThrowNoSuchElement_WhenUserDoesNotExist() {
-        String nickname = "unknown";
-
-        when(userRepository.existsByNickname(nickname)).thenReturn(false);
-
-        ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> userService.getAllFlashcardSetsByUserNickname(nickname)
-        );
-
-        Assertions.assertThat(exception.getMessage())
-                .isEqualTo("User with nickname: " + nickname + " not found");
     }
 
     @Test

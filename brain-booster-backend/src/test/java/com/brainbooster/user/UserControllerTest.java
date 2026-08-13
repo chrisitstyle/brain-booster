@@ -6,6 +6,7 @@ import com.brainbooster.config.JwtService;
 import com.brainbooster.exception.EmailAlreadyExistsException;
 import com.brainbooster.exception.ErrorDTO;
 import com.brainbooster.exception.ResourceNotFoundException;
+import com.brainbooster.flashcardset.FlashcardSetService;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.folder.FolderService;
 import com.brainbooster.folder.dto.FolderDTO;
@@ -48,6 +49,8 @@ class UserControllerTest {
     private JwtService jwtService;
     @MockitoBean
     private FolderService folderService;
+    @MockitoBean
+    private FlashcardSetService flashcardSetService;
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @Autowired
@@ -159,7 +162,7 @@ class UserControllerTest {
         // given
         long userId = 1L;
         FlashcardSetDTO setDTO = TestEntities.createFlashcardSetDTO();
-        when(userService.getAllFlashcardSetsByUserId(userId)).thenReturn(List.of(setDTO));
+        when(flashcardSetService.getAllFlashcardSetsByUserId(userId)).thenReturn(List.of(setDTO));
 
         // when
         MvcResult result = mockMvc.perform(get("/users/" + userId + "/flashcard-sets")
@@ -183,7 +186,7 @@ class UserControllerTest {
         // given
         String nickname = "johndoe";
         FlashcardSetDTO setDTO = TestEntities.createFlashcardSetDTO();
-        when(userService.getAllFlashcardSetsByUserNickname(nickname)).thenReturn(List.of(setDTO));
+        when(flashcardSetService.getAllFlashcardSetsByUserNickname(nickname)).thenReturn(List.of(setDTO));
 
         // when
         MvcResult result = mockMvc.perform(get("/users/nickname/" + nickname + "/flashcard-sets")

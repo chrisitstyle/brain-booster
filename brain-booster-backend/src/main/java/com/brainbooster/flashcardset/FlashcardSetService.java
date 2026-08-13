@@ -27,6 +27,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class FlashcardSetService {
 
+    private static final String USER_WITH_NICKNAME_MESSAGE_PREFIX = "User with nickname: ";
     private static final String NOT_FOUND_MESSAGE_SUFFIX = " not found";
     private static final String USER_WITH_ID_MESSAGE_PREFIX = "User with id: ";
     private static final String FLASHCARD_SET_WITH_ID_MESSAGE_PREFIX = "FlashcardSet with id: ";
@@ -73,6 +74,32 @@ public class FlashcardSetService {
 
     public List<FlashcardSetDTO> getAllFlashcardSets() {
         return flashcardSetRepository.findAllWithUsers()
+                .stream()
+                .map(flashcardSetDTOMapper)
+                .toList();
+    }
+
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    buildUserNotFoundMessage(userId)
+            );
+        }
+
+        return flashcardSetRepository.findByUserId(userId)
+                .stream()
+                .map(flashcardSetDTOMapper)
+                .toList();
+    }
+
+    public List<FlashcardSetDTO> getAllFlashcardSetsByUserNickname(String nickname) {
+        if (!userRepository.existsByNickname(nickname)) {
+            throw new ResourceNotFoundException(
+                    buildUserNotFoundMessage(nickname)
+            );
+        }
+
+        return flashcardSetRepository.findAllByUserNickname(nickname)
                 .stream()
                 .map(flashcardSetDTOMapper)
                 .toList();
@@ -145,6 +172,12 @@ public class FlashcardSetService {
 
     private String buildUserNotFoundMessage(Long userId) {
         return USER_WITH_ID_MESSAGE_PREFIX + userId + NOT_FOUND_MESSAGE_SUFFIX;
+    }
+
+    private String buildUserNotFoundMessage(String nickname) {
+        return USER_WITH_NICKNAME_MESSAGE_PREFIX
+                + nickname
+                + NOT_FOUND_MESSAGE_SUFFIX;
     }
 
     private String buildFlashcardSetNotFoundMessage(Long setId) {

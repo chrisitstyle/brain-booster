@@ -277,6 +277,103 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
                 .hasMessageContaining("FlashcardSet with id: 999 not found");
     }
 
+    @Test
+    @DisplayName("getAllFlashcardSetsByUserId - Should return flashcard sets for user")
+    void getAllFlashcardSetsByUserId_ShouldReturnUserSets() {
+        // given
+        User user = userRepository.findById(2L).orElseThrow();
+        User anotherUser = userRepository.findById(3L).orElseThrow();
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(user)
+                        .setName("User Set 1")
+                        .build());
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(user)
+                        .setName("User Set 2")
+                        .build());
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(anotherUser)
+                        .setName("Another User Set")
+                        .build());
+
+        // when
+        List<FlashcardSetDTO> results = flashcardSetService.getAllFlashcardSetsByUserId(user.getUserId());
+
+        // then
+        assertThat(results)
+                .extracting(FlashcardSetDTO::setName)
+                .containsExactlyInAnyOrder("User Set 1", "User Set 2")
+                .doesNotContain("Another User Set");
+    }
+
+    @Test
+    @DisplayName("getAllFlashcardSetsByUserId - Should throw ResourceNotFoundException when user does not exist")
+    void getAllFlashcardSetsByUserId_ShouldThrowResourceNotFoundException_WhenUserNotFound() {
+        // when, then
+        assertThatThrownBy(() -> flashcardSetService.getAllFlashcardSetsByUserId(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User with id: 999 not found");
+    }
+
+    @Test
+    @DisplayName("getAllFlashcardSetsByUserNickname - Should return flashcard sets for user")
+    void getAllFlashcardSetsByUserNickname_ShouldReturnUserSets() {
+        // given
+        User user = userRepository.findById(2L).orElseThrow();
+        User anotherUser = userRepository.findById(3L).orElseThrow();
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(user)
+                        .setName("Nickname Set 1")
+                        .build());
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(user)
+                        .setName("Nickname Set 2")
+                        .build());
+
+        flashcardSetRepository.save(
+                TestEntities.flashcardSetBuilder()
+                        .setId(null)
+                        .user(anotherUser)
+                        .setName("Another User Set")
+                        .build());
+
+        // when
+        List<FlashcardSetDTO> results = flashcardSetService.getAllFlashcardSetsByUserNickname(
+                        user.getNickname());
+
+        // then
+        assertThat(results)
+                .extracting(FlashcardSetDTO::setName)
+                .containsExactlyInAnyOrder("Nickname Set 1", "Nickname Set 2")
+                .doesNotContain("Another User Set");
+    }
+
+    @Test
+    @DisplayName("getAllFlashcardSetsByUserNickname - Should throw ResourceNotFoundException when user does not exist")
+    void getAllFlashcardSetsByUserNickname_ShouldThrowResourceNotFoundException_WhenUserNotFound() {
+        // when, then
+        assertThatThrownBy(() -> flashcardSetService.getAllFlashcardSetsByUserNickname(
+                        "unknown-user"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining(
+                        "User with nickname: unknown-user not found");
+    }
+
     // -- UPDATE TESTS --
 
     @Test

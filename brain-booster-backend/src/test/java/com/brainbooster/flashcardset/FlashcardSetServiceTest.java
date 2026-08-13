@@ -308,6 +308,101 @@ class FlashcardSetServiceTest {
     }
 
     @Test
+    void getAllFlashcardSetsByUserId_ShouldReturnFlashcardSets_WhenUserExists() {
+        // given
+        Long userId = 1L;
+
+        when(userRepository.existsById(userId))
+                .thenReturn(true);
+
+        when(flashcardSetRepository.findByUserId(userId))
+                .thenReturn(List.of(flashcardSet));
+
+        when(flashcardSetDTOMapper.apply(flashcardSet))
+                .thenReturn(flashcardSetDTO);
+
+        // when
+        List<FlashcardSetDTO> result =
+                flashcardSetService.getAllFlashcardSetsByUserId(userId);
+
+        // then
+        Assertions.assertThat(result)
+                .containsExactly(flashcardSetDTO);
+
+        verify(userRepository).existsById(userId);
+        verify(flashcardSetRepository).findByUserId(userId);
+        verify(flashcardSetDTOMapper).apply(flashcardSet);
+    }
+
+    @Test
+    void getAllFlashcardSetsByUserId_ShouldThrowResourceNotFound_WhenUserDoesNotExist() {
+        // given
+        Long userId = 1L;
+
+        when(userRepository.existsById(userId))
+                .thenReturn(false);
+
+        // when, then
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> flashcardSetService.getAllFlashcardSetsByUserId(userId));
+
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("User with id: 1 not found");
+
+        verify(flashcardSetRepository, never())
+                .findByUserId(anyLong());
+    }
+
+    @Test
+    void getAllFlashcardSetsByUserNickname_ShouldReturnFlashcardSets_WhenUserExists() {
+        // given
+        String nickname = "johndoe";
+
+        when(userRepository.existsByNickname(nickname))
+                .thenReturn(true);
+
+        when(flashcardSetRepository.findAllByUserNickname(nickname))
+                .thenReturn(List.of(flashcardSet));
+
+        when(flashcardSetDTOMapper.apply(flashcardSet))
+                .thenReturn(flashcardSetDTO);
+
+        // when
+        List<FlashcardSetDTO> result = flashcardSetService.getAllFlashcardSetsByUserNickname(nickname);
+
+        // then
+        Assertions.assertThat(result)
+                .containsExactly(flashcardSetDTO);
+
+        verify(userRepository).existsByNickname(nickname);
+        verify(flashcardSetRepository)
+                .findAllByUserNickname(nickname);
+    }
+
+    @Test
+    void getAllFlashcardSetsByUserNickname_ShouldThrowResourceNotFound_WhenUserDoesNotExist() {
+        // given
+        String nickname = "unknown";
+
+        when(userRepository.existsByNickname(nickname))
+                .thenReturn(false);
+
+        // when + then
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> flashcardSetService
+                        .getAllFlashcardSetsByUserNickname(nickname)
+        );
+
+        Assertions.assertThat(exception.getMessage())
+                .isEqualTo("User with nickname: unknown not found");
+
+        verify(flashcardSetRepository, never())
+                .findAllByUserNickname(anyString());
+    }
+
+    @Test
     void updateFlashcardSet_ReturnsUpdatedFlashcardSetDTO() {
         // given
         AuthenticatedUser authUser = TestEntities.createAuthenticatedUser();
