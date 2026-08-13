@@ -1,5 +1,6 @@
 package com.brainbooster.gameresult.attempt;
 
+import com.brainbooster.exception.InvalidGameModeException;
 import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.gameresult.dto.GameAttemptDTO;
 import com.brainbooster.gameresult.dto.GameAttemptSummaryDTO;
@@ -23,12 +24,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,8 +78,8 @@ class GameAttemptServiceTest {
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
 
         Long setId = 1L;
-        LocalDate from = LocalDate.of(2026, 8, 1);
-        LocalDate to = LocalDate.of(2026, 8, 10);
+        LocalDate from = LocalDate.of(2026, Month.AUGUST, 1);
+        LocalDate to = LocalDate.of(2026, Month.AUGUST, 10);
 
         Instant expectedFrom = Instant.parse("2026-08-01T00:00:00Z");
 
@@ -194,7 +194,7 @@ class GameAttemptServiceTest {
     }
 
     @Test
-    void getMyGameAttempts_ShouldThrowBadRequest_WhenModeIsInvalid() {
+    void getMyGameAttempts_ShouldThrowInvalidGameModeException_WhenModeIsInvalid() {
         // given
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
         Pageable pageable = PageRequest.of(0, 20);
@@ -212,17 +212,8 @@ class GameAttemptServiceTest {
                         pageable
                 )
         )
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(exception -> {
-                    ResponseStatusException responseException =
-                            (ResponseStatusException) exception;
-
-                    assertThat(responseException.getStatusCode())
-                            .isEqualTo(HttpStatus.BAD_REQUEST);
-
-                    assertThat(responseException.getReason())
-                            .isEqualTo("Invalid game mode: invalid-mode");
-                });
+                .isInstanceOf(InvalidGameModeException.class)
+                .hasMessage("Invalid game mode: invalid-mode");
 
         verify(gameAttemptRepository, never())
                 .findByUserIdWithFilters(
