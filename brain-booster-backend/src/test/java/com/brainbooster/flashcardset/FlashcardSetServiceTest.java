@@ -13,6 +13,7 @@ import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
+import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.user.UserRepository;
 import com.brainbooster.utils.TestEntities;
@@ -67,9 +68,15 @@ class FlashcardSetServiceTest {
     @Test
     void addFlashcardSetCreationDTO_ReturnsFlashcardSetDTO() {
         // given
-        Long userId = 1L;
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+        Long userId = authenticatedUser.userId();
+
         FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
+
         User mockUser = TestEntities.createUser();
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
 
         when(userRepository.findById(userId))
                 .thenReturn(Optional.of(mockUser));
@@ -81,8 +88,7 @@ class FlashcardSetServiceTest {
                 .thenReturn(flashcardSetDTO);
 
         // when
-        FlashcardSetDTO resultDTO =
-                flashcardSetService.addFlashcardSet(inputDTO, userId);
+        FlashcardSetDTO resultDTO = flashcardSetService.addFlashcardSet(inputDTO);
 
         // then
         Assertions.assertThat(resultDTO).isNotNull();
@@ -93,6 +99,7 @@ class FlashcardSetServiceTest {
         Assertions.assertThat(resultDTO.description())
                 .isEqualTo(flashcardSetDTO.description());
 
+        verify(currentUserProvider).getCurrentUser();
         verify(userRepository).findById(userId);
         verify(flashcardSetRepository).save(any(FlashcardSet.class));
         verify(flashcardRepository).saveAll(anyList());
@@ -103,21 +110,29 @@ class FlashcardSetServiceTest {
     void addFlashcardSet_ThrowsResourceNotFoundException_WhenUserNotFound() {
         // given
         Long userId = 999L;
-        FlashcardSetCreationDTO inputDTO = TestEntities.createFlashcardSetCreationDTO();
+
+        AuthenticatedUser authenticatedUser =
+                new AuthenticatedUser(userId, Role.USER);
+
+        FlashcardSetCreationDTO inputDTO =
+                TestEntities.createFlashcardSetCreationDTO();
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(authenticatedUser);
 
         when(userRepository.findById(userId))
                 .thenReturn(Optional.empty());
 
         // when + then
         ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> flashcardSetService.addFlashcardSet(inputDTO, userId)
-        );
+                ResourceNotFoundException.class, () -> flashcardSetService.addFlashcardSet(inputDTO));
 
         Assertions.assertThat(exception.getMessage())
                 .isEqualTo("User with id: " + userId + " not found");
 
+        verify(currentUserProvider).getCurrentUser();
         verify(userRepository).findById(userId);
+
         verify(flashcardSetRepository, never())
                 .save(any(FlashcardSet.class));
     }

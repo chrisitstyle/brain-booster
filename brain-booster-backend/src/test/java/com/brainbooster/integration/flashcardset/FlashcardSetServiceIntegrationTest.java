@@ -68,16 +68,16 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     void addFlashcardSet_ShouldSaveSet() {
         // given
         User owner = userRepository.findById(2L).orElseThrow();
+        mockAuthenticatedUser(owner);
+
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "My Set",
                 "My Desc",
                 List.of(
-                        new FlashcardContentDTO("Term 1", "Definition 1")
-                )
-        );
+                        new FlashcardContentDTO("Term 1", "Definition 1")));
 
         // when
-        FlashcardSetDTO result = flashcardSetService.addFlashcardSet(creationDTO, owner.getUserId());
+        FlashcardSetDTO result = flashcardSetService.addFlashcardSet(creationDTO);
 
         // then
         assertThat(result.setName()).isEqualTo("My Set");
@@ -90,23 +90,20 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
     void addFlashcardSet_ShouldSaveFlashcardsWithSet() {
         // given
         User owner = userRepository.findById(2L).orElseThrow();
-
+        mockAuthenticatedUser(owner);
         FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
                 "My Set",
                 "My Desc",
                 List.of(
                         new FlashcardContentDTO("Term 1", "Definition 1"),
-                        new FlashcardContentDTO("Term 2", "Definition 2")
-                )
+                        new FlashcardContentDTO("Term 2", "Definition 2"))
         );
 
         // when
-        FlashcardSetDTO result =
-                flashcardSetService.addFlashcardSet(creationDTO, owner.getUserId());
+        FlashcardSetDTO result = flashcardSetService.addFlashcardSet(creationDTO);
 
         // then
-        List<Flashcard> savedFlashcards =
-                flashcardRepository.findAllByFlashcardSet_SetId(result.setId());
+        List<Flashcard> savedFlashcards = flashcardRepository.findAllByFlashcardSet_SetId(result.setId());
 
         assertThat(savedFlashcards)
                 .hasSize(2)
@@ -114,22 +111,6 @@ class FlashcardSetServiceIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder(
                         tuple("Term 1", "Definition 1"),
                         tuple("Term 2", "Definition 2"));
-    }
-
-    @Test
-    @DisplayName("addFlashcardSet - Should throw ResourceNotFoundException when user does not exist")
-    void addFlashcardSet_ShouldThrowResourceNotFoundException_WhenUserNotFound() {
-        // given
-        FlashcardSetCreationDTO creationDTO = new FlashcardSetCreationDTO(
-                "My Set",
-                "My Desc",
-                List.of(
-                        new FlashcardContentDTO("Term 1", "Definition 1")));
-
-        // when, then
-        assertThatThrownBy(() -> flashcardSetService.addFlashcardSet(creationDTO, 999L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("User with id: 999 not found");
     }
 
     // -- READ TESTS --
