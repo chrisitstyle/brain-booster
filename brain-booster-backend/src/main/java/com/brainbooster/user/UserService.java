@@ -1,9 +1,6 @@
 package com.brainbooster.user;
 
 import com.brainbooster.exception.ResourceNotFoundException;
-import com.brainbooster.flashcardset.FlashcardSetRepository;
-import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
-import com.brainbooster.flashcardset.mapper.FlashcardSetDTOMapper;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.user.dto.UserCreationDTO;
@@ -25,8 +22,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserDTOMapper userDTOMapper;
     private final PasswordEncoder passwordEncoder;
-    private final FlashcardSetRepository flashcardSetRepository;
-    private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final CurrentUserProvider currentUserProvider;
     private final UserAccountCreator userAccountCreator;
 
@@ -59,30 +54,6 @@ public class UserService {
         return userRepository.findById(userId).
                 map(userDTOMapper)
                 .orElseThrow(() -> new ResourceNotFoundException("User with this id does not exist"));
-    }
-
-    public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(Long userId) {
-
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User with id: " + userId + " not found");
-        }
-
-        return flashcardSetRepository.findByUserId(userId)
-                .stream()
-                .map(flashcardSetDTOMapper)
-                .toList();
-    }
-
-    public List<FlashcardSetDTO> getAllFlashcardSetsByUserNickname(String nickname) {
-
-        if (!userRepository.existsByNickname(nickname)) {
-            throw new ResourceNotFoundException("User with nickname: " + nickname + " not found");
-        }
-
-        return flashcardSetRepository.findAllByUserNickname(nickname)
-                .stream()
-                .map(flashcardSetDTOMapper)
-                .toList();
     }
 
     @Transactional

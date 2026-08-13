@@ -1,6 +1,7 @@
 package com.brainbooster.user;
 
 
+import com.brainbooster.flashcardset.FlashcardSetService;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.folder.FolderService;
 import com.brainbooster.folder.dto.FolderDTO;
@@ -30,6 +31,7 @@ public class UserController {
 
     private final UserService userService;
     private final FolderService folderService;
+    private final FlashcardSetService flashcardSetService;
 
     @Operation(
             summary = "Create a new user",
@@ -100,7 +102,7 @@ public class UserController {
     public List<FlashcardSetDTO> getAllFlashcardSetsByUserId(
             @Parameter(description = "ID of the user", example = "1")
             @PathVariable Long userId) {
-        return userService.getAllFlashcardSetsByUserId(userId);
+        return flashcardSetService.getAllFlashcardSetsByUserId(userId);
 
     }
 
@@ -114,7 +116,7 @@ public class UserController {
     public List<FlashcardSetDTO> getAllFlashcardSetsByNickname(
             @Parameter(description = "Nickname of the user", example = "johndoe")
             @PathVariable String nickname) {
-        return userService.getAllFlashcardSetsByUserNickname(nickname);
+        return flashcardSetService.getAllFlashcardSetsByUserNickname(nickname);
     }
 
     @Operation(
