@@ -3,6 +3,7 @@ package com.brainbooster.flashcard;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
+import com.brainbooster.flashcard.starred.StarredFlashcardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,7 +22,7 @@ import java.util.List;
 @RequestMapping("/flashcards")
 public class FlashcardController {
     private final FlashcardService flashcardService;
-
+    private final StarredFlashcardService starredFlashcardService;
 
     @Operation(
             summary = "Create a new flashcard",
@@ -93,7 +94,7 @@ public class FlashcardController {
     @ApiResponse(responseCode = "404", description = "Flashcard not found")
     @PostMapping("/{flashcardId}/starred")
     public FlashcardDTO starFlashcard(@PathVariable Long flashcardId) {
-        return flashcardService.starFlashcard(flashcardId);
+        return starredFlashcardService.starFlashcard(flashcardId);
     }
 
     @Operation(
@@ -106,7 +107,7 @@ public class FlashcardController {
     @ApiResponse(responseCode = "404", description = "Flashcard not found")
     @DeleteMapping("/{flashcardId}/starred")
     public FlashcardDTO unstarFlashcard(@PathVariable Long flashcardId) {
-        return flashcardService.unstarFlashcard(flashcardId);
+        return starredFlashcardService.unstarFlashcard(flashcardId);
     }
 
     @Operation(

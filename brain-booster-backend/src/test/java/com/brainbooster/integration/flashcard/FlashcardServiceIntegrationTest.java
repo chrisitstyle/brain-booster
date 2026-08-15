@@ -7,7 +7,6 @@ import com.brainbooster.flashcard.FlashcardService;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.integration.AbstractIntegrationTest;
@@ -40,8 +39,6 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
     private FlashcardSetRepository flashcardSetRepository;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private UserStarredFlashcardRepository starredFlashcardRepository;
 
     @AfterEach
     void clearSecurityContext() {
@@ -302,70 +299,5 @@ class FlashcardServiceIntegrationTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> flashcardService.deleteFlashcardById(flashcardId))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("You are not allowed to delete this flashcard!");
-    }
-
-    // -- STARRED TESTS --
-
-    @Test
-    @DisplayName("starFlashcard - Should add star relation for authenticated user")
-    void starFlashcard_ShouldSaveStarRelation() {
-        // given
-        User user = userRepository.findById(2L).orElseThrow();
-        mockAuthenticatedUser(user);
-
-        FlashcardSet savedSet = flashcardSetRepository.save(
-                TestEntities
-                        .flashcardSetBuilder()
-                        .setId(null)
-                        .user(user).build());
-
-        Flashcard savedCard = flashcardRepository.save(
-                TestEntities
-                        .flashcardBuilder()
-                        .flashcardId(null)
-                        .flashcardSet(savedSet).build());
-
-        // when
-        FlashcardDTO result = flashcardService.starFlashcard(savedCard.getFlashcardId());
-
-        // then
-        assertThat(result.starred()).isTrue();
-        assertThat(starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(
-                        user.getUserId(),
-                        savedCard.getFlashcardId())).isTrue();
-    }
-
-    @Test
-    @DisplayName("unstarFlashcard - Should remove star relation for authenticated user")
-    void unstarFlashcard_ShouldRemoveStarRelation() {
-        // given
-        User user = userRepository.findById(2L).orElseThrow();
-        mockAuthenticatedUser(user);
-
-        FlashcardSet savedSet = flashcardSetRepository.save(
-                TestEntities
-                        .flashcardSetBuilder()
-                        .setId(null)
-                        .user(user).build());
-
-        Flashcard savedCard = flashcardRepository.save(
-                TestEntities
-                        .flashcardBuilder()
-                        .flashcardId(null)
-                        .flashcardSet(savedSet).build());
-
-        // simulate that user already starred it
-        starredFlashcardRepository.save(TestEntities.createUserStarredFlashcard(user, savedCard));
-
-        // when
-        FlashcardDTO result = flashcardService.unstarFlashcard(savedCard.getFlashcardId());
-
-        // then
-        assertThat(result.starred()).isFalse();
-        assertThat(starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(
-                        user.getUserId(),
-                        savedCard.getFlashcardId())).isFalse();
     }
 }
