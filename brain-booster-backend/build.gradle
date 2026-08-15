@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.flywaydb:flyway-mysql:12.3.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:12.3.0'
     }
 }
 plugins {
