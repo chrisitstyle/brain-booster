@@ -5,16 +5,11 @@ import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
-import com.brainbooster.flashcard.starred.UserStarredFlashcard;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
-import com.brainbooster.user.User;
-import com.brainbooster.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,8 +27,6 @@ public class FlashcardService {
 
     private final FlashcardRepository flashcardRepository;
     private final FlashcardSetRepository flashcardSetRepository;
-    private final UserStarredFlashcardRepository starredFlashcardRepository;
-    private final UserRepository userRepository;
     private final FlashcardDTOMapper flashcardDTOMapper;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
     private final CurrentUserProvider currentUserProvider;
@@ -84,45 +77,6 @@ public class FlashcardService {
         return flashcardDTOMapper.apply(savedFlashcard);
     }
 
-    @Transactional
-    public FlashcardDTO starFlashcard(Long flashcardId) {
-        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
-
-        Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
-
-        boolean alreadyStarred = starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(authenticatedUser.userId(), flashcardId);
-
-        if (!alreadyStarred) {
-            User userReference = userRepository.getReferenceById(authenticatedUser.userId());
-
-            UserStarredFlashcard starredFlashcard = UserStarredFlashcard.builder()
-                    .id(new UserStarredFlashcardId(authenticatedUser.userId(), flashcardId))
-                    .user(userReference)
-                    .flashcard(flashcard)
-                    .build();
-
-            starredFlashcardRepository.save(starredFlashcard);
-        }
-
-        return flashcardDTOMapper.toDto(flashcard, true);
-    }
-
-    @Transactional
-    public FlashcardDTO unstarFlashcard(Long flashcardId) {
-        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUser();
-
-        Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new ResourceNotFoundException(buildFlashcardNotFoundMessage(flashcardId)));
-
-        starredFlashcardRepository.deleteByUser_UserIdAndFlashcard_FlashcardId(
-                authenticatedUser.userId(),
-                flashcardId
-        );
-
-        return flashcardDTOMapper.toDto(flashcard, false);
-    }
 
     public void deleteFlashcardById(Long flashcardId) {
         Flashcard existingFlashcard = flashcardRepository.findByIdWithSetAndUser(flashcardId)

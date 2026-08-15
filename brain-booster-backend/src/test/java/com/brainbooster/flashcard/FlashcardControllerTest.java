@@ -7,9 +7,8 @@ import com.brainbooster.exception.ResourceNotFoundException;
 import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
+import com.brainbooster.flashcard.starred.StarredFlashcardService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -31,7 +30,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @WebMvcTest(controllers = FlashcardController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@ExtendWith(MockitoExtension.class)
 class FlashcardControllerTest {
 
     @Autowired
@@ -44,9 +42,10 @@ class FlashcardControllerTest {
     private JwtService jwtService;
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-
     @MockitoBean
     private FlashcardService flashcardService;
+    @MockitoBean
+    private StarredFlashcardService starredFlashcardService;
 
     private final FlashcardDTO flashcardDTO1 = new FlashcardDTO(1L, 1L, "Test Term", "Test Definition", false);
     private final FlashcardDTO flashcardDTO2 = new FlashcardDTO(2L, 1L, "Test Term 2", "Test Definition 2", false);
@@ -186,7 +185,7 @@ class FlashcardControllerTest {
     @Test
     void starFlashcard_ShouldReturnStarredFlashcardDTO() throws Exception {
         // given
-        when(flashcardService.starFlashcard(1L)).thenReturn(starredFlashcardDTO);
+        when(starredFlashcardService.starFlashcard(1L)).thenReturn(starredFlashcardDTO);
 
         // when
         MvcResult result = mockMvc.perform(post("/flashcards/1/starred"))
@@ -203,13 +202,13 @@ class FlashcardControllerTest {
         assertThat(response.flashcardId()).isEqualTo(1L);
         assertThat(response.starred()).isTrue();
 
-        verify(flashcardService).starFlashcard(1L);
+        verify(starredFlashcardService).starFlashcard(1L);
     }
 
     @Test
     void unstarFlashcard_ShouldReturnUnstarredFlashcardDTO() throws Exception {
         // given
-        when(flashcardService.unstarFlashcard(1L)).thenReturn(unstarredFlashcardDTO);
+        when(starredFlashcardService.unstarFlashcard(1L)).thenReturn(unstarredFlashcardDTO);
 
         // when
         MvcResult result = mockMvc.perform(delete("/flashcards/1/starred"))
@@ -226,13 +225,13 @@ class FlashcardControllerTest {
         assertThat(response.flashcardId()).isEqualTo(1L);
         assertThat(response.starred()).isFalse();
 
-        verify(flashcardService).unstarFlashcard(1L);
+        verify(starredFlashcardService).unstarFlashcard(1L);
     }
 
     @Test
     void starFlashcard_ShouldReturnNotFound_WhenFlashcardDoesNotExist() throws Exception {
         // given
-        when(flashcardService.starFlashcard(999L))
+        when(starredFlashcardService.starFlashcard(999L))
                 .thenThrow(new ResourceNotFoundException("Flashcard with id 999 not found"));
 
         // when
@@ -244,8 +243,7 @@ class FlashcardControllerTest {
 
         ErrorDTO errorResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
-                ErrorDTO.class
-        );
+                ErrorDTO.class);
 
         assertThat(errorResponse.message()).isEqualTo("Flashcard with id 999 not found");
         assertThat(errorResponse.status()).isEqualTo("NOT_FOUND");

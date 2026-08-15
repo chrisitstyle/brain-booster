@@ -5,7 +5,7 @@ import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
+import com.brainbooster.flashcard.starred.StarredFlashcardService;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
@@ -41,7 +41,7 @@ class FlashcardSetServiceTest {
     @Mock
     private FlashcardRepository flashcardRepository;
     @Mock
-    private UserStarredFlashcardRepository starredFlashcardRepository;
+    private StarredFlashcardService starredFlashcardService;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -215,7 +215,9 @@ class FlashcardSetServiceTest {
                 false
         );
 
-        when(currentUserProvider.getCurrentUserOrNull()).thenReturn(null);
+        when(starredFlashcardService
+                .getStarredFlashcardIdsForCurrentUserInSet(1L))
+                .thenReturn(Set.of());
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
         when(flashcardRepository.findAllByFlashcardSet_SetId(1L))
                 .thenReturn(mockFlashcards);
@@ -239,17 +241,16 @@ class FlashcardSetServiceTest {
                 .extracting(FlashcardDTO::starred)
                 .containsExactly(false, false);
 
-        verify(starredFlashcardRepository, never())
-                .findStarredFlashcardIdsByUserIdAndSetId(anyLong(), anyLong());
+        verify(starredFlashcardService)
+                .getStarredFlashcardIdsForCurrentUserInSet(1L);
     }
 
     @Test
     void getAllFlashcardsInSet_ReturnFlashcardsDTOsWithUserStarredStatus_WhenUserIsAuthenticated() {
         // given
-        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
-
-        when(currentUserProvider.getCurrentUserOrNull())
-                .thenReturn(authenticatedUser);
+        when(starredFlashcardService
+                .getStarredFlashcardIdsForCurrentUserInSet(1L))
+                .thenReturn(Set.of(2L));
 
         List<Flashcard> mockFlashcards = List.of(
                 new Flashcard(1L, flashcardSet, "Question 1", "Answer 1"),
@@ -261,23 +262,20 @@ class FlashcardSetServiceTest {
                 1L,
                 "Question 1",
                 "Answer 1",
-                false
-        );
+                false);
 
         FlashcardDTO dto2 = new FlashcardDTO(
                 2L,
                 1L,
                 "Question 2",
                 "Answer 2",
-                true
-        );
+                true);
 
         when(flashcardSetRepository.existsById(1L)).thenReturn(true);
 
-        when(starredFlashcardRepository.findStarredFlashcardIdsByUserIdAndSetId(
-                authenticatedUser.userId(),
-                1L
-        )).thenReturn(Set.of(2L));
+        when(starredFlashcardService
+                .getStarredFlashcardIdsForCurrentUserInSet(1L))
+                .thenReturn(Set.of(2L));
 
         when(flashcardRepository.findAllByFlashcardSet_SetId(1L))
                 .thenReturn(mockFlashcards);
@@ -301,8 +299,8 @@ class FlashcardSetServiceTest {
                 .extracting(FlashcardDTO::starred)
                 .containsExactly(false, true);
 
-        verify(starredFlashcardRepository, times(1))
-                .findStarredFlashcardIdsByUserIdAndSetId(authenticatedUser.userId(), 1L);
+        verify(starredFlashcardService)
+                .getStarredFlashcardIdsForCurrentUserInSet(1L);
     }
 
     @Test
@@ -320,6 +318,7 @@ class FlashcardSetServiceTest {
                 .isEqualTo("FlashcardSet with id: 1 not found");
 
         verify(flashcardRepository, never()).findAllByFlashcardSet_SetId(anyLong());
+        verifyNoInteractions(starredFlashcardService);
     }
 
     @Test

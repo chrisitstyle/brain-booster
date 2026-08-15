@@ -5,9 +5,6 @@ import com.brainbooster.flashcard.dto.FlashcardCreationDTO;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.dto.FlashcardUpdateDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
-import com.brainbooster.flashcard.starred.UserStarredFlashcard;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardId;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
 import com.brainbooster.flashcardset.FlashcardSet;
 import com.brainbooster.flashcardset.FlashcardSetRepository;
 import com.brainbooster.security.AuthenticatedUser;
@@ -15,7 +12,7 @@ import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.security.authorization.OwnerOrAdminPolicy;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
-import com.brainbooster.user.UserRepository;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
@@ -35,11 +32,6 @@ class FlashcardServiceTest {
 
     private final FlashcardSetRepository flashcardSetRepository = mock(FlashcardSetRepository.class);
 
-    private final UserStarredFlashcardRepository starredFlashcardRepository =
-            mock(UserStarredFlashcardRepository.class);
-
-    private final UserRepository userRepository = mock(UserRepository.class);
-
     private final FlashcardDTOMapper flashcardDTOMapper = mock(FlashcardDTOMapper.class);
 
     private final OwnerOrAdminPolicy ownerOrAdminPolicy = new OwnerOrAdminPolicy();
@@ -49,8 +41,6 @@ class FlashcardServiceTest {
     private final FlashcardService flashcardService = new FlashcardService(
             flashcardRepository,
             flashcardSetRepository,
-            starredFlashcardRepository,
-            userRepository,
             flashcardDTOMapper,
             ownerOrAdminPolicy,
             currentUserProvider);
@@ -374,136 +364,6 @@ class FlashcardServiceTest {
                 .hasMessage("You are not allowed to edit this flashcard!");
 
         verify(flashcardRepository, never()).save(any());
-    }
-
-    @Test
-    void starFlashcard_ShouldCreateStarredRelationAndReturnStarredFlashcard() {
-        // given
-        User user = createUser();
-        AuthenticatedUser authenticatedUser = createAuthenticatedUser();
-        Flashcard flashcard = createFlashcard();
-        FlashcardDTO expectedDTO = createFlashcardDTO(true);
-
-        when(currentUserProvider.getCurrentUser()).thenReturn(authenticatedUser);
-        when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-
-        when(starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
-                .thenReturn(false);
-
-        when(userRepository.getReferenceById(1L))
-                .thenReturn(user);
-
-        when(flashcardDTOMapper.toDto(flashcard, true))
-                .thenReturn(expectedDTO);
-
-        // when
-        FlashcardDTO result = flashcardService.starFlashcard(1L);
-
-        // then
-        assertThat(result).isEqualTo(expectedDTO);
-        assertThat(result.starred()).isTrue();
-
-        ArgumentCaptor<UserStarredFlashcard> starredCaptor =
-                ArgumentCaptor.forClass(UserStarredFlashcard.class);
-
-        verify(starredFlashcardRepository).save(starredCaptor.capture());
-
-        UserStarredFlashcard savedStarredFlashcard = starredCaptor.getValue();
-
-        assertThat(savedStarredFlashcard.getId())
-                .isEqualTo(new UserStarredFlashcardId(1L, 1L));
-
-        assertThat(savedStarredFlashcard.getUser()).isEqualTo(user);
-        assertThat(savedStarredFlashcard.getFlashcard()).isEqualTo(flashcard);
-    }
-
-    @Test
-    void starFlashcard_ShouldNotCreateDuplicateRelation_WhenFlashcardIsAlreadyStarred() {
-        // given
-        AuthenticatedUser authUser = createAuthenticatedUser();
-        Flashcard flashcard = createFlashcard();
-        FlashcardDTO expectedDTO = createFlashcardDTO(true);
-
-        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
-        when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-
-        when(starredFlashcardRepository
-                .existsByUser_UserIdAndFlashcard_FlashcardId(1L, 1L))
-                .thenReturn(true);
-
-        when(flashcardDTOMapper.toDto(flashcard, true))
-                .thenReturn(expectedDTO);
-
-        // when
-        FlashcardDTO result = flashcardService.starFlashcard(1L);
-
-        // then
-        assertThat(result).isEqualTo(expectedDTO);
-        assertThat(result.starred()).isTrue();
-
-        verify(starredFlashcardRepository, never()).save(any());
-        verify(userRepository, never()).getReferenceById(anyLong());
-    }
-
-    @Test
-    void starFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
-        // given
-        AuthenticatedUser authUser = createAuthenticatedUser();
-
-        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
-        when(flashcardRepository.findById(999L)).thenReturn(Optional.empty());
-
-        // when + then
-        assertThatThrownBy(() -> flashcardService.starFlashcard(999L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Flashcard with id 999 not found");
-
-        verify(starredFlashcardRepository, never())
-                .existsByUser_UserIdAndFlashcard_FlashcardId(anyLong(), anyLong());
-
-        verify(starredFlashcardRepository, never()).save(any());
-    }
-
-    @Test
-    void unstarFlashcard_ShouldDeleteStarredRelationAndReturnUnstarredFlashcard() {
-        // given
-        AuthenticatedUser authUser = createAuthenticatedUser();
-        Flashcard flashcard = createFlashcard();
-        FlashcardDTO expectedDTO = createFlashcardDTO(false);
-
-        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
-        when(flashcardRepository.findById(1L)).thenReturn(Optional.of(flashcard));
-
-        when(flashcardDTOMapper.toDto(flashcard, false))
-                .thenReturn(expectedDTO);
-
-        // when
-        FlashcardDTO result = flashcardService.unstarFlashcard(1L);
-
-        // then
-        assertThat(result).isEqualTo(expectedDTO);
-        assertThat(result.starred()).isFalse();
-
-        verify(starredFlashcardRepository)
-                .deleteByUser_UserIdAndFlashcard_FlashcardId(1L, 1L);
-    }
-
-    @Test
-    void unstarFlashcard_ShouldThrowResourceNotFoundException_WhenFlashcardDoesNotExist() {
-        // given
-        AuthenticatedUser authUser = createAuthenticatedUser();
-
-        when(currentUserProvider.getCurrentUser()).thenReturn(authUser);
-        when(flashcardRepository.findById(999L)).thenReturn(Optional.empty());
-
-        // when + then
-        assertThatThrownBy(() -> flashcardService.unstarFlashcard(999L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Flashcard with id 999 not found");
-
-        verify(starredFlashcardRepository, never())
-                .deleteByUser_UserIdAndFlashcard_FlashcardId(anyLong(), anyLong());
     }
 
     @Test

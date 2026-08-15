@@ -5,7 +5,7 @@ import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.flashcard.FlashcardRepository;
 import com.brainbooster.flashcard.dto.FlashcardDTO;
 import com.brainbooster.flashcard.mapper.FlashcardDTOMapper;
-import com.brainbooster.flashcard.starred.UserStarredFlashcardRepository;
+import com.brainbooster.flashcard.starred.StarredFlashcardService;
 import com.brainbooster.flashcardset.dto.FlashcardSetCreationDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetDTO;
 import com.brainbooster.flashcardset.dto.FlashcardSetUpdateDTO;
@@ -39,7 +39,7 @@ public class FlashcardSetService {
     private final UserRepository userRepository;
     private final FlashcardSetRepository flashcardSetRepository;
     private final FlashcardRepository flashcardRepository;
-    private final UserStarredFlashcardRepository starredFlashcardRepository;
+    private final StarredFlashcardService starredFlashcardService;
     private final FlashcardSetDTOMapper flashcardSetDTOMapper;
     private final FlashcardDTOMapper flashcardDTOMapper;
     private final OwnerOrAdminPolicy ownerOrAdminPolicy;
@@ -118,13 +118,8 @@ public class FlashcardSetService {
             throw new ResourceNotFoundException(buildFlashcardSetNotFoundMessage(setId));
         }
 
-        AuthenticatedUser authenticatedUser = currentUserProvider.getCurrentUserOrNull();
-        Set<Long> starredFlashcardIds = authenticatedUser == null
-                ? Set.of()
-                : starredFlashcardRepository.findStarredFlashcardIdsByUserIdAndSetId(
-                authenticatedUser.userId(),
-                setId
-        );
+        Set<Long> starredFlashcardIds = starredFlashcardService
+                .getStarredFlashcardIdsForCurrentUserInSet(setId);
 
         return flashcardRepository.findAllByFlashcardSet_SetId(setId)
                 .stream()
