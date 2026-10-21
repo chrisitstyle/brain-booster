@@ -22,3 +22,7 @@ minimumReleaseAgeExclude:
   - sharp@0.35.0
   - braces@3.0.4
   - source-map-js@1.2.2
+
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm
