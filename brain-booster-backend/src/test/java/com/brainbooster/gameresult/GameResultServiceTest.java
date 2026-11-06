@@ -647,8 +647,7 @@ class GameResultServiceTest {
         GameResult gameResult = createGameResult(
                 owner,
                 flashcardSet,
-                GameMode.MATCHING
-        );
+                GameMode.MATCHING);
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
@@ -660,11 +659,151 @@ class GameResultServiceTest {
                 () -> gameResultService.deleteGameResult(1L)
         )
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessage(
-                        "You are not allowed to delete this game result."
-                );
+                .hasMessage("You are not allowed to delete this game result.");
 
         verify(gameResultRepository, never())
                 .delete(any());
     }
+
+
+
+    @Test
+    void saveGameResult_shouldThrowException_whenScoreDoesNotMatchQuestionResults() {
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(createAuthenticatedUser(2L, Role.USER));
+
+        var wrongAnswer = createSaveGameQuestionResultRequest(
+                25L,
+                "multiple-choice-25-0",
+                0,
+                GameQuestionType.MULTIPLE_CHOICE,
+                QuestionAnswerSide.DEFINITION,
+                "cat",
+                "pies",
+                "kot",
+                false,
+                0);
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                11L,
+                GameMode.MULTIPLE_CHOICE,
+                1,
+                1,
+                15,
+                List.of(wrongAnswer));
+
+        assertThatThrownBy(
+                () -> gameResultService.saveGameResult(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Score does not match question results.");
+
+        verify(gameResultRepository, never()).save(any());
+        verifyNoInteractions(gameAttemptRecorder);
+    }
+
+
+    @Test
+    void saveGameResult_shouldSaveResult_whenScoreMatchesQuestionResults() {
+        User user = createUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(createAuthenticatedUser(2L, Role.USER));
+
+        when(userRepository.getReferenceById(2L))
+                .thenReturn(user);
+
+        when(flashcardSetRepository.findById(11L))
+                .thenReturn(Optional.of(flashcardSet));
+
+        SaveGameResultRequest request = createMultipleChoiceGameResultRequestWithQuestionResult(
+                        11L, 25L);
+
+        when(gameResultRepository.findByUser_UserIdAndSet_SetIdAndMode(
+                2L, 11L, GameMode.MULTIPLE_CHOICE
+        )).thenReturn(Optional.empty());
+
+        when(gameResultRepository.save(any(GameResult.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        GameResultDTO expectedDto = createGameResultDTO(
+                1L, 2L, 11L,
+                GameMode.MULTIPLE_CHOICE,
+                1, 1, 15);
+
+        when(gameResultMapper.toDto(any(GameResult.class)))
+                .thenReturn(expectedDto);
+
+        GameResultDTO result = gameResultService.saveGameResult(request);
+
+        assertThat(result).isEqualTo(expectedDto);
+
+        ArgumentCaptor<GameResult> captor = ArgumentCaptor.forClass(GameResult.class);
+
+        verify(gameResultRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getScore()).isEqualTo(1);
+        assertThat(captor.getValue().getTotalQuestions()).isEqualTo(1);
+
+        verify(gameAttemptRecorder).recordAttempt(
+                eq(user),
+                eq(flashcardSet),
+                eq(request),
+                any(Instant.class));
+    }
+
+
+    @Test
+    void saveGameResult_shouldSaveResult_whenQuestionResultsAreNull() {
+        User user = createUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
+
+        when(currentUserProvider.getCurrentUser())
+                .thenReturn(createAuthenticatedUser(2L, Role.USER));
+
+        when(userRepository.getReferenceById(2L))
+                .thenReturn(user);
+
+        when(flashcardSetRepository.findById(11L))
+                .thenReturn(Optional.of(flashcardSet));
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                11L,
+                GameMode.MULTIPLE_CHOICE,
+                0,
+                1,
+                15,
+                null);
+
+        when(gameResultRepository.findByUser_UserIdAndSet_SetIdAndMode(
+                2L, 11L, GameMode.MULTIPLE_CHOICE
+        )).thenReturn(Optional.empty());
+
+        when(gameResultRepository.save(any(GameResult.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        GameResultDTO expectedDto = createGameResultDTO(
+                1L, 2L, 11L,
+                GameMode.MULTIPLE_CHOICE,
+                0, 1, 15);
+
+        when(gameResultMapper.toDto(any(GameResult.class)))
+                .thenReturn(expectedDto);
+
+        GameResultDTO result = gameResultService.saveGameResult(request);
+
+        assertThat(result).isEqualTo(expectedDto);
+
+        verify(gameResultRepository).save(any(GameResult.class));
+
+        verify(gameAttemptRecorder).recordAttempt(
+                eq(user),
+                eq(flashcardSet),
+                eq(request),
+                any(Instant.class));
+    }
+
+
+
+
 }

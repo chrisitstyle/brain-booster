@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -220,9 +221,7 @@ class GameAttemptRecorderTest {
                 completedAt)
         )
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage(
-                        "Flashcard with id: 99 not found"
-                );
+                .hasMessage("Flashcard with id: 99 not found");
 
         verify(gameAttemptRepository, never())
                 .save(any());
@@ -258,10 +257,44 @@ class GameAttemptRecorderTest {
                 completedAt)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "Flashcard with id: 25 does not belong to set: 11"
-                );
+                .hasMessage("Flashcard with id: 25 does not belong to set: 11");
 
         verify(gameAttemptRepository, never()).save(any());
     }
+
+
+    @Test
+    void recordAttempt_shouldSaveAttemptWithoutQuestions_whenQuestionResultsAreNull() {
+        User user = createUser(2L, Role.USER);
+        FlashcardSet flashcardSet = createFlashcardSet(11L, user);
+
+        SaveGameResultRequest request = new SaveGameResultRequest(
+                11L,
+                GameMode.MATCHING,
+                0,
+                1,
+                null,
+                null);
+
+        Instant completedAt = Instant.parse("2026-08-11T10:00:00Z");
+
+        gameAttemptRecorder.recordAttempt(
+                user,
+                flashcardSet,
+                request,
+                completedAt);
+
+        ArgumentCaptor<GameAttempt> captor = ArgumentCaptor.forClass(GameAttempt.class);
+
+        verify(gameAttemptRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getQuestionResults()).isEmpty();
+
+        verifyNoInteractions(flashcardRepository);
+    }
+
+
+
+
+
 }
