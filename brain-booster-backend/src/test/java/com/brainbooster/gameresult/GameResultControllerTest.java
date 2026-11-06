@@ -2,6 +2,7 @@ package com.brainbooster.gameresult;
 
 import com.brainbooster.config.JwtAuthenticationFilter;
 import com.brainbooster.gameresult.dto.GameResultDTO;
+import com.brainbooster.gameresult.dto.SaveGameQuestionResultRequest;
 import com.brainbooster.gameresult.dto.SaveGameResultRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -267,4 +268,116 @@ class GameResultControllerTest {
 
         verify(gameResultService).deleteGameResult(1L);
     }
+
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenSetIdIsNull() throws Exception {
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                null, GameMode.MULTIPLE_CHOICE, 1, 1, 15);
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenModeIsNull() throws Exception {
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                11L, null, 1, 1, 15);
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenScoreIsNull() throws Exception {
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                11L, GameMode.MULTIPLE_CHOICE, null, 1, 15);
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenDurationIsNegative() throws Exception {
+
+        SaveGameResultRequest request = createSaveGameResultRequest(
+                11L, GameMode.MULTIPLE_CHOICE, 1, 1, -1);
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenQuestionOrderIsNegative() throws Exception {
+
+        SaveGameResultRequest request = requestWithQuestion(
+                -1, true, 0, "question-1");
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenWasCorrectIsNull() throws Exception {
+
+        SaveGameResultRequest request = requestWithQuestion(
+                0, null, 0, "question-1");
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenMistakesCountIsNegative() throws Exception {
+
+        SaveGameResultRequest request = requestWithQuestion(
+                0, true, -1, "question-1"
+        );
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void saveGameResult_shouldReturnBadRequest_whenQuestionKeyExceedsMaxLength() throws Exception {
+
+        SaveGameResultRequest request = requestWithQuestion(
+                0, true, 0, "a".repeat(121));
+
+        assertInvalidRequest(request);
+    }
+
+    private void assertInvalidRequest(SaveGameResultRequest request) throws Exception {
+
+        mockMvc.perform(post("/game-results")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(gameResultService);
+    }
+
+    private SaveGameResultRequest requestWithQuestion(
+            Integer order,
+            Boolean wasCorrect,
+            Integer mistakesCount,
+            String questionKey
+    ) {
+        SaveGameQuestionResultRequest question = new SaveGameQuestionResultRequest(
+                        25L,
+                        questionKey,
+                        order,
+                        GameQuestionType.MULTIPLE_CHOICE,
+                        QuestionAnswerSide.DEFINITION,
+                        "cat",
+                        "kot",
+                        "kot",
+                        wasCorrect,
+                        mistakesCount);
+
+        return createSaveGameResultRequest(
+                11L,
+                GameMode.MULTIPLE_CHOICE,
+                1,
+                1,
+                15,
+                List.of(question));
+    }
+
 }

@@ -47,6 +47,7 @@ public class GameResultService {
         User userReference = userRepository.getReferenceById(authenticatedUser.userId());
 
         validateScore(request.score(), request.totalQuestions());
+        validateQuestionResults(request);
 
         FlashcardSet flashcardSet = flashcardSetRepository.findById(request.setId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -184,4 +185,23 @@ public class GameResultService {
                 + resultId
                 + NOT_FOUND_MSG_SUFFIX;
     }
+
+
+    private void validateQuestionResults(SaveGameResultRequest request) {
+        if (request.mode() != GameMode.MULTIPLE_CHOICE
+                || request.questionResults() == null
+                || request.questionResults().isEmpty()) {
+            return;
+        }
+
+        long correctAnswers = request.questionResults()
+                .stream()
+                .filter(result -> Boolean.TRUE.equals(result.wasCorrect()))
+                .count();
+
+        if (correctAnswers != request.score()) {
+            throw new IllegalArgumentException("Score does not match question results.");
+        }
+    }
+
 }
