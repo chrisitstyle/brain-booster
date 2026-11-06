@@ -3,40 +3,48 @@ package com.brainbooster.gameresult.analytics;
 import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.gameresult.questionresult.QuestionTypeStatisticsProjection;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class QuestionTypeAnalyzer {
 
-    public List<QuestionTypeAnalyticsDTO> analyze(
-            List<GameQuestionResult> questionResults
+    public List<QuestionTypeAnalyticsDTO> analyzeAggregates(
+            List<QuestionTypeStatisticsProjection> questionTypeStatistics
     ) {
-        Map<GameQuestionType, QuestionTypeStats> statsByQuestionType = new EnumMap<>(GameQuestionType.class);
-
-        for (GameQuestionResult questionResult : questionResults) {
-            statsByQuestionType
-                    .computeIfAbsent(
-                            questionResult.getQuestionType(),
-                            QuestionTypeStats::new
-                    )
-                    .addResult(questionResult);
-        }
-
-        return statsByQuestionType.values()
-                .stream()
-                .map(QuestionTypeStats::toDto)
+        return questionTypeStatistics.stream()
+                .map(this::mapStatisticsToDto)
                 .sorted(
-                        Comparator.comparing(
-                                dto -> dto.questionType().ordinal()
+                        Comparator.comparingInt(
+                                statistics -> statistics.questionType().ordinal()
                         )
                 )
                 .toList();
     }
+
+    private QuestionTypeAnalyticsDTO mapStatisticsToDto(
+            QuestionTypeStatisticsProjection questionTypeStatistics
+    ) {
+        long totalAnswers = questionTypeStatistics.getTotalAnswers();
+        long correctAnswers = questionTypeStatistics.getCorrectAnswers();
+        long incorrectAnswers = totalAnswers - correctAnswers;
+
+        double accuracyPercentage = totalAnswers == 0
+                ? 0.0
+                : Math.round(
+                ((double) correctAnswers / totalAnswers) * 10000.0) / 100.0;
+
+        return new QuestionTypeAnalyticsDTO(
+                questionTypeStatistics.getQuestionType(),
+                totalAnswers,
+                correctAnswers,
+                incorrectAnswers,
+                accuracyPercentage);
+    }
+
 
     private static class QuestionTypeStats {
 

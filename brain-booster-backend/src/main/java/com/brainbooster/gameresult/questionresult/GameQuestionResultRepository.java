@@ -14,17 +14,50 @@ public interface GameQuestionResultRepository extends JpaRepository<GameQuestion
     @EntityGraph(attributePaths = {"attempt", "flashcard"})
     List<GameQuestionResult> findByAttempt_AttemptIdOrderByQuestionOrderAsc(Long attemptId);
 
+
     @Query("""
-            SELECT questionResult
+            SELECT
+                flashcard.flashcardId AS flashcardId,
+                flashcard.term AS term,
+                flashcard.definition AS definition,
+                COUNT(questionResult.questionResultId) AS totalAnswers,
+                COUNT(
+                    CASE WHEN questionResult.wasCorrect = true
+                    THEN 1 END
+                ) AS correctAnswers,
+                SUM(questionResult.mistakesCount) AS totalMistakes,
+                MAX(questionResult.answeredAt) AS lastAnsweredAt
             FROM GameQuestionResult questionResult
-            JOIN FETCH questionResult.attempt attempt
-            JOIN FETCH questionResult.flashcard flashcard
+            JOIN questionResult.attempt attempt
+            JOIN questionResult.flashcard flashcard
             WHERE attempt.user.userId = :userId
               AND attempt.set.setId = :setId
-            ORDER BY questionResult.answeredAt DESC
+            GROUP BY
+                flashcard.flashcardId,
+                flashcard.term,
+                flashcard.definition
             """)
-    List<GameQuestionResult> findByUserIdAndSetIdOrderByAnsweredAtDesc(
+    List<WeakFlashcardStatisticsProjection> findFlashcardStatisticsByUserIdAndSetId(
             @Param("userId") Long userId,
             @Param("setId") Long setId
     );
+
+    @Query("""
+            SELECT
+                questionResult.questionType AS questionType,
+                COUNT(questionResult.questionResultId) AS totalAnswers,
+                COUNT(
+                    CASE WHEN questionResult.wasCorrect = true
+                    THEN 1 END
+                ) AS correctAnswers
+            FROM GameQuestionResult questionResult
+            JOIN questionResult.attempt attempt
+            WHERE attempt.user.userId = :userId
+              AND attempt.set.setId = :setId
+            GROUP BY questionResult.questionType
+            """)
+    List<QuestionTypeStatisticsProjection> findQuestionTypeStatisticsByUserIdAndSetId(
+            @Param("userId") Long userId,
+            @Param("setId") Long setId);
+
 }

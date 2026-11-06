@@ -7,15 +7,15 @@ import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
 import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
 import com.brainbooster.gameresult.attempt.GameAttemptSummaryProjection;
-import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.gameresult.questionresult.QuestionTypeStatisticsProjection;
+import com.brainbooster.gameresult.questionresult.WeakFlashcardStatisticsProjection;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -83,33 +83,31 @@ public class GameAnalyticsService {
                 .toList();
     }
 
+
     @Transactional(readOnly = true)
     public List<WeakFlashcardDTO> getMySetWeakFlashcards(Long setId) {
         AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
-        List<GameQuestionResult> questionResults = gameQuestionResultRepository
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+        List<WeakFlashcardStatisticsProjection> flashcardStatistics = gameQuestionResultRepository
+                .findFlashcardStatisticsByUserIdAndSetId(
                         currentUser.userId(),
-                        setId
-                );
+                        setId);
 
-        return weakFlashcardAnalyzer.analyze(questionResults);
+        return weakFlashcardAnalyzer.analyzeAggregates(flashcardStatistics);
     }
 
     @Transactional(readOnly = true)
-    public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(
-            Long setId
-    ) {
+    public List<QuestionTypeAnalyticsDTO> getMySetQuestionTypeAnalytics(Long setId) {
         AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
 
-        List<GameQuestionResult> questionResults = gameQuestionResultRepository
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+        List<QuestionTypeStatisticsProjection> questionTypeStatistics = gameQuestionResultRepository
+                .findQuestionTypeStatisticsByUserIdAndSetId(
                         currentUser.userId(),
-                        setId
-                );
+                        setId);
 
-        return questionTypeAnalyzer.analyze(questionResults);
+        return questionTypeAnalyzer.analyzeAggregates(questionTypeStatistics);
     }
+
 
     private GameProgressPointDTO mapToProgressPoint(GameAttempt attempt) {
         return new GameProgressPointDTO(
@@ -122,8 +120,7 @@ public class GameAnalyticsService {
                         attempt.getTotalQuestions()
                 ),
                 attempt.getDurationSeconds(),
-                attempt.getMode()
-        );
+                attempt.getMode());
     }
 
 

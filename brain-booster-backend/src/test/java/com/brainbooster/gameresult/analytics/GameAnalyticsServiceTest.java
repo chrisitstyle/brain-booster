@@ -8,8 +8,9 @@ import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
 import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
 import com.brainbooster.gameresult.attempt.GameAttemptSummaryProjection;
-import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
+import com.brainbooster.gameresult.questionresult.QuestionTypeStatisticsProjection;
+import com.brainbooster.gameresult.questionresult.WeakFlashcardStatisticsProjection;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
 import com.brainbooster.utils.TestEntities;
@@ -240,18 +241,16 @@ class GameAnalyticsServiceTest {
     }
 
     @Test
-    void getMySetWeakFlashcards_ShouldDelegateAnalysis() {
-        // given
+    void getMySetWeakFlashcards_shouldDelegateAggregatedStatistics_whenUserIsAuthenticated() {
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
-        Long setId = 1L;
 
-        GameQuestionResult firstResult = mock(GameQuestionResult.class);
+        Long flashcardSetId = 1L;
 
-        GameQuestionResult secondResult = mock(GameQuestionResult.class);
+        WeakFlashcardStatisticsProjection flashcardStatistics = mock(WeakFlashcardStatisticsProjection.class);
 
-        List<GameQuestionResult> questionResults = List.of(firstResult, secondResult);
+        List<WeakFlashcardStatisticsProjection> aggregatedStatistics = List.of(flashcardStatistics);
 
-        WeakFlashcardDTO expected = new WeakFlashcardDTO(
+        WeakFlashcardDTO expectedFlashcard = new WeakFlashcardDTO(
                 1L,
                 "Weak term",
                 "Weak definition",
@@ -260,87 +259,71 @@ class GameAnalyticsServiceTest {
                 1L,
                 2,
                 50.0,
-                Instant.parse("2026-08-02T10:00:00Z")
-        );
+                Instant.parse("2026-08-02T10:00:00Z"));
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
 
-        when(gameQuestionResultRepository
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.userId(),
-                        setId
-                ))
-                .thenReturn(questionResults);
+        when(gameQuestionResultRepository.findFlashcardStatisticsByUserIdAndSetId(
+                authenticatedUser.userId(),
+                flashcardSetId
+        )).thenReturn(aggregatedStatistics);
 
-        when(weakFlashcardAnalyzer.analyze(questionResults))
-                .thenReturn(List.of(expected));
+        when(weakFlashcardAnalyzer.analyzeAggregates(aggregatedStatistics))
+                .thenReturn(List.of(expectedFlashcard));
 
-        // when
-        List<WeakFlashcardDTO> result = gameAnalyticsService.getMySetWeakFlashcards(setId);
+        List<WeakFlashcardDTO> actualFlashcards = gameAnalyticsService
+                .getMySetWeakFlashcards(flashcardSetId);
 
-        // then
-        assertThat(result)
-                .containsExactly(expected);
+        assertThat(actualFlashcards).containsExactly(expectedFlashcard);
 
         verify(gameQuestionResultRepository)
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+                .findFlashcardStatisticsByUserIdAndSetId(
                         authenticatedUser.userId(),
-                        setId
-                );
+                        flashcardSetId);
 
-        verify(weakFlashcardAnalyzer)
-                .analyze(questionResults);
+        verify(weakFlashcardAnalyzer).analyzeAggregates(aggregatedStatistics);
     }
 
     @Test
-    void getMySetQuestionTypeAnalytics_ShouldDelegateAnalysis() {
-        // given
+    void getMySetQuestionTypeAnalytics_shouldDelegateAggregatedStatistics_whenUserIsAuthenticated() {
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
-        Long setId = 1L;
 
-        GameQuestionResult firstResult = mock(GameQuestionResult.class);
+        Long flashcardSetId = 1L;
 
-        GameQuestionResult secondResult = mock(GameQuestionResult.class);
+        QuestionTypeStatisticsProjection questionTypeStatistics = mock(QuestionTypeStatisticsProjection.class);
 
-        List<GameQuestionResult> questionResults = List.of(firstResult, secondResult);
+        List<QuestionTypeStatisticsProjection> aggregatedStatistics = List.of(questionTypeStatistics);
 
-        QuestionTypeAnalyticsDTO expected =
-                new QuestionTypeAnalyticsDTO(
-                        GameQuestionType.values()[0],
-                        3L,
-                        2L,
-                        1L,
-                        66.67
-                );
+        QuestionTypeAnalyticsDTO expectedStatistics = new QuestionTypeAnalyticsDTO(
+                GameQuestionType.MULTIPLE_CHOICE,
+                3L,
+                2L,
+                1L,
+                66.67);
 
         when(currentUserProvider.getCurrentUser())
                 .thenReturn(authenticatedUser);
 
-        when(gameQuestionResultRepository
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
-                        authenticatedUser.userId(),
-                        setId
-                ))
-                .thenReturn(questionResults);
+        when(gameQuestionResultRepository.findQuestionTypeStatisticsByUserIdAndSetId(
+                authenticatedUser.userId(),
+                flashcardSetId
+        )).thenReturn(aggregatedStatistics);
 
-        when(questionTypeAnalyzer.analyze(questionResults))
-                .thenReturn(List.of(expected));
+        when(questionTypeAnalyzer.analyzeAggregates(aggregatedStatistics))
+                .thenReturn(List.of(expectedStatistics));
 
-        // when
-        List<QuestionTypeAnalyticsDTO> result = gameAnalyticsService.getMySetQuestionTypeAnalytics(setId);
+        List<QuestionTypeAnalyticsDTO> actualStatistics = gameAnalyticsService
+                .getMySetQuestionTypeAnalytics(flashcardSetId);
 
-        // then
-        assertThat(result)
-                .containsExactly(expected);
+        assertThat(actualStatistics).containsExactly(expectedStatistics);
 
         verify(gameQuestionResultRepository)
-                .findByUserIdAndSetIdOrderByAnsweredAtDesc(
+                .findQuestionTypeStatisticsByUserIdAndSetId(
                         authenticatedUser.userId(),
-                        setId
-                );
+                        flashcardSetId);
 
-        verify(questionTypeAnalyzer)
-                .analyze(questionResults);
+        verify(questionTypeAnalyzer).analyzeAggregates(aggregatedStatistics);
     }
+
 }
