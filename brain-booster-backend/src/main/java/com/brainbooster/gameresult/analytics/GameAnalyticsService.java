@@ -6,6 +6,7 @@ import com.brainbooster.gameresult.analytics.dto.GameProgressPointDTO;
 import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
 import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
+import com.brainbooster.gameresult.attempt.GameAttemptSummaryProjection;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
 import com.brainbooster.security.AuthenticatedUser;
@@ -27,16 +28,18 @@ public class GameAnalyticsService {
     private final WeakFlashcardAnalyzer weakFlashcardAnalyzer;
     private final QuestionTypeAnalyzer questionTypeAnalyzer;
 
+
     @Transactional(readOnly = true)
     public GameAnalyticsSummaryDTO getMySetSummary(Long setId) {
-        AuthenticatedUser currentUser = currentUserProvider.getCurrentUser();
+        AuthenticatedUser currentUser =
+                currentUserProvider.getCurrentUser();
 
-        List<GameAttempt> attempts = gameAttemptRepository
-                .findByUserIdAndSetIdOrderByCompletedAtAsc(
+        GameAttemptSummaryProjection attemptSummary = gameAttemptRepository
+                .findSummaryByUserIdAndSetId(
                         currentUser.userId(),
                         setId);
 
-        long totalAttempts = attempts.size();
+        long totalAttempts = attemptSummary.getTotalAttempts();
 
         if (totalAttempts == 0) {
             return new GameAnalyticsSummaryDTO(
@@ -45,51 +48,26 @@ public class GameAnalyticsService {
                     0,
                     0.0,
                     null,
-                    0.0
-            );
+                    0.0);
         }
 
-        int totalScore = attempts.stream()
-                .mapToInt(GameAttempt::getScore)
-                .sum();
+        Double averageDurationSeconds = attemptSummary.getAverageDurationSeconds();
 
-        int totalQuestions = attempts.stream()
-                .mapToInt(GameAttempt::getTotalQuestions)
-                .sum();
-
-        double averageScore = attempts.stream()
-                .mapToInt(GameAttempt::getScore)
-                .average()
-                .orElse(0.0);
-
-        int bestScore = attempts.stream()
-                .mapToInt(GameAttempt::getScore)
-                .max()
-                .orElse(0);
-
-        double averageDuration = attempts.stream()
-                .filter(attempt -> attempt.getDurationSeconds() != null)
-                .mapToInt(GameAttempt::getDurationSeconds)
-                .average()
-                .orElse(0.0);
-
-        Instant lastAttemptAt = attempts.stream()
-                .map(GameAttempt::getCompletedAt)
-                .max(Instant::compareTo)
-                .orElse(null);
+        double averageDuration = averageDurationSeconds == null
+                ? 0.0
+                : averageDurationSeconds;
 
         return new GameAnalyticsSummaryDTO(
                 totalAttempts,
-                roundToTwoDecimals(averageScore),
-                bestScore,
+                roundToTwoDecimals(attemptSummary.getAverageScore()),
+                attemptSummary.getBestScore(),
                 roundToTwoDecimals(averageDuration),
-                lastAttemptAt,
+                attemptSummary.getLastCompletedAt(),
                 calculateAccuracyPercentage(
-                        totalScore,
-                        totalQuestions
-                )
-        );
+                        attemptSummary.getTotalScore(),
+                        attemptSummary.getTotalQuestions()));
     }
+
 
     @Transactional(readOnly = true)
     public List<GameProgressPointDTO> getMySetProgress(Long setId) {
@@ -148,16 +126,16 @@ public class GameAnalyticsService {
         );
     }
 
+
     private static double calculateAccuracyPercentage(
-            int correctAnswers,
-            int totalQuestions
+            long correctAnswers,
+            long totalQuestions
     ) {
         if (totalQuestions == 0) {
             return 0.0;
         }
 
-        double accuracyPercentage =
-                ((double) correctAnswers / totalQuestions) * 100;
+        double accuracyPercentage = ((double) correctAnswers / totalQuestions) * 100;
 
         return roundToTwoDecimals(accuracyPercentage);
     }

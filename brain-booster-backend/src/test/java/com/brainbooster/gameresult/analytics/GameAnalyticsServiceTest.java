@@ -7,11 +7,11 @@ import com.brainbooster.gameresult.analytics.dto.GameProgressPointDTO;
 import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
 import com.brainbooster.gameresult.attempt.GameAttempt;
 import com.brainbooster.gameresult.attempt.GameAttemptRepository;
+import com.brainbooster.gameresult.attempt.GameAttemptSummaryProjection;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.GameQuestionResultRepository;
 import com.brainbooster.security.AuthenticatedUser;
 import com.brainbooster.security.CurrentUserProvider;
-import com.brainbooster.user.User;
 import com.brainbooster.utils.TestEntities;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,91 +42,155 @@ class GameAnalyticsServiceTest {
     @InjectMocks
     private GameAnalyticsService gameAnalyticsService;
 
+
     @Test
-    void getMySetSummary_ShouldReturnEmptySummary_WhenUserHasNoAttempts() {
-        // given
+    void getMySetSummary_shouldReturnEmptySummary_whenUserHasNoAttempts() {
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
-        Long setId = 1L;
 
-        when(currentUserProvider.getCurrentUser())
-                .thenReturn(authenticatedUser);
+        Long flashcardSetId = 1L;
 
-        when(gameAttemptRepository.findByUserIdAndSetIdOrderByCompletedAtAsc(
-                authenticatedUser.userId(),
-                setId
-        )).thenReturn(List.of());
+        GameAttemptSummaryProjection attemptSummary = mock(GameAttemptSummaryProjection.class);
 
-        // when
-        GameAnalyticsSummaryDTO result = gameAnalyticsService.getMySetSummary(setId);
+        stubAttemptSummaryForAuthenticatedUser(
+                authenticatedUser,
+                flashcardSetId,
+                attemptSummary);
 
-        // then
-        GameAnalyticsSummaryDTO expected = new GameAnalyticsSummaryDTO(
+        when(attemptSummary.getTotalAttempts()).thenReturn(0L);
+
+        GameAnalyticsSummaryDTO actualSummary = gameAnalyticsService.getMySetSummary(flashcardSetId);
+
+        GameAnalyticsSummaryDTO expectedSummary = new GameAnalyticsSummaryDTO(
                 0L,
                 0.0,
                 0,
                 0.0,
                 null,
-                0.0
-        );
+                0.0);
 
-        assertThat(result)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
+        assertThat(actualSummary).isEqualTo(expectedSummary);
 
-        verify(gameAttemptRepository)
-                .findByUserIdAndSetIdOrderByCompletedAtAsc(
-                        authenticatedUser.userId(),
-                        setId
-                );
+        verify(gameAttemptRepository).findSummaryByUserIdAndSetId(
+                authenticatedUser.userId(),
+                flashcardSetId);
     }
 
     @Test
-    void getMySetSummary_ShouldCalculateSummary_WhenAttemptsExist() {
-        // given
+    void getMySetSummary_shouldCalculateSummary_whenAttemptsExist() {
         AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
-        Long setId = 1L;
 
-        Instant firstCompletedAt = Instant.parse("2026-08-01T10:00:00Z");
+        Long flashcardSetId = 1L;
 
-        Instant secondCompletedAt = Instant.parse("2026-08-02T10:00:00Z");
+        Instant lastCompletedAt = Instant.parse("2026-08-02T10:00:00Z");
 
-        GameAttempt firstAttempt = mock(GameAttempt.class);
-        GameAttempt secondAttempt = mock(GameAttempt.class);
+        GameAttemptSummaryProjection attemptSummary = mock(GameAttemptSummaryProjection.class);
 
-        when(firstAttempt.getScore()).thenReturn(7);
-        when(firstAttempt.getTotalQuestions()).thenReturn(10);
-        when(firstAttempt.getDurationSeconds()).thenReturn(60);
-        when(firstAttempt.getCompletedAt()).thenReturn(firstCompletedAt);
+        stubAttemptSummaryForAuthenticatedUser(
+                authenticatedUser,
+                flashcardSetId,
+                attemptSummary);
 
-        when(secondAttempt.getScore()).thenReturn(9);
-        when(secondAttempt.getTotalQuestions()).thenReturn(10);
-        when(secondAttempt.getDurationSeconds()).thenReturn(120);
-        when(secondAttempt.getCompletedAt()).thenReturn(secondCompletedAt);
+        when(attemptSummary.getTotalAttempts()).thenReturn(2L);
+        when(attemptSummary.getTotalScore()).thenReturn(16L);
+        when(attemptSummary.getTotalQuestions()).thenReturn(20L);
+        when(attemptSummary.getAverageScore()).thenReturn(8.0);
+        when(attemptSummary.getBestScore()).thenReturn(9);
+        when(attemptSummary.getAverageDurationSeconds())
+                .thenReturn(90.0);
+        when(attemptSummary.getLastCompletedAt())
+                .thenReturn(lastCompletedAt);
 
-        when(currentUserProvider.getCurrentUser())
-                .thenReturn(authenticatedUser);
+        GameAnalyticsSummaryDTO actualSummary = gameAnalyticsService.getMySetSummary(flashcardSetId);
 
-        when(gameAttemptRepository.findByUserIdAndSetIdOrderByCompletedAtAsc(
-                authenticatedUser.userId(),
-                setId
-        )).thenReturn(List.of(firstAttempt, secondAttempt));
-
-        // when
-        GameAnalyticsSummaryDTO result = gameAnalyticsService.getMySetSummary(setId);
-
-        // then
-        GameAnalyticsSummaryDTO expected = new GameAnalyticsSummaryDTO(
+        GameAnalyticsSummaryDTO expectedSummary = new GameAnalyticsSummaryDTO(
                 2L,
                 8.0,
                 9,
                 90.0,
-                secondCompletedAt,
+                lastCompletedAt,
                 80.0);
 
-        assertThat(result)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
+        assertThat(actualSummary).isEqualTo(expectedSummary);
     }
+
+    @Test
+    void getMySetSummary_shouldCalculateWeightedAccuracy_whenQuestionCountsDiffer() {
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        Long flashcardSetId = 1L;
+
+        GameAttemptSummaryProjection attemptSummary =
+                mock(GameAttemptSummaryProjection.class);
+
+        stubAttemptSummaryForAuthenticatedUser(
+                authenticatedUser,
+                flashcardSetId,
+                attemptSummary);
+
+        // First attempt - 1/2 correct answers
+        // Second attempt - 9/10 correct answers
+        // Weighted accuracy - 10/12 = 83.33%
+
+        when(attemptSummary.getTotalAttempts()).thenReturn(2L);
+        when(attemptSummary.getTotalScore()).thenReturn(10L);
+        when(attemptSummary.getTotalQuestions()).thenReturn(12L);
+        when(attemptSummary.getAverageScore()).thenReturn(5.0);
+        when(attemptSummary.getBestScore()).thenReturn(9);
+        when(attemptSummary.getAverageDurationSeconds())
+                .thenReturn(80.0);
+
+        GameAnalyticsSummaryDTO actualSummary =
+                gameAnalyticsService.getMySetSummary(flashcardSetId);
+
+        assertThat(actualSummary.totalAttempts()).isEqualTo(2L);
+        assertThat(actualSummary.averageScore()).isEqualTo(5.0);
+        assertThat(actualSummary.bestScore()).isEqualTo(9);
+        assertThat(actualSummary.accuracyPercentage())
+                .isEqualTo(83.33);
+    }
+
+    @Test
+    void getMySetSummary_shouldReturnZeroAverageDuration_whenAllDurationsAreNull() {
+        AuthenticatedUser authenticatedUser = TestEntities.createAuthenticatedUser();
+
+        Long flashcardSetId = 1L;
+
+        GameAttemptSummaryProjection attemptSummary = mock(GameAttemptSummaryProjection.class);
+
+        stubAttemptSummaryForAuthenticatedUser(
+                authenticatedUser,
+                flashcardSetId,
+                attemptSummary);
+
+        when(attemptSummary.getTotalAttempts()).thenReturn(1L);
+        when(attemptSummary.getTotalScore()).thenReturn(2L);
+        when(attemptSummary.getTotalQuestions()).thenReturn(4L);
+        when(attemptSummary.getAverageScore()).thenReturn(2.0);
+        when(attemptSummary.getBestScore()).thenReturn(2);
+
+        // Mockito returns null for an unstubbed Double getter
+
+        GameAnalyticsSummaryDTO actualSummary =
+                gameAnalyticsService.getMySetSummary(flashcardSetId);
+
+        assertThat(actualSummary.averageDuration()).isZero();
+        assertThat(actualSummary.accuracyPercentage())
+                .isEqualTo(50.0);
+    }
+
+    private void stubAttemptSummaryForAuthenticatedUser(
+            AuthenticatedUser authenticatedUser,
+            Long flashcardSetId,
+            GameAttemptSummaryProjection attemptSummary
+    ) {
+        when(currentUserProvider.getCurrentUser()).thenReturn(authenticatedUser);
+
+        when(gameAttemptRepository.findSummaryByUserIdAndSetId(
+                authenticatedUser.userId(),
+                flashcardSetId
+        )).thenReturn(attemptSummary);
+    }
+
 
     @Test
     void getMySetProgress_ShouldReturnProgressForAuthenticatedUser() {

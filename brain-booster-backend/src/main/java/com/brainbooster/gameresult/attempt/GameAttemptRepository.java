@@ -63,6 +63,24 @@ public interface GameAttemptRepository extends JpaRepository<GameAttempt, Long> 
             """)
     List<GameAttempt> findByUserIdAndSetIdOrderByCompletedAtAsc(
             @Param("userId") Long userId,
-            @Param("setId") Long setId
-    );
+            @Param("setId") Long setId);
+
+
+    @Query("""
+        SELECT
+            COUNT(attempt.attemptId) AS totalAttempts,
+            SUM(attempt.score) AS totalScore,
+            SUM(attempt.totalQuestions) AS totalQuestions,
+            AVG(attempt.score) AS averageScore,
+            MAX(attempt.score) AS bestScore,
+            AVG(attempt.durationSeconds) AS averageDurationSeconds,
+            MAX(attempt.completedAt) AS lastCompletedAt
+        FROM GameAttempt attempt
+        WHERE attempt.user.userId = :userId
+          AND attempt.set.setId = :setId
+        """)
+    GameAttemptSummaryProjection findSummaryByUserIdAndSetId(
+            @Param("userId") Long userId,
+            @Param("setId") Long setId);
+
 }
