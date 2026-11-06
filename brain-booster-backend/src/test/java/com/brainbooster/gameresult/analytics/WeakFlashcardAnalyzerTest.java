@@ -1,8 +1,8 @@
+
 package com.brainbooster.gameresult.analytics;
 
-import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.gameresult.WeakFlashcardDTO;
-import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.gameresult.questionresult.WeakFlashcardStatisticsProjection;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -17,177 +17,243 @@ class WeakFlashcardAnalyzerTest {
     private final WeakFlashcardAnalyzer weakFlashcardAnalyzer = new WeakFlashcardAnalyzer();
 
     @Test
-    void analyze_ShouldAggregateWeakFlashcardResults() {
+    void analyzeAggregates_shouldCalculateStatistics_whenFlashcardHasIncorrectAnswers() {
         // given
-        Instant firstAnsweredAt = Instant.parse("2026-08-01T10:00:00Z");
+        Instant lastAnsweredAt = Instant.parse("2026-08-02T10:00:00Z");
 
-        Instant secondAnsweredAt = Instant.parse("2026-08-02T10:00:00Z");
-
-        Flashcard flashcard = mock(Flashcard.class);
-
-        when(flashcard.getFlashcardId()).thenReturn(1L);
-        when(flashcard.getTerm()).thenReturn("Weak term");
-        when(flashcard.getDefinition()).thenReturn("Weak definition");
-
-        GameQuestionResult correctResult = createQuestionResult(
-                flashcard,
-                true,
-                0,
-                firstAnsweredAt);
-
-        GameQuestionResult incorrectResult = createQuestionResult(
-                flashcard,
-                false,
-                2,
-                secondAnsweredAt);
+        WeakFlashcardStatisticsProjection flashcardStatistics = createFlashcardStatistics(
+                        1L,
+                        "Weak term",
+                        "Weak definition",
+                        2L,
+                        1L,
+                        2L,
+                        lastAnsweredAt);
 
         // when
-        List<WeakFlashcardDTO> result = weakFlashcardAnalyzer.analyze(
-                List.of(correctResult, incorrectResult)
-        );
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(flashcardStatistics));
 
         // then
-        WeakFlashcardDTO expected = new WeakFlashcardDTO(
-                1L,
-                "Weak term",
-                "Weak definition",
-                2L,
-                1L,
-                1L,
-                2,
-                50.0,
-                secondAnsweredAt
-        );
+        WeakFlashcardDTO expectedFlashcard = new WeakFlashcardDTO(
+                        1L,
+                        "Weak term",
+                        "Weak definition",
+                        2L,
+                        1L,
+                        1L,
+                        2,
+                        50.0,
+                        lastAnsweredAt);
 
-        assertThat(result).containsExactly(expected);
+        assertThat(actualFlashcards).containsExactly(expectedFlashcard);
     }
 
     @Test
-    void analyze_ShouldExcludeFlashcardWithoutIncorrectAnswersOrMistakes() {
+    void analyzeAggregates_shouldExcludeFlashcard_whenAllAnswersAreCorrectWithoutMistakes() {
         // given
-        Flashcard flashcard = mock(Flashcard.class);
-
-        when(flashcard.getFlashcardId()).thenReturn(1L);
-
-        GameQuestionResult correctResult = createQuestionResult(
-                flashcard,
-                true,
-                0,
-                Instant.parse("2026-08-01T10:00:00Z"));
+        WeakFlashcardStatisticsProjection flashcardStatistics = createFlashcardStatistics(
+                        1L,
+                        "cat",
+                        "kot",
+                        3L,
+                        3L,
+                        0L,
+                        Instant.parse("2026-08-01T10:00:00Z"));
 
         // when
-        List<WeakFlashcardDTO> result = weakFlashcardAnalyzer.analyze(
-                        List.of(correctResult));
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(flashcardStatistics));
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(actualFlashcards).isEmpty();
     }
 
     @Test
-    void analyze_ShouldIncludeCorrectFlashcard_WhenMistakesWereMade() {
+    void analyzeAggregates_shouldIncludeFlashcard_whenCorrectAnswersHaveMistakes() {
         // given
-        Instant answeredAt = Instant.parse("2026-08-01T10:00:00Z");
+        Instant lastAnsweredAt = Instant.parse("2026-08-02T10:00:00Z");
 
-        Flashcard flashcard = mock(Flashcard.class);
-
-        when(flashcard.getFlashcardId()).thenReturn(1L);
-        when(flashcard.getTerm()).thenReturn("Term");
-        when(flashcard.getDefinition()).thenReturn("Definition");
-
-        GameQuestionResult resultWithMistakes = createQuestionResult(
-                flashcard,
-                true,
-                2,
-                answeredAt);
+        WeakFlashcardStatisticsProjection flashcardStatistics =
+                createFlashcardStatistics(
+                        25L,
+                        "cat",
+                        "kot",
+                        2L,
+                        2L,
+                        3L,
+                        lastAnsweredAt);
 
         // when
-        List<WeakFlashcardDTO> result = weakFlashcardAnalyzer.analyze(
-                        List.of(resultWithMistakes));
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(flashcardStatistics));
 
         // then
-        WeakFlashcardDTO expected = new WeakFlashcardDTO(
-                1L,
-                "Term",
-                "Definition",
-                1L,
-                1L,
-                0L,
-                2,
-                100.0,
-                answeredAt);
+        WeakFlashcardDTO expectedFlashcard = new WeakFlashcardDTO(
+                        25L,
+                        "cat",
+                        "kot",
+                        2L,
+                        2L,
+                        0L,
+                        3,
+                        100.0,
+                        lastAnsweredAt);
 
-        assertThat(result).containsExactly(expected);
+        assertThat(actualFlashcards)
+                .containsExactly(expectedFlashcard);
     }
 
     @Test
-    void analyze_ShouldSortWeakestFlashcardsFirst() {
+    void analyzeAggregates_shouldSortByIncorrectAnswers_whenFlashcardsHaveDifferentErrorCounts() {
         // given
-        Instant answeredAt = Instant.parse("2026-08-01T10:00:00Z");
+        Instant lastAnsweredAt = Instant.parse("2026-08-01T10:00:00Z");
 
-        Flashcard weakerFlashcard = mock(Flashcard.class);
-        Flashcard lessWeakFlashcard = mock(Flashcard.class);
+        WeakFlashcardStatisticsProjection weakerFlashcardStatistics = createFlashcardStatistics(
+                        1L,
+                        "Weaker",
+                        "Definition",
+                        2L,
+                        0L,
+                        2L,
+                        lastAnsweredAt);
 
-        when(weakerFlashcard.getFlashcardId()).thenReturn(1L);
-        when(weakerFlashcard.getTerm()).thenReturn("Weaker");
-        when(weakerFlashcard.getDefinition()).thenReturn("Definition");
-
-        when(lessWeakFlashcard.getFlashcardId()).thenReturn(2L);
-        when(lessWeakFlashcard.getTerm()).thenReturn("Less weak");
-        when(lessWeakFlashcard.getDefinition()).thenReturn("Definition");
-
-        GameQuestionResult firstIncorrect = createQuestionResult(
-                weakerFlashcard,
-                false,
-                1,
-                answeredAt);
-
-        GameQuestionResult secondIncorrect = createQuestionResult(
-                weakerFlashcard,
-                false,
-                1,
-                answeredAt);
-
-        GameQuestionResult lessWeakIncorrect = createQuestionResult(
-                lessWeakFlashcard,
-                false,
-                5,
-                answeredAt);
+        WeakFlashcardStatisticsProjection lessWeakFlashcardStatistics = createFlashcardStatistics(
+                        2L,
+                        "Less weak",
+                        "Definition",
+                        1L,
+                        0L,
+                        5L,
+                        lastAnsweredAt);
 
         // when
-        List<WeakFlashcardDTO> result = weakFlashcardAnalyzer.analyze(
-                        List.of(
-                                lessWeakIncorrect,
-                                firstIncorrect,
-                                secondIncorrect));
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(lessWeakFlashcardStatistics,
+                                weakerFlashcardStatistics));
 
         // then
-        assertThat(result)
+        assertThat(actualFlashcards)
                 .extracting(WeakFlashcardDTO::flashcardId)
                 .containsExactly(1L, 2L);
     }
 
     @Test
-    void analyze_ShouldReturnEmptyList_WhenNoResultsExist() {
+    void analyzeAggregates_shouldSortByTotalMistakes_whenIncorrectAnswerCountsAreEqual() {
+        // given
+        Instant lastAnsweredAt = Instant.parse("2026-08-01T10:00:00Z");
+
+        WeakFlashcardStatisticsProjection moreMistakesStatistics =
+                createFlashcardStatistics(
+                        1L,
+                        "More mistakes",
+                        "Definition",
+                        2L,
+                        1L,
+                        5L,
+                        lastAnsweredAt);
+
+        WeakFlashcardStatisticsProjection fewerMistakesStatistics = createFlashcardStatistics(
+                        2L,
+                        "Fewer mistakes",
+                        "Definition",
+                        2L,
+                        1L,
+                        2L,
+                        lastAnsweredAt);
+
         // when
-        List<WeakFlashcardDTO> result = weakFlashcardAnalyzer.analyze(List.of());
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(fewerMistakesStatistics, moreMistakesStatistics));
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(actualFlashcards)
+                .extracting(WeakFlashcardDTO::flashcardId)
+                .containsExactly(1L, 2L);
     }
 
-    private GameQuestionResult createQuestionResult(
-            Flashcard flashcard,
-            boolean wasCorrect,
-            Integer mistakesCount,
-            Instant answeredAt
+    @Test
+    void analyzeAggregates_shouldSortByLastAnsweredAt_whenDifficultyIsEqual() {
+        // given
+        Instant earlierAnsweredAt = Instant.parse("2026-08-01T10:00:00Z");
+
+        Instant laterAnsweredAt = Instant.parse("2026-08-02T10:00:00Z");
+
+        WeakFlashcardStatisticsProjection earlierFlashcardStatistics = createFlashcardStatistics(
+                        1L,
+                        "Earlier",
+                        "Definition",
+                        2L,
+                        1L,
+                        1L,
+                        earlierAnsweredAt);
+
+        WeakFlashcardStatisticsProjection laterFlashcardStatistics = createFlashcardStatistics(
+                        2L,
+                        "Later",
+                        "Definition",
+                        2L,
+                        1L,
+                        1L,
+                        laterAnsweredAt);
+
+        // when
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        List.of(earlierFlashcardStatistics,
+                                laterFlashcardStatistics));
+
+        // then
+        assertThat(actualFlashcards)
+                .extracting(WeakFlashcardDTO::flashcardId)
+                .containsExactly(2L, 1L);
+    }
+
+    @Test
+    void analyzeAggregates_shouldReturnEmptyList_whenStatisticsAreEmpty() {
+        // given
+        List<WeakFlashcardStatisticsProjection> flashcardStatistics = List.of();
+
+        // when
+        List<WeakFlashcardDTO> actualFlashcards = weakFlashcardAnalyzer.analyzeAggregates(
+                        flashcardStatistics);
+
+        // then
+        assertThat(actualFlashcards).isEmpty();
+    }
+
+    private WeakFlashcardStatisticsProjection createFlashcardStatistics(
+            Long flashcardId,
+            String term,
+            String definition,
+            long totalAnswers,
+            long correctAnswers,
+            long totalMistakes,
+            Instant lastAnsweredAt
     ) {
-        GameQuestionResult result = mock(GameQuestionResult.class);
+        WeakFlashcardStatisticsProjection flashcardStatistics =
+                mock(WeakFlashcardStatisticsProjection.class);
 
-        when(result.getFlashcard()).thenReturn(flashcard);
-        when(result.getWasCorrect()).thenReturn(wasCorrect);
-        when(result.getMistakesCount()).thenReturn(mistakesCount);
-        when(result.getAnsweredAt()).thenReturn(answeredAt);
+        when(flashcardStatistics.getFlashcardId())
+                .thenReturn(flashcardId);
 
-        return result;
+        when(flashcardStatistics.getTerm())
+                .thenReturn(term);
+
+        when(flashcardStatistics.getDefinition())
+                .thenReturn(definition);
+
+        when(flashcardStatistics.getTotalAnswers())
+                .thenReturn(totalAnswers);
+
+        when(flashcardStatistics.getCorrectAnswers())
+                .thenReturn(correctAnswers);
+
+        when(flashcardStatistics.getTotalMistakes())
+                .thenReturn(totalMistakes);
+
+        when(flashcardStatistics.getLastAnsweredAt())
+                .thenReturn(lastAnsweredAt);
+
+        return flashcardStatistics;
     }
 }

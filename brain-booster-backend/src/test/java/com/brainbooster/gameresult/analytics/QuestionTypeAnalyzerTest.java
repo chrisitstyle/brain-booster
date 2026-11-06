@@ -1,8 +1,9 @@
+
 package com.brainbooster.gameresult.analytics;
 
 import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
-import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.gameresult.questionresult.QuestionTypeStatisticsProjection;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,111 +14,134 @@ import static org.mockito.Mockito.when;
 
 class QuestionTypeAnalyzerTest {
 
-    private final QuestionTypeAnalyzer questionTypeAnalyzer =
-            new QuestionTypeAnalyzer();
+    private final QuestionTypeAnalyzer questionTypeAnalyzer = new QuestionTypeAnalyzer();
 
     @Test
-    void analyze_ShouldAggregateResultsByQuestionType() {
+    void analyzeAggregates_shouldCalculateStatistics_whenQuestionTypeExists() {
         // given
-        GameQuestionType questionType = GameQuestionType.values()[0];
+        GameQuestionType questionType = GameQuestionType.MULTIPLE_CHOICE;
 
-        GameQuestionResult firstCorrectResult = createQuestionResult(questionType, true);
-
-        GameQuestionResult secondCorrectResult = createQuestionResult(questionType, true);
-
-        GameQuestionResult incorrectResult = createQuestionResult(questionType, false);
+        QuestionTypeStatisticsProjection questionTypeStatistics = createQuestionTypeStatistics(questionType, 3L, 2L);
 
         // when
-        List<QuestionTypeAnalyticsDTO> result = questionTypeAnalyzer.analyze(
-                        List.of(
-                                firstCorrectResult,
-                                secondCorrectResult,
-                                incorrectResult));
+        List<QuestionTypeAnalyticsDTO> actualStatistics = questionTypeAnalyzer.analyzeAggregates(
+                        List.of(questionTypeStatistics));
 
         // then
-        QuestionTypeAnalyticsDTO expected = new QuestionTypeAnalyticsDTO(
+        QuestionTypeAnalyticsDTO expectedStatistics = new QuestionTypeAnalyticsDTO(
                         questionType,
                         3L,
                         2L,
                         1L,
                         66.67);
 
-        assertThat(result)
-                .containsExactly(expected);
+        assertThat(actualStatistics)
+                .containsExactly(expectedStatistics);
     }
 
     @Test
-    void analyze_ShouldSeparateDifferentQuestionTypes() {
+    void analyzeAggregates_shouldSeparateQuestionTypes_whenMultipleTypesExist() {
         // given
-        GameQuestionType firstType = GameQuestionType.values()[0];
+        GameQuestionType firstQuestionType = GameQuestionType.values()[0];
 
-        GameQuestionType secondType = GameQuestionType.values()[1];
+        GameQuestionType secondQuestionType = GameQuestionType.values()[1];
 
-        GameQuestionResult firstTypeResult = createQuestionResult(firstType, true);
+        QuestionTypeStatisticsProjection firstTypeStatistics = createQuestionTypeStatistics(
+                        firstQuestionType,
+                        3L,
+                        2L);
 
-        GameQuestionResult secondTypeResult = createQuestionResult(secondType, false);
+        QuestionTypeStatisticsProjection secondTypeStatistics = createQuestionTypeStatistics(
+                        secondQuestionType,
+                        2L,
+                        0L);
 
         // when
-        List<QuestionTypeAnalyticsDTO> result = questionTypeAnalyzer.analyze(
+        List<QuestionTypeAnalyticsDTO> actualStatistics = questionTypeAnalyzer.analyzeAggregates(
                         List.of(
-                                secondTypeResult,
-                                firstTypeResult
-                        )
-                );
+                                secondTypeStatistics,
+                                firstTypeStatistics));
 
         // then
-        assertThat(result)
-                .extracting(QuestionTypeAnalyticsDTO::questionType)
+        QuestionTypeAnalyticsDTO expectedFirstType = new QuestionTypeAnalyticsDTO(
+                        firstQuestionType,
+                        3L,
+                        2L,
+                        1L,
+                        66.67);
+
+        QuestionTypeAnalyticsDTO expectedSecondType = new QuestionTypeAnalyticsDTO(
+                        secondQuestionType,
+                        2L,
+                        0L,
+                        2L,
+                        0.0);
+
+        assertThat(actualStatistics)
                 .containsExactly(
-                        firstType,
-                        secondType);
+                        expectedFirstType,
+                        expectedSecondType);
     }
 
     @Test
-    void analyze_ShouldCalculateAccuracyPercentage() {
+    void analyzeAggregates_shouldCalculateAccuracy_whenHalfOfAnswersAreCorrect() {
         // given
-        GameQuestionType questionType = GameQuestionType.values()[0];
-
-        GameQuestionResult correctResult = createQuestionResult(questionType, true);
-
-        GameQuestionResult incorrectResult = createQuestionResult(questionType, false);
+        QuestionTypeStatisticsProjection questionTypeStatistics = createQuestionTypeStatistics(
+                        GameQuestionType.MULTIPLE_CHOICE,
+                        2L,
+                        1L);
 
         // when
-        List<QuestionTypeAnalyticsDTO> result = questionTypeAnalyzer.analyze(
-                        List.of(
-                                correctResult,
-                                incorrectResult));
+        List<QuestionTypeAnalyticsDTO> actualStatistics = questionTypeAnalyzer.analyzeAggregates(
+                        List.of(questionTypeStatistics));
 
         // then
-        assertThat(result)
+        assertThat(actualStatistics)
                 .singleElement()
-                .extracting(
-                        QuestionTypeAnalyticsDTO::accuracyPercentage
-                )
-                .isEqualTo(50.0);
+                .satisfies(statistics -> {
+                    assertThat(statistics.totalAnswers())
+                            .isEqualTo(2L);
+
+                    assertThat(statistics.correctAnswers())
+                            .isEqualTo(1L);
+
+                    assertThat(statistics.incorrectAnswers())
+                            .isEqualTo(1L);
+
+                    assertThat(statistics.accuracyPercentage())
+                            .isEqualTo(50.0);
+                });
     }
 
     @Test
-    void analyze_ShouldReturnEmptyList_WhenNoResultsExist() {
+    void analyzeAggregates_shouldReturnEmptyList_whenStatisticsAreEmpty() {
+        // given
+        List<QuestionTypeStatisticsProjection> questionTypeStatistics = List.of();
+
         // when
-        List<QuestionTypeAnalyticsDTO> result = questionTypeAnalyzer.analyze(List.of());
+        List<QuestionTypeAnalyticsDTO> actualStatistics = questionTypeAnalyzer.analyzeAggregates(
+                        questionTypeStatistics);
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(actualStatistics).isEmpty();
     }
 
-    private GameQuestionResult createQuestionResult(
+    private QuestionTypeStatisticsProjection createQuestionTypeStatistics(
             GameQuestionType questionType,
-            boolean wasCorrect
+            long totalAnswers,
+            long correctAnswers
     ) {
-        GameQuestionResult result = mock(GameQuestionResult.class);
+        QuestionTypeStatisticsProjection questionTypeStatistics = mock(QuestionTypeStatisticsProjection.class);
 
-        when(result.getQuestionType())
+        when(questionTypeStatistics.getQuestionType())
                 .thenReturn(questionType);
 
-        when(result.getWasCorrect())
-                .thenReturn(wasCorrect);
+        when(questionTypeStatistics.getTotalAnswers())
+                .thenReturn(totalAnswers);
 
-        return result;
+        when(questionTypeStatistics.getCorrectAnswers())
+                .thenReturn(correctAnswers);
+
+        return questionTypeStatistics;
     }
 }

@@ -3,58 +3,67 @@ package com.brainbooster.gameresult.analytics;
 import com.brainbooster.flashcard.Flashcard;
 import com.brainbooster.gameresult.WeakFlashcardDTO;
 import com.brainbooster.gameresult.questionresult.GameQuestionResult;
+import com.brainbooster.gameresult.questionresult.WeakFlashcardStatisticsProjection;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class WeakFlashcardAnalyzer {
 
     private static final Comparator<WeakFlashcardDTO> WEAKEST_FIRST = Comparator
             .comparingLong(WeakFlashcardDTO::incorrectAnswers)
-                    .reversed()
-                    .thenComparing(
-                            Comparator.comparingInt(
-                                    WeakFlashcardDTO::totalMistakes
-                            ).reversed()
+            .reversed()
+            .thenComparing(
+                    Comparator.comparingInt(
+                            WeakFlashcardDTO::totalMistakes
+                    ).reversed()
+            )
+            .thenComparing(
+                    WeakFlashcardDTO::lastAnsweredAt,
+                    Comparator.nullsLast(
+                            Comparator.reverseOrder()
                     )
-                    .thenComparing(
-                            WeakFlashcardDTO::lastAnsweredAt,
-                            Comparator.nullsLast(
-                                    Comparator.reverseOrder()
-                            )
-                    );
+            );
 
-    public List<WeakFlashcardDTO> analyze(
-            List<GameQuestionResult> questionResults
+    public List<WeakFlashcardDTO> analyzeAggregates(
+            List<WeakFlashcardStatisticsProjection> flashcardStatistics
     ) {
-        Map<Long, WeakFlashcardStats> statsByFlashcardId = new HashMap<>();
-
-        for (GameQuestionResult questionResult : questionResults) {
-            Long flashcardId =
-                    questionResult.getFlashcard().getFlashcardId();
-
-            statsByFlashcardId
-                    .computeIfAbsent(
-                            flashcardId,
-                            ignored -> new WeakFlashcardStats(
-                                    questionResult.getFlashcard()
-                            )
-                    )
-                    .addResult(questionResult);
-        }
-
-        return statsByFlashcardId.values()
-                .stream()
-                .map(WeakFlashcardStats::toDto)
+        return flashcardStatistics.stream()
+                .map(this::mapStatisticsToDto)
                 .filter(this::isWeak)
                 .sorted(WEAKEST_FIRST)
                 .toList();
     }
+
+    private WeakFlashcardDTO mapStatisticsToDto(
+            WeakFlashcardStatisticsProjection flashcardStatistics
+    ) {
+        long totalAnswers = flashcardStatistics.getTotalAnswers();
+        long correctAnswers = flashcardStatistics.getCorrectAnswers();
+        long incorrectAnswers = totalAnswers - correctAnswers;
+
+        int totalMistakes = Math.toIntExact(flashcardStatistics.getTotalMistakes());
+
+        double accuracyPercentage = totalAnswers == 0
+                ? 0.0
+                : Math.round(
+                ((double) correctAnswers / totalAnswers) * 10000.0) / 100.0;
+
+        return new WeakFlashcardDTO(
+                flashcardStatistics.getFlashcardId(),
+                flashcardStatistics.getTerm(),
+                flashcardStatistics.getDefinition(),
+                totalAnswers,
+                correctAnswers,
+                incorrectAnswers,
+                totalMistakes,
+                accuracyPercentage,
+                flashcardStatistics.getLastAnsweredAt());
+    }
+
 
     private boolean isWeak(WeakFlashcardDTO flashcard) {
         return flashcard.incorrectAnswers() > 0
