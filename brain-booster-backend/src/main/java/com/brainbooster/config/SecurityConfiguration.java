@@ -115,6 +115,9 @@ public class SecurityConfiguration {
                                 "/profile/settings/email"
                         ).authenticated()
 
+                        // spaced repetition endpoints require auth user
+                        .requestMatchers("/reviews", "/reviews/**").authenticated()
+
                         .anyRequest().hasAuthority(Role.ADMIN.name())
                 )
                 .exceptionHandling(exception -> exception

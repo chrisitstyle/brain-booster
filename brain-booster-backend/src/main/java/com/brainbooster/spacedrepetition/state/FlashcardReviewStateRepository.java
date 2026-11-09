@@ -1,5 +1,6 @@
 package com.brainbooster.spacedrepetition.state;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
@@ -20,4 +21,16 @@ public interface FlashcardReviewStateRepository extends JpaRepository<FlashcardR
             Long userId,
             Long setId,
             Instant dueAt);
+
+
+    /**
+     * Returns a limited number of due reviews ordered by due date.
+     */
+    List<FlashcardReviewState>
+    findByUser_UserIdAndFlashcard_FlashcardSet_SetIdAndDueAtLessThanEqualOrderByDueAtAsc(
+            Long userId,
+            Long setId,
+            Instant dueAt,
+            Pageable pageable);
+
 }
