@@ -14,6 +14,7 @@ import com.brainbooster.spacedrepetition.history.FlashcardReviewLog;
 import com.brainbooster.spacedrepetition.history.FlashcardReviewLogRepository;
 import com.brainbooster.spacedrepetition.history.ReviewRating;
 import com.brainbooster.spacedrepetition.scheduler.JavaFsrsSchedulerAdapter;
+import com.brainbooster.spacedrepetition.service.ReviewDailyLimitService;
 import com.brainbooster.spacedrepetition.service.ReviewSchedulingService;
 import com.brainbooster.spacedrepetition.service.ReviewSessionService;
 import com.brainbooster.spacedrepetition.settings.UserReviewSettings;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.when;
 @Import({
         ReviewSchedulingService.class,
         ReviewSessionService.class,
+        ReviewDailyLimitService.class,
         JavaFsrsSchedulerAdapter.class,
         ReviewWorkflowIntegrationTest.TestConfig.class
 })
@@ -91,6 +93,7 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
 
     @Autowired
     private Clock clock;
+
 
     private User learningUser;
     private FlashcardSet flashcardSet;
@@ -280,8 +283,7 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
         // given
         Instant currentTime = clock.instant();
 
-        FlashcardReviewState dueReviewState =
-                FlashcardReviewState.builder()
+        FlashcardReviewState dueReviewState = FlashcardReviewState.builder()
                         .user(learningUser)
                         .flashcard(firstFlashcard)
                         .state(ReviewStage.REVIEW)
@@ -292,8 +294,7 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
         entityManager.clear();
 
         // when
-        List<ReviewCardDTO> reviewQueue =
-                reviewSessionService.getReviewQueue(
+        List<ReviewCardDTO> reviewQueue = reviewSessionService.getReviewQueue(
                         flashcardSet.getSetId());
 
         // then
@@ -354,6 +355,164 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
                 flashcardSet.getSetId()))
                 .isInstanceOf(AccessDeniedException.class);
     }
+
+
+    @Test
+    void submitReview_shouldRejectSecondNewCard_whenDailyLimitIsReached() {
+        // given
+        reviewSettingsRepository.saveAndFlush(
+                UserReviewSettings.builder()
+                        .user(learningUser)
+                        .newCardsPerDay(1)
+                        .reviewLimitPerDay(200)
+                        .timezone("Europe/Warsaw")
+                        .build());
+
+        reviewSchedulingService.submitReview(
+                new SubmitReviewRequest(
+                        firstFlashcard.getFlashcardId(),
+                        ReviewRating.GOOD,
+                        FIRST_REQUEST_ID));
+
+        entityManager.flush();
+
+        // when
+        SubmitReviewRequest secondRequest = new SubmitReviewRequest(
+                        secondFlashcard.getFlashcardId(),
+                        ReviewRating.GOOD,
+                        SECOND_REQUEST_ID);
+
+        // then
+        assertThatThrownBy(() -> reviewSchedulingService.submitReview(secondRequest)
+        )
+                .isInstanceOf(ReviewConflictException.class)
+                .hasMessage("Daily new card limit reached.");
+
+        assertThat(reviewLogRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void submitReview_shouldReturnOriginalResult_whenLimitIsReachedAndRequestIsRetried() {
+        // given
+        reviewSettingsRepository.saveAndFlush(
+                UserReviewSettings.builder()
+                        .user(learningUser)
+                        .newCardsPerDay(1)
+                        .build());
+
+        SubmitReviewRequest reviewRequest = new SubmitReviewRequest(
+                        firstFlashcard.getFlashcardId(),
+                        ReviewRating.GOOD,
+                        FIRST_REQUEST_ID);
+
+        ReviewResultDTO originalResult = reviewSchedulingService.submitReview(reviewRequest);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        ReviewResultDTO repeatedResult = reviewSchedulingService.submitReview(reviewRequest);
+
+        // then
+        assertThat(repeatedResult).isEqualTo(originalResult);
+        assertThat(reviewLogRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void getReviewQueue_shouldExcludeNewCards_whenDailyLimitIsReached() {
+        // given
+        reviewSettingsRepository.saveAndFlush(
+                UserReviewSettings.builder()
+                        .user(learningUser)
+                        .newCardsPerDay(1)
+                        .build());
+
+        reviewSchedulingService.submitReview(
+                new SubmitReviewRequest(
+                        firstFlashcard.getFlashcardId(),
+                        ReviewRating.GOOD,
+                        FIRST_REQUEST_ID));
+
+        entityManager.flush();
+
+        // when
+        List<ReviewCardDTO> reviewQueue = reviewSessionService.getReviewQueue(
+                        flashcardSet.getSetId());
+
+        // then
+        assertThat(reviewQueue)
+                .extracting(ReviewCardDTO::flashcardId)
+                .doesNotContain(secondFlashcard.getFlashcardId());
+    }
+
+
+    @Test
+    void submitReview_shouldRejectDueReview_whenDailyReviewLimitIsZero() {
+        // given
+        reviewSettingsRepository.saveAndFlush(
+                UserReviewSettings.builder()
+                        .user(learningUser)
+                        .reviewLimitPerDay(0)
+                        .build());
+
+        reviewStateRepository.saveAndFlush(
+                FlashcardReviewState.builder()
+                        .user(learningUser)
+                        .flashcard(firstFlashcard)
+                        .state(ReviewStage.REVIEW)
+                        .dueAt(clock.instant().minusSeconds(60))
+                        .build());
+
+        SubmitReviewRequest reviewRequest = new SubmitReviewRequest(
+                        firstFlashcard.getFlashcardId(),
+                        ReviewRating.GOOD,
+                        FIRST_REQUEST_ID);
+
+        // when
+        // then
+        assertThatThrownBy(() ->
+                reviewSchedulingService.submitReview(reviewRequest)
+        )
+                .isInstanceOf(ReviewConflictException.class)
+                .hasMessage("Daily review limit reached.");
+
+        assertThat(reviewLogRepository.count()).isZero();
+    }
+
+    @Test
+    void getReviewQueue_shouldIncludeLearningCards_whenBothDailyLimitsAreZero() {
+        // given
+        reviewSettingsRepository.saveAndFlush(
+                UserReviewSettings.builder()
+                        .user(learningUser)
+                        .newCardsPerDay(0)
+                        .reviewLimitPerDay(0)
+                        .build());
+
+        reviewStateRepository.saveAndFlush(
+                FlashcardReviewState.builder()
+                        .user(learningUser)
+                        .flashcard(firstFlashcard)
+                        .state(ReviewStage.LEARNING)
+                        .dueAt(clock.instant().minusSeconds(60))
+                        .build());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        List<ReviewCardDTO> reviewQueue = reviewSessionService.getReviewQueue(flashcardSet.getSetId());
+
+        // then
+        assertThat(reviewQueue)
+                .extracting(ReviewCardDTO::flashcardId)
+                .containsExactly(firstFlashcard.getFlashcardId());
+
+        assertThat(reviewQueue.get(0).stage())
+                .isEqualTo(ReviewStage.LEARNING);
+    }
+
+
 
     private User persistUser(String nickname) {
         return entityManager.persist(

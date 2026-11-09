@@ -51,4 +51,20 @@ public interface FlashcardReviewLogRepository extends JpaRepository<FlashcardRev
             @Param("dayStart") Instant dayStart,
             @Param("dayEnd") Instant dayEnd);
 
+
+    @Query("""
+        SELECT COUNT(reviewLog)
+        FROM FlashcardReviewLog reviewLog
+        WHERE reviewLog.reviewState.user.userId = :userId
+          AND reviewLog.stageBefore = :stage
+          AND reviewLog.reviewedAt >= :startInclusive
+          AND reviewLog.reviewedAt < :endExclusive
+        """)
+    long countByUserStageAndPeriod(
+            @Param("userId") Long userId,
+            @Param("stage") ReviewStage stage,
+            @Param("startInclusive") Instant startInclusive,
+            @Param("endExclusive") Instant endExclusive);
+
+
 }

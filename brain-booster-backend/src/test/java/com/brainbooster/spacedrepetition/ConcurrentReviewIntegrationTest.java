@@ -12,6 +12,7 @@ import com.brainbooster.spacedrepetition.dto.SubmitReviewRequest;
 import com.brainbooster.spacedrepetition.history.FlashcardReviewLogRepository;
 import com.brainbooster.spacedrepetition.history.ReviewRating;
 import com.brainbooster.spacedrepetition.scheduler.JavaFsrsSchedulerAdapter;
+import com.brainbooster.spacedrepetition.service.ReviewDailyLimitService;
 import com.brainbooster.spacedrepetition.service.ReviewSchedulingService;
 import com.brainbooster.spacedrepetition.state.FlashcardReviewState;
 import com.brainbooster.spacedrepetition.state.FlashcardReviewStateRepository;
@@ -60,6 +61,7 @@ import static org.mockito.Mockito.when;
  */
 @Import({
         ReviewSchedulingService.class,
+        ReviewDailyLimitService.class,
         JavaFsrsSchedulerAdapter.class,
         ConcurrentReviewIntegrationTest.TestConfig.class
 })
@@ -95,8 +97,7 @@ class ConcurrentReviewIntegrationTest extends AbstractRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        TransactionTemplate transactionTemplate =
-                new TransactionTemplate(transactionManager);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 
         // commit fixtures before starting concurrent transactions
         transactionTemplate.executeWithoutResult(status -> {

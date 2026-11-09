@@ -57,6 +57,7 @@ public class ReviewSchedulingService {
     private final FsrsSchedulerAdapter fsrsSchedulerAdapter;
     private final CurrentUserProvider currentUserProvider;
     private final Clock clock;
+    private final ReviewDailyLimitService reviewDailyLimitService;
 
 
     /**
@@ -70,11 +71,11 @@ public class ReviewSchedulingService {
         Long userId = currentUserProvider.getCurrentUser().userId();
 
         // Lock the user row before checking idempotency or creating a review state.
-        // This prevents concurrent submissions from creating duplicate states.
+        // This also serializes daily limit checks for concurrent submissions.
         User user = userRepository.findByIdForReviewUpdate(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
-        // Return the original result when the same request is submitted again.
+        // return the original result when the same request is submitted again
         FlashcardReviewLog existingLog = reviewLogRepository
                 .findByRequestId(request.requestId())
                 .orElse(null);
@@ -87,22 +88,29 @@ public class ReviewSchedulingService {
                 .findByIdWithSetAndUser(request.flashcardId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Flashcard not found."));
+
         verifyFlashcardOwnership(flashcard, userId);
 
         FlashcardReviewState reviewState = reviewStateRepository
                 .findByUser_UserIdAndFlashcard_FlashcardId(
                         userId,
-                        request.flashcardId()).orElse(null);
+                        request.flashcardId())
+                .orElse(null);
 
-        // use a single review timestamp with PostgreSQL microsecond precision
-        Instant reviewedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        Instant currentTime = clock.instant();
 
-        verifyReviewIsDue(reviewState, reviewedAt);
+        verifyReviewIsDue(reviewState, currentTime);
 
-        // preserve the previous review state for the history log
         ReviewStage previousStage = reviewState == null
                 ? ReviewStage.NEW
                 : reviewState.getState();
+
+        // Enforce daily limits before calculating the next FSRS schedule.
+        // LEARNING and RELEARNING do not consume daily capacity.
+        reviewDailyLimitService.verifyReviewAllowed(
+                userId,
+                previousStage,
+                currentTime);
 
         Instant previousDueAt = reviewState == null
                 ? null
@@ -122,9 +130,13 @@ public class ReviewSchedulingService {
                 previousCardData,
                 request.rating(),
                 desiredRetention,
-                reviewedAt);
+                currentTime);
 
-        // normalize the calculated due date before persisting it
+        // Normalize timestamps to PostgreSQL microsecond precision.
+        // This ensures that idempotent retries return consistent timestamps.
+        Instant reviewedAt = fsrsResult.reviewedAt()
+                .truncatedTo(ChronoUnit.MICROS);
+
         Instant nextReviewAt = fsrsResult.nextReviewAt()
                 .truncatedTo(ChronoUnit.MICROS);
 
@@ -152,7 +164,7 @@ public class ReviewSchedulingService {
 
         reviewState.setReviewCount(reviewState.getReviewCount() + 1);
 
-        // Count a lapse only when a card in the REVIEW stage is forgotten.
+        // count a lapse only when a card in the REVIEW stage is forgotten
         if (previousStage == ReviewStage.REVIEW
                 && request.rating() == ReviewRating.AGAIN) {
             reviewState.setLapses(reviewState.getLapses() + 1);
@@ -160,9 +172,10 @@ public class ReviewSchedulingService {
 
         // Persist the complete FSRS state.
         // The serialized card is the source of truth for future scheduling.
-        FlashcardReviewState savedState = reviewStateRepository.saveAndFlush(reviewState);
+        FlashcardReviewState savedState =
+                reviewStateRepository.saveAndFlush(reviewState);
 
-        // Store an immutable history entry for the completed review.
+        // store an immutable history entry for the completed review
         FlashcardReviewLog reviewLog = FlashcardReviewLog.builder()
                 .reviewState(savedState)
                 .rating(request.rating())

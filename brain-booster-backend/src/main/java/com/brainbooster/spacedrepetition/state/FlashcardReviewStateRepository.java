@@ -33,4 +33,8 @@ public interface FlashcardReviewStateRepository extends JpaRepository<FlashcardR
             Instant dueAt,
             Pageable pageable);
 
+    List<FlashcardReviewState> findByUser_UserIdAndFlashcard_FlashcardSet_SetId(
+            Long userId,
+            Long setId);
+
 }
