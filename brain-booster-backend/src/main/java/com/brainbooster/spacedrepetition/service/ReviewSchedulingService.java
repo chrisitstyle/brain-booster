@@ -94,9 +94,10 @@ public class ReviewSchedulingService {
                         userId,
                         request.flashcardId()).orElse(null);
 
-        Instant currentTime = clock.instant();
+        // use a single review timestamp with PostgreSQL microsecond precision
+        Instant reviewedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
 
-        verifyReviewIsDue(reviewState, currentTime);
+        verifyReviewIsDue(reviewState, reviewedAt);
 
         // preserve the previous review state for the history log
         ReviewStage previousStage = reviewState == null
@@ -116,17 +117,14 @@ public class ReviewSchedulingService {
                 .map(UserReviewSettings::getDesiredRetention)
                 .orElse(DEFAULT_DESIRED_RETENTION);
 
-        // Calculate the next review using the complete FSRS memory state.
+        // calculate the next review using the complete FSRS memory state
         FsrsReviewResult fsrsResult = fsrsSchedulerAdapter.review(
                 previousCardData,
                 request.rating(),
-                desiredRetention);
+                desiredRetention,
+                reviewedAt);
 
-        // Normalize timestamps to PostgreSQL microsecond precision.
-        // This ensures that idempotent retries return consistent timestamps.
-        Instant reviewedAt = fsrsResult.reviewedAt()
-                .truncatedTo(ChronoUnit.MICROS);
-
+        // normalize the calculated due date before persisting it
         Instant nextReviewAt = fsrsResult.nextReviewAt()
                 .truncatedTo(ChronoUnit.MICROS);
 

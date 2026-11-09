@@ -24,6 +24,7 @@ import com.brainbooster.spacedrepetition.state.ReviewStage;
 import com.brainbooster.user.Role;
 import com.brainbooster.user.User;
 import com.brainbooster.utils.TestEntities;
+import io.github.openspacedrepetition.Card;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -119,8 +121,9 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
         authenticateUser(learningUser);
     }
 
+
     @Test
-    void submitReview_shouldPersistStateAndHistory_whenCardIsNew() {
+    void submitReview_shouldPersistConsistentStateAndHistory_whenCardIsNew() {
         // given
         SubmitReviewRequest reviewRequest = new SubmitReviewRequest(
                 firstFlashcard.getFlashcardId(),
@@ -137,16 +140,18 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
         FlashcardReviewState persistedState = reviewStateRepository
                 .findByUser_UserIdAndFlashcard_FlashcardId(
                         learningUser.getUserId(),
-                        firstFlashcard.getFlashcardId()).orElseThrow();
+                        firstFlashcard.getFlashcardId())
+                .orElseThrow();
 
         FlashcardReviewLog persistedLog = reviewLogRepository
                 .findByRequestId(FIRST_REQUEST_ID)
                 .orElseThrow();
 
-        assertThat(persistedState.getReviewCount()).isEqualTo(1);
-        assertThat(persistedState.getFsrsCardData()).isNotBlank();
+        Card restoredCard = Card.fromJson(persistedState.getFsrsCardData());
 
-        assertThat(persistedState.getDueAt()).isEqualTo(actualResult.nextReviewAt());
+        assertThat(persistedState.getReviewCount()).isEqualTo(1);
+
+        assertThat(persistedState.getFsrsCardData()).isNotBlank();
 
         assertThat(persistedLog.getStageBefore()).isEqualTo(ReviewStage.NEW);
 
@@ -154,10 +159,21 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
 
         assertThat(persistedLog.getCardDataAfter()).isEqualTo(persistedState.getFsrsCardData());
 
+        // compare the same instant using PostgreSQL timestamp precision
+        assertThat(restoredCard.getDue().truncatedTo(ChronoUnit.MICROS))
+                .isEqualTo(persistedState.getDueAt());
+
         assertThat(persistedLog.getNextDueAt()).isEqualTo(persistedState.getDueAt());
+
+        assertThat(actualResult.nextReviewAt()).isEqualTo(persistedState.getDueAt());
+
+        assertThat(persistedLog.getReviewedAt()).isEqualTo(persistedState.getLastReviewedAt());
+
+        assertThat(actualResult.reviewedAt()).isEqualTo(persistedLog.getReviewedAt());
 
         assertThat(actualResult.nextReviewAt()).isAfter(actualResult.reviewedAt());
     }
+
 
 
     @Test

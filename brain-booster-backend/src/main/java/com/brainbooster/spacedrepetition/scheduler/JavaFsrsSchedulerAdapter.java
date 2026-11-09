@@ -8,13 +8,15 @@ import io.github.openspacedrepetition.Rating;
 import io.github.openspacedrepetition.Scheduler;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
  * Integrates the Java-FSRS scheduling library with Brain Booster.
  *
  * <p>Restores the complete memory state of a flashcard, applies the
- * user's rating and returns the updated state for persistence.
+ * user's rating at the provided timestamp and returns the updated
+ * state for persistence.
  *
  * <p>This component does not access the database. Review state updates
  * and review history must be persisted together by the application
@@ -27,9 +29,12 @@ public class JavaFsrsSchedulerAdapter implements FsrsSchedulerAdapter {
     public FsrsReviewResult review(
             String cardData,
             ReviewRating rating,
-            double desiredRetention
+            double desiredRetention,
+            Instant reviewedAt
     ) {
         Objects.requireNonNull(rating, "Review rating must not be null.");
+
+        Objects.requireNonNull(reviewedAt, "Review timestamp must not be null.");
 
         validateDesiredRetention(desiredRetention);
 
@@ -41,12 +46,17 @@ public class JavaFsrsSchedulerAdapter implements FsrsSchedulerAdapter {
 
         Rating fsrsRating = Rating.valueOf(rating.name());
 
-        CardAndReviewLog reviewResult = scheduler.reviewCard(card, fsrsRating);
+        // Use the timestamp supplied by the application service
+        // rather than relying on the library's system clock.
+        CardAndReviewLog reviewResult = scheduler.reviewCard(
+                card,
+                fsrsRating,
+                reviewedAt,
+                null);
 
         Card updatedCard = reviewResult.card();
 
-        // Store the complete FSRS state instead of reconstructing
-        // it from a subset of database columns.
+        // preserve the complete FSRS memory state for future reviews
         String updatedCardData = updatedCard.toJson();
 
         return new FsrsReviewResult(
