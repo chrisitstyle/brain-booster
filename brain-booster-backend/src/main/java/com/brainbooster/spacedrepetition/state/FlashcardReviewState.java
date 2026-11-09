@@ -49,12 +49,6 @@ public class FlashcardReviewState {
     @Column(name = "difficulty")
     private Double difficulty;
 
-    @Column(name = "scheduled_days")
-    private Double scheduledDays;
-
-    @Column(name = "learning_step")
-    private Integer learningStep;
-
     // preserve the complete library Card state for lossless round-tripping
     @Column(name = "fsrs_card_data", columnDefinition = "text")
     private String fsrsCardData;

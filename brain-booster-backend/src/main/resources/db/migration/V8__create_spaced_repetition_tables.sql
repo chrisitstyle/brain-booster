@@ -9,8 +9,6 @@ CREATE TABLE flashcard_review_states
     last_reviewed_at TIMESTAMPTZ,
     stability DOUBLE PRECISION,
     difficulty DOUBLE PRECISION,
-    scheduled_days DOUBLE PRECISION,
-    learning_step INTEGER,
     review_count INTEGER NOT NULL DEFAULT 0,
     lapses INTEGER NOT NULL DEFAULT 0,
     fsrs_card_data TEXT,
@@ -29,10 +27,6 @@ CREATE TABLE flashcard_review_states
         CHECK (stability IS NULL OR stability >= 0),
     CONSTRAINT chk_flashcard_review_states_difficulty
         CHECK (difficulty IS NULL OR difficulty BETWEEN 1 AND 10),
-    CONSTRAINT chk_flashcard_review_states_scheduled_days
-        CHECK (scheduled_days IS NULL OR scheduled_days >= 0),
-    CONSTRAINT chk_flashcard_review_states_learning_step
-        CHECK (learning_step IS NULL OR learning_step >= 0),
     CONSTRAINT chk_flashcard_review_states_review_count
         CHECK (review_count >= 0),
     CONSTRAINT chk_flashcard_review_states_lapses
@@ -69,7 +63,8 @@ CREATE TABLE flashcard_review_logs
     CONSTRAINT chk_flashcard_review_logs_stage_before
         CHECK (stage_before IN ('NEW', 'LEARNING', 'REVIEW', 'RELEARNING')),
     CONSTRAINT chk_flashcard_review_logs_stage_after
-        CHECK (stage_after IN ('NEW', 'LEARNING', 'REVIEW', 'RELEARNING')));
+        CHECK (stage_after IN ('NEW', 'LEARNING', 'REVIEW', 'RELEARNING'))
+);
 
 CREATE INDEX idx_flashcard_review_logs_state_reviewed
     ON flashcard_review_logs (review_state_id, reviewed_at DESC);
