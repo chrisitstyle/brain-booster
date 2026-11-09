@@ -41,3 +41,20 @@ export interface ReviewResult {
   reviewedAt: string;
   nextReviewAt: string;
 }
+
+/**
+ * Represents the user's FSRS scheduling preferences.
+ */
+export interface UserReviewSettings {
+  desiredRetention: number;
+  newCardsPerDay: number;
+  reviewLimitPerDay: number;
+  timezone: string;
+}
+
+/**
+ * Represents a partial update of FSRS review preferences.
+ *
+ * Omitted fields retain their previously saved values.
+ */
+export type UpdateUserReviewSettingsRequest = Partial<UserReviewSettings>;

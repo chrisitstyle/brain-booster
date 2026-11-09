@@ -4,6 +4,8 @@ import type {
   ReviewCard,
   ReviewResult,
   SubmitReviewRequest,
+  UserReviewSettings,
+  UpdateUserReviewSettingsRequest,
 } from "@/types/spaced-repetition";
 
 /**
@@ -46,5 +48,37 @@ export async function submitFlashcardReview(
     token,
     body: reviewRequest,
     fallbackMessage: "Failed to save flashcard review.",
+  });
+}
+
+/**
+ * Fetches the authenticated user's effective FSRS settings.
+ *
+ * The backend returns default values when no settings are saved.
+ */
+export async function getReviewSettings(
+  token: string,
+  signal?: AbortSignal,
+): Promise<UserReviewSettings> {
+  return apiRequest<UserReviewSettings>("/reviews/settings", {
+    token,
+    signal,
+    cache: "no-store",
+    fallbackMessage: "Failed to load review settings.",
+  });
+}
+
+/**
+ * Applies a partial update to the authenticated user's FSRS settings.
+ */
+export async function updateReviewSettings(
+  settingsUpdate: UpdateUserReviewSettingsRequest,
+  token: string,
+): Promise<UserReviewSettings> {
+  return apiRequest<UserReviewSettings>("/reviews/settings", {
+    method: "PATCH",
+    token,
+    body: settingsUpdate,
+    fallbackMessage: "Failed to update review settings.",
   });
 }

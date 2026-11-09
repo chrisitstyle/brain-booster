@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { notifyProfileUpdated } from "@/utils/profile-events";
+import ReviewSettingsSection from "@/app/profile/settings/review-settings-section";
 
 type ProfileLoadingState = "loading" | "success" | "error";
 
@@ -438,6 +439,7 @@ export function ProfileSettings() {
           </div>
         </form>
       </section>
+      {token && <ReviewSettingsSection token={token} />}
     </main>
   );
 }
