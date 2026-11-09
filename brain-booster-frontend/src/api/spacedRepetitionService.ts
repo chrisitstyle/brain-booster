@@ -6,6 +6,7 @@ import type {
   SubmitReviewRequest,
   UserReviewSettings,
   UpdateUserReviewSettingsRequest,
+  ReviewDashboard,
 } from "@/types/spaced-repetition";
 
 /**
@@ -80,5 +81,24 @@ export async function updateReviewSettings(
     token,
     body: settingsUpdate,
     fallbackMessage: "Failed to update review settings.",
+  });
+}
+
+/**
+ * Fetches aggregated FSRS learning statistics for the current user.
+ *
+ * @param token Authenticated user's JWT.
+ * @param signal Optional cancellation signal.
+ * @returns Dashboard statistics across all owned flashcard sets.
+ */
+export async function getReviewDashboard(
+  token: string,
+  signal?: AbortSignal,
+): Promise<ReviewDashboard> {
+  return apiRequest<ReviewDashboard>("/reviews/dashboard", {
+    token,
+    signal,
+    cache: "no-store",
+    fallbackMessage: "Failed to load spaced repetition statistics.",
   });
 }

@@ -58,3 +58,45 @@ export interface UserReviewSettings {
  * Omitted fields retain their previously saved values.
  */
 export type UpdateUserReviewSettingsRequest = Partial<UserReviewSettings>;
+
+/**
+ * Represents FSRS review activity on one local calendar day.
+ */
+export interface ReviewDailyActivity {
+  date: string;
+  reviews: number;
+  newCards: number;
+}
+
+/**
+ * Represents the number of submitted ratings of one type.
+ */
+export interface ReviewRatingCount {
+  rating: ReviewRating;
+  count: number;
+}
+
+/**
+ * Represents scheduled reviews on one local calendar day.
+ */
+export interface ReviewDailyForecast {
+  date: string;
+  dueCards: number;
+}
+
+/**
+ * Represents the authenticated user's FSRS learning dashboard.
+ */
+export interface ReviewDashboard {
+  totalCards: number;
+  newCards: number;
+  learningCards: number;
+  reviewCards: number;
+  relearningCards: number;
+  dueNow: number;
+  reviewedToday: number;
+  timezone: string;
+  activity: ReviewDailyActivity[];
+  ratings: ReviewRatingCount[];
+  forecast: ReviewDailyForecast[];
+}

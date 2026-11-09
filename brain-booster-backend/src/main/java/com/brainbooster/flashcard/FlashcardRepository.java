@@ -41,4 +41,11 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
             @Param("userId") Long userId,
             Pageable pageable);
 
+    @Query("""
+        SELECT COUNT(flashcard)
+        FROM Flashcard flashcard
+        WHERE flashcard.flashcardSet.user.userId = :userId
+        """)
+    long countOwnedFlashcards(@Param("userId") Long userId);
+
 }

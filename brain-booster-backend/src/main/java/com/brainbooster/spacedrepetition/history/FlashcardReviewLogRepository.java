@@ -1,6 +1,7 @@
 package com.brainbooster.spacedrepetition.history;
 
 import com.brainbooster.spacedrepetition.state.ReviewStage;
+import com.brainbooster.spacedrepetition.stats.ReviewActivityEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -65,6 +66,23 @@ public interface FlashcardReviewLogRepository extends JpaRepository<FlashcardRev
             @Param("stage") ReviewStage stage,
             @Param("startInclusive") Instant startInclusive,
             @Param("endExclusive") Instant endExclusive);
+
+    @Query("""
+        SELECT new com.brainbooster.spacedrepetition.stats.ReviewActivityEvent(
+            reviewLog.reviewedAt,
+            reviewLog.rating,
+            reviewLog.stageBefore
+        )
+        FROM FlashcardReviewLog reviewLog
+        WHERE reviewLog.reviewState.user.userId = :userId
+          AND reviewLog.reviewedAt >= :startInclusive
+          AND reviewLog.reviewedAt <= :currentTime
+        ORDER BY reviewLog.reviewedAt
+        """)
+    List<ReviewActivityEvent> findActivityEvents(
+            @Param("userId") Long userId,
+            @Param("startInclusive") Instant startInclusive,
+            @Param("currentTime") Instant currentTime);
 
 
 }
