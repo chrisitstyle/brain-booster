@@ -32,9 +32,19 @@ import { useAuth } from "@/context/AuthContext";
 import type { ReviewDashboard, ReviewRating } from "@/types/spaced-repetition";
 
 type DashboardState =
-  | { status: "loading"; token?: string }
-  | { status: "ready"; token: string; data: ReviewDashboard }
-  | { status: "error"; token: string; message: string };
+  | { status: "loading" }
+  | {
+      status: "ready";
+      token: string;
+      reloadCounter: number;
+      data: ReviewDashboard;
+    }
+  | {
+      status: "error";
+      token: string;
+      reloadCounter: number;
+      message: string;
+    };
 
 type StageKey =
   | "newCards"
@@ -179,8 +189,6 @@ export default function ReviewDashboardClient() {
 
     const abortController = new AbortController();
 
-    setState({ status: "loading", token });
-
     async function loadDashboard(authToken: string) {
       try {
         const data = await getReviewDashboard(
@@ -192,6 +200,7 @@ export default function ReviewDashboardClient() {
           setState({
             status: "ready",
             token: authToken,
+            reloadCounter,
             data,
           });
         }
@@ -200,6 +209,7 @@ export default function ReviewDashboardClient() {
           setState({
             status: "error",
             token: authToken,
+            reloadCounter,
             message:
               error instanceof Error
                 ? error.message
@@ -246,7 +256,11 @@ export default function ReviewDashboardClient() {
     );
   }
 
-  if (state.token !== token || state.status === "loading") {
+  if (
+    state.status === "loading" ||
+    state.token !== token ||
+    state.reloadCounter !== reloadCounter
+  ) {
     return <DashboardLoading />;
   }
 

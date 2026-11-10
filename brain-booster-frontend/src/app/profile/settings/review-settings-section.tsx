@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+  type SubmitEvent,
+} from "react";
 
 import {
   BrainCircuit,
@@ -37,6 +43,15 @@ interface ReviewSettingsFormValues {
 }
 
 type SettingsLoadingState = "loading" | "success" | "error";
+
+type SettingsLoadResult =
+  | { status: "success"; token: string; reloadCounter: number }
+  | {
+      status: "error";
+      token: string;
+      reloadCounter: number;
+      message: string;
+    };
 
 const MIN_RETENTION_PERCENTAGE = 70;
 const MAX_RETENTION_PERCENTAGE = 97;
@@ -85,6 +100,16 @@ function detectUserTimezone(): string {
   }
 }
 
+// Use a null server snapshot to avoid hydration mismatches.
+// Browser time zone detection runs after hydration, without an effect.
+function subscribeToTimezone(): () => void {
+  return () => undefined;
+}
+
+function getServerTimezone(): null {
+  return null;
+}
+
 /**
  * Converts an unknown request failure into a readable message.
  */
@@ -115,26 +140,35 @@ export default function ReviewSettingsSection({
     null,
   );
 
-  const [loadingState, setLoadingState] =
-    useState<SettingsLoadingState>("loading");
-
-  const [loadingError, setLoadingError] = useState("");
+  const [loadResult, setLoadResult] = useState<SettingsLoadResult | null>(
+    null,
+  );
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
+  const detectedTimezone = useSyncExternalStore(
+    subscribeToTimezone,
+    detectUserTimezone,
+    getServerTimezone,
+  );
 
   const [reloadCounter, setReloadCounter] = useState(0);
 
-  useEffect(() => {
-    setDetectedTimezone(detectUserTimezone());
-  }, []);
+  // Only render a result from the current token and request attempt.
+  const hasCurrentResult =
+    loadResult?.token === token && loadResult.reloadCounter === reloadCounter;
+
+  const loadingState: SettingsLoadingState = hasCurrentResult
+    ? loadResult.status
+    : "loading";
+
+  const loadingError =
+    hasCurrentResult && loadResult.status === "error"
+      ? loadResult.message
+      : "";
 
   useEffect(() => {
     const abortController = new AbortController();
-
-    setLoadingState("loading");
-    setLoadingError("");
 
     async function loadSettings() {
       try {
@@ -146,7 +180,7 @@ export default function ReviewSettingsSection({
 
         setSavedSettings(settings);
         setFormValues(createFormValues(settings));
-        setLoadingState("success");
+        setLoadResult({ status: "success", token, reloadCounter });
       } catch (error: unknown) {
         if (abortController.signal.aborted) {
           return;
@@ -157,8 +191,7 @@ export default function ReviewSettingsSection({
           "Failed to load review settings.",
         );
 
-        setLoadingError(message);
-        setLoadingState("error");
+        setLoadResult({ status: "error", token, reloadCounter, message });
       }
     }
 

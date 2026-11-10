@@ -39,6 +39,22 @@ interface ReviewSessionClientProps {
 
 type QueueStatus = "loading" | "ready" | "error";
 
+type QueueLoadState =
+  | { status: "loading" }
+  | {
+      status: "ready";
+      flashcardSetId: number;
+      token: string;
+      reloadCounter: number;
+    }
+  | {
+      status: "error";
+      flashcardSetId: number;
+      token: string;
+      reloadCounter: number;
+      message: string;
+    };
+
 const reviewRatingOptions = [
   {
     rating: "AGAIN",
@@ -90,8 +106,9 @@ export default function ReviewSessionClient({
   const { token, isAuthLoading } = useAuth();
 
   const [reviewQueue, setReviewQueue] = useState<ReviewCard[]>([]);
-  const [queueStatus, setQueueStatus] = useState<QueueStatus>("loading");
-  const [queueError, setQueueError] = useState<string | null>(null);
+  const [queueLoadState, setQueueLoadState] = useState<QueueLoadState>({
+    status: "loading",
+  });
 
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -107,6 +124,18 @@ export default function ReviewSessionClient({
     useState<SubmitReviewRequest | null>(null);
 
   const [reloadCounter, setReloadCounter] = useState(0);
+
+  // A new set, auth token or retry attempt immediately shows loading.
+  const queueStatus: QueueStatus =
+    queueLoadState.status === "loading" ||
+    queueLoadState.flashcardSetId !== flashcardSetId ||
+    queueLoadState.token !== token ||
+    queueLoadState.reloadCounter !== reloadCounter
+      ? "loading"
+      : queueLoadState.status;
+
+  const queueError =
+    queueLoadState.status === "error" ? queueLoadState.message : null;
 
   // Refs synchronously prevent duplicate submissions.
   const pendingSubmissionRef = useRef<SubmitReviewRequest | null>(null);
@@ -125,9 +154,6 @@ export default function ReviewSessionClient({
     }
 
     const abortController = new AbortController();
-
-    setQueueStatus("loading");
-    setQueueError(null);
 
     async function loadAvailableReviews(authenticatedToken: string) {
       try {
@@ -152,17 +178,27 @@ export default function ReviewSessionClient({
         pendingSubmissionRef.current = null;
         setPendingReviewRequest(null);
 
-        setQueueStatus("ready");
+        setQueueLoadState({
+          status: "ready",
+          flashcardSetId,
+          token: authenticatedToken,
+          reloadCounter,
+        });
       } catch (error: unknown) {
         if (abortController.signal.aborted) {
           return;
         }
 
-        setQueueError(
-          getReviewErrorMessage(error, "Failed to load flashcard reviews."),
-        );
-
-        setQueueStatus("error");
+        setQueueLoadState({
+          status: "error",
+          flashcardSetId,
+          token: authenticatedToken,
+          reloadCounter,
+          message: getReviewErrorMessage(
+            error,
+            "Failed to load flashcard reviews.",
+          ),
+        });
       }
     }
 
