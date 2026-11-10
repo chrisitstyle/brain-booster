@@ -1,8 +1,6 @@
 package com.brainbooster.gameresult.analytics;
 
-import com.brainbooster.gameresult.GameQuestionType;
 import com.brainbooster.gameresult.analytics.dto.QuestionTypeAnalyticsDTO;
-import com.brainbooster.gameresult.questionresult.GameQuestionResult;
 import com.brainbooster.gameresult.questionresult.QuestionTypeStatisticsProjection;
 import org.springframework.stereotype.Component;
 
@@ -43,58 +41,5 @@ public class QuestionTypeAnalyzer {
                 correctAnswers,
                 incorrectAnswers,
                 accuracyPercentage);
-    }
-
-
-    private static class QuestionTypeStats {
-
-        private final GameQuestionType questionType;
-
-        private long totalAnswers;
-        private long correctAnswers;
-        private long incorrectAnswers;
-
-        private QuestionTypeStats(
-                GameQuestionType questionType
-        ) {
-            this.questionType = questionType;
-        }
-
-        private void addResult(
-                GameQuestionResult questionResult
-        ) {
-            totalAnswers++;
-            updateAnswerCounters(questionResult);
-        }
-
-        private void updateAnswerCounters(
-                GameQuestionResult questionResult
-        ) {
-            if (Boolean.TRUE.equals(questionResult.getWasCorrect())) {
-                correctAnswers++;
-            } else {
-                incorrectAnswers++;
-            }
-        }
-
-        private QuestionTypeAnalyticsDTO toDto() {
-            return new QuestionTypeAnalyticsDTO(
-                    questionType,
-                    totalAnswers,
-                    correctAnswers,
-                    incorrectAnswers,
-                    calculateAccuracyPercentage()
-            );
-        }
-
-        private double calculateAccuracyPercentage() {
-            if (totalAnswers == 0) {
-                return 0.0;
-            }
-
-            double accuracyPercentage = ((double) correctAnswers / totalAnswers) * 100;
-
-            return Math.round(accuracyPercentage * 100.0) / 100.0;
-        }
     }
 }
