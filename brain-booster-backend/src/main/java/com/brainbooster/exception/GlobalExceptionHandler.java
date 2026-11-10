@@ -85,8 +85,16 @@ public class GlobalExceptionHandler {
 
         return createErrorResponse(
                 "An unexpected server error occurred",
-                HttpStatus.INTERNAL_SERVER_ERROR
-        );
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ReviewConflictException.class)
+    public ResponseEntity<ErrorDTO> handleReviewConflict(
+            ReviewConflictException exception
+    ) {
+        return createErrorResponse(
+                exception.getMessage(),
+                HttpStatus.CONFLICT);
     }
 
     /**

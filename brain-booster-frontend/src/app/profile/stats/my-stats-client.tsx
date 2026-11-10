@@ -93,6 +93,16 @@ export default function MyStatsClient() {
               Choose a flashcard set to view your progress, attempts, weak
               flashcards, and question type accuracy.
             </p>
+
+            <Button
+              asChild
+              className="mt-5 bg-pink-500 text-white hover:bg-pink-600"
+            >
+              <Link href="/reviews/dashboard">
+                <Brain className="h-4 w-4" aria-hidden="true" />
+                Spaced repetition dashboard
+              </Link>
+            </Button>
           </div>
         </section>
 

@@ -36,6 +36,8 @@ dependencies {
     implementation 'org.flywaydb:flyway-core:12.3.0'
     implementation 'org.flywaydb:flyway-database-postgresql:12.3.0'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+    // FSRS-6 scheduling algorithm
+    implementation 'io.github.open-spaced-repetition:fsrs:1.0.0'
 
     // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'

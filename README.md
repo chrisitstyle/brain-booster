@@ -1,7 +1,7 @@
 # 🧠 Brain Booster
 
 Brain Booster is a full-stack learning platform for creating, managing, sharing, and studying flashcards.  
-In addition to classic flashcard review, the application provides multiple learning games, detailed attempt history, question-level results, progress analytics, and focused weak-card review sessions.
+In addition to classic flashcard review, the application provides multiple learning games, detailed attempt history, question-level results, progress analytics, focused weak-card review sessions, and **FSRS-6 spaced repetition** with personalized review schedules and a dedicated learning dashboard.
 
 ## 📌 Table of Contents
 
@@ -15,6 +15,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - [Running with Makefile](#-running-with-makefile)
 - [Roles and Authorization](#-roles-and-authorization)
 - [Learning Games and Analytics](#-learning-games-and-analytics)
+- [Spaced Repetition (FSRS-6)](#-spaced-repetition-fsrs-6)
 - [API Overview](#-api-overview)
 - [OpenAPI / Swagger](#-openapi--swagger)
 - [Automated Testing](#-automated-testing)
@@ -38,6 +39,9 @@ In addition to classic flashcard review, the application provides multiple learn
 
 - **Classic Study Mode**  
   Interactive flashcard review with card flipping, navigation, text-to-speech, shuffling, and local known/unknown progress tracking.
+
+- **FSRS-6 Spaced Repetition**  
+  Adaptive, persistent flashcard reviews with Again / Hard / Good / Easy ratings, daily limits, configurable retention, and learning analytics.
 
 - **Learning Games**  
   Four supported game modes: Multiple Choice, Written, Matching, and Custom Test.
@@ -84,6 +88,7 @@ In addition to classic flashcard review, the application provides multiple learn
 - Spring Web
 - Spring Security
 - Spring Data JPA
+- Java-FSRS (FSRS-6 scheduling)
 - Springdoc OpenAPI / Swagger UI
 - PostgreSQL
 - JWT
@@ -114,6 +119,8 @@ brain-booster/
 ├── docker-compose.yml
 ├── Makefile
 ├── .env.example
+├── docs/
+│   └── FSRS.md
 ├── brain-booster-backend/
 │   ├── src/
 │   ├── gradle/
@@ -154,6 +161,14 @@ Main backend domains include:
   - `attempt`
   - `questionresult`
   - `analytics`
+- `spacedrepetition`
+  - `scheduler`
+  - `service`
+  - `settings`
+  - `state`
+  - `history`
+  - `stats`
+  - `dto`
 
 ### Frontend
 
@@ -481,6 +496,8 @@ A regular user can:
 - view their own results and attempt history,
 - review question-level attempt details,
 - view their own learning analytics,
+- review flashcards from their own sets with FSRS-6 and manage their review preferences,
+- view their own spaced repetition dashboard,
 - review weak flashcards.
 
 ### `ADMIN`
@@ -546,14 +563,51 @@ Weak-flashcard accuracy is calculated from the user's correct and total answers 
 
 ### Frontend Learning Routes
 
-| Route                                        | Description                                                |
-| -------------------------------------------- | ---------------------------------------------------------- |
-| `/profile/settings`                          | Manage the authenticated user's nickname and email address |
-| `/profile/stats`                             | Entry page for selecting a flashcard set                   |
-| `/profile/sets/{setId}/stats`                | Detailed learning analytics for a set                      |
-| `/profile/sets/{setId}/attempts`             | Attempt history for a set                                  |
-| `/profile/sets/{setId}/attempts/{attemptId}` | Summary and question-level details of an attempt           |
-| `/profile/sets/{setId}/weak-cards`           | Focused weak-card review session                           |
+| Route                                        | Description                                        |
+| -------------------------------------------- | -------------------------------------------------- |
+| `/profile/settings`                          | Manage profile details and FSRS review preferences |
+| `/profile/stats`                             | Entry page for selecting a flashcard set           |
+| `/profile/sets/{setId}/stats`                | Detailed learning analytics for a set              |
+| `/profile/sets/{setId}/attempts`             | Attempt history for a set                          |
+| `/profile/sets/{setId}/attempts/{attemptId}` | Summary and question-level details of an attempt   |
+| `/profile/sets/{setId}/weak-cards`           | Focused weak-card review session                   |
+| `/users/{nickname}/sets/{id}/reviews`        | FSRS review session for an owned set               |
+| `/reviews/dashboard`                         | FSRS dashboard across the user's flashcard sets    |
+
+## 🧠 Spaced Repetition (FSRS-6)
+
+Brain Booster implements **FSRS-6 (Free Spaced Repetition Scheduler)** to schedule flashcard reviews based on a memory model rather than fixed intervals. The scheduler considers a card's review history and the user's rating to estimate when the next review should happen.
+
+FSRS models memory with three concepts:
+
+- **Difficulty (D)** — how hard a card is to remember (on a 1–10 scale).
+- **Stability (S)** — the time after which the predicted probability of recall falls to 90%.
+- **Retrievability (R)** — the estimated probability of recalling the card at a given moment.
+
+During a review, users reveal the answer and choose **Again**, **Hard**, **Good**, or **Easy**. The Java-FSRS scheduler updates the card's memory state and determines its next due date. Higher **desired retention** usually produces shorter intervals and more frequent reviews; the default is **90%**.
+
+### Implemented capabilities
+
+- **Persistent scheduling** — each authenticated user has an independent FSRS state for every reviewed flashcard; the complete serialized card is retained for subsequent reviews.
+- **Review lifecycle** — `NEW`, `LEARNING`, `REVIEW`, and `RELEARNING` stages, including short-term learning and relearning steps.
+- **Four review ratings** — `AGAIN`, `HARD`, `GOOD`, and `EASY`.
+- **Review settings** — adjustable target retention (70–97%), new cards per day, and regular reviews per day; the browser detects the IANA time zone used for local-day limits when settings are saved.
+- **Server-side daily limits** — capacity applies across all of a user's sets; `LEARNING` and `RELEARNING` steps remain available even when the limits have been reached.
+- **Reliable submission** — transactional card-state and immutable review-log persistence, idempotent UUID request IDs, and a pessimistic user-row lock for concurrent submissions.
+- **Learning dashboard** — due-now count, today's reviews, card-stage distribution, the last 14 days of activity and ratings, and a seven-day due-date forecast.
+
+FSRS scheduling is distinct from the classic flashcard mode, game scores, and weak-card analytics. It schedules reviews from **FSRS review history**, not game accuracy. The current integration uses the scheduling parameters provided by Java-FSRS; **per-user optimization of the 21 FSRS-6 weights is not implemented**.
+
+### Review flow
+
+1. Open an owned flashcard set and start its **Spaced repetition** session.
+2. The backend returns currently due cards and eligible new cards, subject to daily capacity.
+3. Reveal the answer and select `AGAIN`, `HARD`, `GOOD`, or `EASY`.
+4. The backend validates ownership, review eligibility, idempotency, and daily limits; Java-FSRS then calculates the new state and due date.
+5. The updated card state and review event are saved in the same database transaction.
+6. Check progress in the application's `/reviews/dashboard` page or adjust preferences in `/profile/settings`.
+
+> **Detailed documentation:** See **[FSRS-6: Algorithm and Brain Booster Integration](docs/FSRS.md)** for the memory model, forgetting-curve equations, review stages, persistence model, API flow, transaction safety, daily limits, analytics, and worked examples.
 
 ## 📡 API Overview
 
@@ -703,6 +757,30 @@ GET /game-attempts/me/sets/12?mode=custom-test&from=2026-01-01&to=2026-01-31
 
 > **Note:** Game attempt and analytics endpoints only expose learning data that belongs to the currently authenticated user, unless an endpoint explicitly allows administrator access.
 
+### Spaced Repetition (FSRS-6)
+
+All FSRS endpoints require authentication and operate on the current user. The `{setId}` queue endpoint is restricted to sets owned by that user.
+
+| Method | Endpoint                      | Description                                                                        | Access                  |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------------- | ----------------------- |
+| GET    | `/reviews/sets/{setId}/queue` | Get eligible due and new cards for an owned set                                    | Authenticated set owner |
+| POST   | `/reviews`                    | Submit an `AGAIN`, `HARD`, `GOOD`, or `EASY` rating with an idempotent `requestId` | Authenticated set owner |
+| GET    | `/reviews/settings`           | Get saved FSRS preferences or effective defaults                                   | Authenticated user      |
+| PATCH  | `/reviews/settings`           | Update retention, daily limits, or time zone                                       | Authenticated user      |
+| GET    | `/reviews/dashboard`          | Get aggregated learning statistics and due-date forecast                           | Authenticated user      |
+
+Example review submission:
+
+```json
+{
+  "flashcardId": 42,
+  "rating": "GOOD",
+  "requestId": "e51773b7-a113-446b-9efd-b257e3301990"
+}
+```
+
+The same request ID can be retried safely with identical data; conflicts such as a not-yet-due card or exhausted daily capacity return an error without recording another review. For full details, see [docs/FSRS.md](docs/FSRS.md).
+
 ## 📖 OpenAPI / Swagger
 
 The backend provides automatically generated OpenAPI documentation using Springdoc OpenAPI and Swagger UI.
@@ -759,6 +837,7 @@ The backend ensures high reliability by using **Testcontainers** to run tests ag
 
 - **Performance Optimized** - uses a shared **Singleton Container pattern** to drastically reduce test execution time across the entire suite.
 - **Integration Tests** - validate all application layers at once, including Spring Security (JWT) filters, with automated database state resets between runs.
+- **FSRS Tests** - verify scheduling integration, history persistence, daily limits, local-day boundaries, and concurrent/idempotent review submissions against PostgreSQL.
 - **Repository Tests** - lightweight, transactional slice tests ensuring that native queries, constraints, and Flyway migrations behave exactly as they would in production.
 - **Architecture Tests** - use **ArchUnit** to enforce important backend boundaries and prevent architectural regressions.
 
@@ -766,8 +845,8 @@ The backend ensures high reliability by using **Testcontainers** to run tests ag
 
 Planned features and improvements:
 
-- **Spaced Repetition**  
-  Schedule future reviews based on previous answers and card difficulty.
+- **FSRS Parameter Optimization**  
+  Optionally train user-specific FSRS parameters from review history in a future iteration; the current implementation uses the library defaults.
 
 - **Retry Incorrect Answers**  
   Start a new practice session directly from incorrect answers in a selected attempt.
