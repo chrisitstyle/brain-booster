@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.brainbooster.utils.TestEntities.*;
@@ -292,9 +291,6 @@ class GameAttemptRecorderTest {
 
         verifyNoInteractions(flashcardRepository);
     }
-
-
-
 
 
 }

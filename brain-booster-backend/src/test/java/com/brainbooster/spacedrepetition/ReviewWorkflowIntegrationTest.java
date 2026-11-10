@@ -350,9 +350,9 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
         authenticateUser(anotherUser);
 
         // when
+        Long setId = flashcardSet.getSetId();
         // then
-        assertThatThrownBy(() -> reviewSessionService.getReviewQueue(
-                flashcardSet.getSetId()))
+        assertThatThrownBy(() -> reviewSessionService.getReviewQueue(setId))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -440,9 +440,7 @@ class ReviewWorkflowIntegrationTest extends AbstractRepositoryTest {
                         flashcardSet.getSetId());
 
         // then
-        assertThat(reviewQueue)
-                .extracting(ReviewCardDTO::flashcardId)
-                .doesNotContain(secondFlashcard.getFlashcardId());
+        assertThat(reviewQueue).isEmpty();
     }
 
 

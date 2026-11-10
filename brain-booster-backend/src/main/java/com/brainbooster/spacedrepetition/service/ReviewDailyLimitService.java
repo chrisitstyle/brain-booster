@@ -32,7 +32,7 @@ public class ReviewDailyLimitService {
     /**
      * Returns the user's remaining review capacity for the local day.
      *
-     * @param userId authenticated user identifier
+     * @param userId      authenticated user identifier
      * @param currentTime current instant
      * @return remaining daily allowance
      */
@@ -60,24 +60,24 @@ public class ReviewDailyLimitService {
                 .toInstant();
 
         long newCardsStudiedToday = reviewLogRepository.countByUserStageAndPeriod(
-                        userId,
-                        ReviewStage.NEW,
-                        startInclusive,
-                        endExclusive);
+                userId,
+                ReviewStage.NEW,
+                startInclusive,
+                endExclusive);
 
         long reviewsCompletedToday = reviewLogRepository.countByUserStageAndPeriod(
-                        userId,
-                        ReviewStage.REVIEW,
-                        startInclusive,
-                        endExclusive);
+                userId,
+                ReviewStage.REVIEW,
+                startInclusive,
+                endExclusive);
 
         long remainingNewCards = Math.max(
                 0L,
-                (long) settings.getNewCardsPerDay() - newCardsStudiedToday);
+                settings.getNewCardsPerDay() - newCardsStudiedToday);
 
         long remainingReviews = Math.max(
                 0L,
-                (long) settings.getReviewLimitPerDay() - reviewsCompletedToday);
+                settings.getReviewLimitPerDay() - reviewsCompletedToday);
 
         return new ReviewDailyAllowance(
                 remainingNewCards,
@@ -90,8 +90,8 @@ public class ReviewDailyLimitService {
      * <p>LEARNING and RELEARNING ratings remain available regardless
      * of daily usage.
      *
-     * @param userId authenticated user identifier
-     * @param stage flashcard stage before the rating
+     * @param userId      authenticated user identifier
+     * @param stage       flashcard stage before the rating
      * @param currentTime current instant
      */
     public void verifyReviewAllowed(

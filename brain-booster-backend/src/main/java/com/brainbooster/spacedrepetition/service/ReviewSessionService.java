@@ -1,4 +1,3 @@
-
 package com.brainbooster.spacedrepetition.service;
 
 import com.brainbooster.exception.ResourceNotFoundException;
@@ -124,18 +123,15 @@ public class ReviewSessionService {
 
             FlashcardReviewState reviewState = statesByFlashcardId.get(flashcard.getFlashcardId());
 
-            if (reviewState != null
-                    && reviewState.getState() != ReviewStage.NEW)
-            {
-                continue;
+            if (reviewState == null
+                    || reviewState.getState() == ReviewStage.NEW) {
+                reviewQueue.add(mapToReviewCard(
+                        flashcard,
+                        ReviewStage.NEW,
+                        null));
+
+                allowance = allowance.consume(ReviewStage.NEW);
             }
-
-            reviewQueue.add(mapToReviewCard(
-                            flashcard,
-                            ReviewStage.NEW,
-                            null));
-
-            allowance = allowance.consume(ReviewStage.NEW);
         }
 
         return reviewQueue;

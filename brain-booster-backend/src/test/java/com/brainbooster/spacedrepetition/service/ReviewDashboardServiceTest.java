@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -175,13 +176,13 @@ class ReviewDashboardServiceTest {
 
         assertThat(dashboard.activity().get(12)).isEqualTo(
                 new ReviewDashboardDTO.DailyActivity(
-                        LocalDate.of(2026, 11, 8),
+                        LocalDate.of(2026, Month.NOVEMBER, 8),
                         1,
                         0));
 
         assertThat(dashboard.activity().get(13)).isEqualTo(
                 new ReviewDashboardDTO.DailyActivity(
-                        LocalDate.of(2026, 11, 9),
+                        LocalDate.of(2026, Month.NOVEMBER, 9),
                         2,
                         1));
 
@@ -193,12 +194,12 @@ class ReviewDashboardServiceTest {
 
         assertThat(dashboard.forecast().get(0)).isEqualTo(
                 new ReviewDashboardDTO.DailyForecast(
-                        LocalDate.of(2026, 11, 9),
+                        LocalDate.of(2026, Month.NOVEMBER, 9),
                         3));
 
         assertThat(dashboard.forecast().get(1)).isEqualTo(
                 new ReviewDashboardDTO.DailyForecast(
-                        LocalDate.of(2026, 11, 10),
+                        LocalDate.of(2026, Month.NOVEMBER, 10),
                         1));
     }
 
